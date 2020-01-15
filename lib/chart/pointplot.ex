@@ -8,8 +8,8 @@ defmodule Contex.PointPlot do
 
   defstruct [:data, :width, :height, :x_col, :y_col, :fill_col, :size_col, :x_scale, :y_scale, :fill_scale]
 
-  def new(%Dataset{} = data, width, height) do
-    %PointPlot{data: data, width: width, height: height}
+  def new(%Dataset{} = data) do
+    %PointPlot{data: data, width: 100, height: 100}
     |> defaults()
   end
 

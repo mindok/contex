@@ -8,8 +8,8 @@ alias Contex.Utils
 
 defstruct [:data, :width, :height, :category_col, :task_col, :show_task_labels, :interval_cols, :time_scale, :task_scale, :padding, :category_scale, :phx_event_handler, id_col: ""]
 
-  def new(%Dataset{} = data, width, height) do
-    %GanttChart{data: data, width: width, height: height}
+  def new(%Dataset{} = data) do
+    %GanttChart{data: data, width: 100, height: 100}
     |> defaults()
   end
 

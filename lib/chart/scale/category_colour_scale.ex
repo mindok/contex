@@ -12,6 +12,8 @@ defmodule Contex.CategoryColourScale do
     |> set_palette(:default)
   end
 
+  def set_palette(%CategoryColourScale{} = scale, nil), do: set_palette(scale, :default)
+
   def set_palette(%CategoryColourScale{} = scale, palette) when is_atom(palette) do
     set_palette(scale, get_palette(palette))
   end
@@ -62,6 +64,11 @@ defmodule Contex.CategoryColourScale do
   # "Inspired by" https://github.com/d3/d3-scale-chromatic/blob/master/src/categorical/Pastel1.js
   @pastel1_palette ["fbb4ae", "b3cde3", "ccebc5", "decbe4", "fed9a6", "ffffcc", "e5d8bd", "fddaec", "f2f2f2"]
   defp get_palette(:pastel1), do: @pastel1_palette
+
+  #Warm colours - see https://learnui.design/tools/data-color-picker.html#single
+  @warm_palette ["d40810", "e76241", "f69877", "ffcab4", "ffeac4", "fffae4"]
+  defp get_palette(:warm), do: @warm_palette
+
 
   defp get_palette(_), do: nil
 

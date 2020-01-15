@@ -9,16 +9,16 @@ defmodule Contex.BarPlot do
 
   defstruct [:data, :width, :height, :category_col, :value_cols, :category_scale, :value_scale,
         :type, :orientation, :padding, :data_labels, :colour_palette, :series_fill_colours, :custom_value_formatter,
-        :phx_event_handler, :select_item]
+        :phx_event_handler, :select_item, :value_range]
 
   #@colours ["DF691A", "e83e8c", "d9534f", "f0ad4e", "6610f2", "f0ad4e", "5cb85c", "6f42c1", "20c99", "5bc0de"]
   #Warm colours - see https://learnui.design/tools/data-color-picker.html#single
-  @colours ["d40810", "e76241", "f69877", "ffcab4", "ffeac4", "fffae4"]
+  #@colours ["d40810", "e76241", "f69877", "ffcab4", "ffeac4", "fffae4"]
 
 
 
-  def new(%Dataset{} = data, width, height, orientation \\ :vertical) do
-    %BarPlot{data: data, width: width, height: height, orientation: orientation}
+  def new(%Dataset{} = data, orientation \\ :vertical) do
+    %BarPlot{data: data, width: 100, height: 100, orientation: orientation, value_range: nil}
     |> defaults()
   end
 
@@ -26,7 +26,7 @@ defmodule Contex.BarPlot do
     cat_col_index = 0
     val_col_index = 1
 
-    plot = %{plot | padding: 2, type: :stacked, colour_palette: @colours}
+    plot = %{plot | padding: 2, type: :stacked, colour_palette: :default}
 
     cat_col_name = Dataset.column_name(plot.data, cat_col_index)
     val_col_names = [Dataset.column_name(plot.data, val_col_index)]
@@ -43,6 +43,15 @@ defmodule Contex.BarPlot do
 
   def type(%BarPlot{} = plot, type) do
     %{plot | type: type}
+    |> set_val_col_names(plot.value_cols)
+  end
+
+  def orientation(%BarPlot{} = plot, orientation) do
+    %{plot | orientation: orientation}
+  end
+
+  def force_value_range(%BarPlot{} = plot, {min, max}=value_range) when is_number(min) and is_number(max) do
+    %{plot | value_range: value_range}
     |> set_val_col_names(plot.value_cols)
   end
 
@@ -66,6 +75,15 @@ defmodule Contex.BarPlot do
     %{plot | colour_palette: colour_palette}
     |> set_val_col_names(plot.value_cols)
   end
+  def colours(plot, colour_palette) when is_atom(colour_palette) do
+    %{plot | colour_palette: colour_palette}
+    |> set_val_col_names(plot.value_cols)
+  end
+  def colours(plot, _) do
+    %{plot | colour_palette: :default}
+    |> set_val_col_names(plot.value_cols)
+  end
+
 
   def event_handler(%BarPlot{}=plot, event_handler) do
     %{plot | phx_event_handler: event_handler}
@@ -282,14 +300,16 @@ defmodule Contex.BarPlot do
 
   def set_val_col_names(%BarPlot{} = plot, val_col_names) when is_list(val_col_names) do
     {min, max} =
-      get_overall_value_domain(plot.data, val_col_names, plot.type)
+      get_overall_value_domain(plot, plot.data, val_col_names, plot.type)
       |> fixup_val_range()
 
     {r_start, r_end} = get_range(:value, plot)
 
     val_scale = ContinuousScale.new_linear() |> ContinuousScale.domain(min, max) |> Scale.set_range(r_start, r_end)
 
-    series_fill_colours = CategoryColourScale.new(val_col_names) |> CategoryColourScale.set_palette(plot.colour_palette)
+    series_fill_colours
+      = CategoryColourScale.new(val_col_names)
+      |> CategoryColourScale.set_palette(plot.colour_palette)
 
     %{plot | value_cols: val_col_names, value_scale: val_scale, series_fill_colours: series_fill_colours}
   end
@@ -302,12 +322,14 @@ defmodule Contex.BarPlot do
   defp get_range(:value,  %BarPlot{orientation: :horizontal}=plot), do: {0, plot.width}
   defp get_range(:value, plot), do: {plot.height, 0}
 
-  defp get_overall_value_domain(data, col_names, :stacked) do
+  defp get_overall_value_domain(%BarPlot{value_range: {min, max}}, _, _, _), do: {min, max}
+
+  defp get_overall_value_domain(_plot, data, col_names, :stacked) do
     {_, max} = Dataset.combined_column_extents(data, col_names)
     {0, max}
   end
 
-  defp get_overall_value_domain(data, col_names, :grouped) do
+  defp get_overall_value_domain(_plot, data, col_names, :grouped) do
     combiner = fn {min1, max1}, {min2, max2} -> {Utils.safe_min(min1, min2), Utils.safe_max(max1, max2)} end
 
     Enum.reduce(col_names, {nil, nil}, fn col, acc_extents ->
