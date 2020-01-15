@@ -19,18 +19,21 @@ defmodule Contex.Sparkline do
 
   def draw(%Sparkline{height: height, width: width, line_width: line_width} = sparkline) do
     vb_width = sparkline.length + 1
-    vb_height = height + (2 * line_width)
+    height = height + (2 * line_width)
     {min, max} = sparkline.extents
-    height = max - min
+    vb_height = max - min
     scale = ContinuousScale.new_linear() |> ContinuousScale.domain(sparkline.data) |> Scale.set_range(height, 0)
     sparkline = %{sparkline | y_transform: scale.domain_to_range_fn}
 
+    output =
     ~s"""
        <svg height="#{height}" width="#{width}" viewBox="0 #{min - line_width} #{vb_width} #{vb_height}" preserveAspectRatio="none" role="img">
         <path d="#{get_closed_path(sparkline)}" #{get_fill_style(sparkline)}></path>
         <path d="#{get_path(sparkline)}" #{get_line_style(sparkline)}></path>
       </svg>
     """
+
+    {:safe, [output]}
   end
 
   defp get_line_style(%Sparkline{line_colour: line_colour, line_width: line_width}) do
@@ -46,7 +49,7 @@ defmodule Contex.Sparkline do
 
     # Same as the open path, except we drop down, run back to height,height (aka 0,0) and close it...
     open_path = get_path(sparkline)
-    [open_path, "V #{height} L 1 #{height} Z"]
+    [open_path, "V #{height} L 0 #{height} Z"]
   end
 
   # This is the IO List approach

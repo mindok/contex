@@ -6,13 +6,13 @@ Contex is a simple server side charting package for elixir.
 
 ## Core concepts
 
-### DataSet 
-Contex uses a simple `DataSet` structure - a list of lists or a list of tuples together with a list of column names.
+### Dataset 
+Contex uses a simple `Dataset` structure - a list of lists or a list of tuples together with a list of column names.
 
 For example:
 ```elixir
  data = [{1, 1}, {2, 2}]
- ds = DataSet.new(data, ["x", "y"])
+ ds = Dataset.new(data, ["x", "y"])
 ```
 
 ### Charts
