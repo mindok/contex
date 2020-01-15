@@ -2,12 +2,12 @@ defmodule Contex.ContinuousScale do
   alias __MODULE__
   alias Contex.Utils
 
-  defstruct [:domain, :nice_domain, :range, :type,
+  defstruct [:domain, :nice_domain, :range,
     :domain_to_range_fn, :range_to_domain_fn, :interval_count, :interval_size,
     :display_decimals, :custom_tick_formatter]
 
   def new_linear() do
-    %ContinuousScale{type: :linear, range: {0.0, 1.0}, interval_count: 10, display_decimals: nil}
+    %ContinuousScale{range: {0.0, 1.0}, interval_count: 10, display_decimals: nil}
   end
 
   def interval_count(%ContinuousScale{} = scale, interval_count) when is_integer(interval_count) and interval_count > 1 do
@@ -62,7 +62,7 @@ defmodule Contex.ContinuousScale do
   defp guess_display_decimals(power_of_ten) when power_of_ten > 0 do 0 end
   defp guess_display_decimals(power_of_ten) do 1 + (-1 * round(power_of_ten)) end
 
-  def update_transform_funcs(%ContinuousScale{nice_domain: {min_d, max_d}, range: {min_r, max_r}, type: :linear} = scale)
+  def update_transform_funcs(%ContinuousScale{nice_domain: {min_d, max_d}, range: {min_r, max_r}} = scale)
        when is_number(min_d) and is_number(max_d) and is_number(min_r) and is_number(max_r)
     do
     domain_width = max_d - min_d

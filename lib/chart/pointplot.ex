@@ -10,6 +10,7 @@ defmodule Contex.PointPlot do
 
   def new(%Dataset{} = data, width, height) do
     %PointPlot{data: data, width: width, height: height}
+    |> defaults()
   end
 
   def defaults(%PointPlot{} = plot) do

@@ -19,6 +19,7 @@ defmodule Contex.BarPlot do
 
   def new(%Dataset{} = data, width, height, orientation \\ :vertical) do
     %BarPlot{data: data, width: width, height: height, orientation: orientation}
+    |> defaults()
   end
 
   def defaults(%BarPlot{} = plot) do

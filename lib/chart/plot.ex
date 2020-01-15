@@ -60,7 +60,8 @@ defmodule Contex.Plot do
 
     plot_content = PlotContent.set_size(plot_content, content_width, content_height)
 
-    [~s|<svg class="chart" viewBox="0 0 #{width} #{height}"  role="img">|,
+    output =
+      [~s|<svg class="chart" viewBox="0 0 #{width} #{height}"  role="img">|,
       get_titles_svg(plot, content_width),
       get_axis_labels_svg(plot, content_width, content_height),
       ~s|<g transform="translate(#{left},#{top})">|,
@@ -69,6 +70,8 @@ defmodule Contex.Plot do
       get_svg_legend(plot_content, legend_left, legend_top, plot.plot_options),
     "</svg>"
     ]
+
+    {:safe, output}
   end
 
   defp get_svg_legend(plot_content, legend_left, legend_top, %{legend_setting: :legend_right}) do

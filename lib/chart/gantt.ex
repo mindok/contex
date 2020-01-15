@@ -10,6 +10,7 @@ defstruct [:data, :width, :height, :category_col, :task_col, :show_task_labels, 
 
   def new(%Dataset{} = data, width, height) do
     %GanttChart{data: data, width: width, height: height}
+    |> defaults()
   end
 
   def defaults(%GanttChart{data: data} = plot) do

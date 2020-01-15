@@ -24,6 +24,21 @@ defmodule ContexTest do
 
       assert Dataset.column_extents(dataset, "bb") == {-2, 5}
     end
+
+    test "Dataset accessing nested list entries" do
+      dataset_nocols = Dataset.new([[1, 2, 3], [4, 5, 6], [-3, -2, -1]])
+      dataset = Dataset.new(dataset_nocols.data, ["aa", "bb", "cccc"])
+
+      [row1 | _] = dataset_nocols.data
+
+      assert Dataset.value(row1, 0) == 1
+      assert Dataset.value(row1, 10) == nil
+
+      assert Dataset.value(row1, Dataset.column_index(dataset, "cccc")) == 3
+
+      assert Dataset.column_extents(dataset, "bb") == {-2, 5}
+    end
+
   end
 
   describe "scales" do
