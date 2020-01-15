@@ -56,18 +56,18 @@ Others under consideration:
 
 
 ### Legends
-`Legends` are generated for scales. Currently legend generation is only supported for a `CategoryColourScale`
+`Legend`s are generated for scales. Currently legend generation is only supported for a `CategoryColourScale`
 
 ### WARNING
-There are quite a few things to tidy up to make this ready for the real world:
+There are quite a few things to tidy up to make this ready for the real world, and the API is likely to be unstable for a little while yet...
 
-[ ] Reasonable docs
-[ ] Default styling
-[ ] More test coverage - it has been built interactively using a liveview page for testing / refinement
-[ ] Options handling - needs to be better structured and use keyword lists rather than maps
-[ ] Colour handling
-[ ] SVG generation is poorly structured - lots of string interpolation. A DSL would be a lot nicer, or something like the approach in [Chunky SVG](https://github.com/mmmries/chunky_svg/), which in turn uses [XML Builder](https://github.com/joshnuss/xml_builder), but this needs a bit of thought to maintain performance and memory efficiency. XML Builder has implemented the XML generation using IO Lists.
-[ ] Benchmarks - particularly for the situation where large datasets are getting updated frequently and served via LiveViews.
+- [ ] Reasonable docs
+- [ ] Default styling
+- [ ] More test coverage - it has been built interactively using a liveview page for testing / refinement
+- [ ] Options handling - needs to be better structured and use keyword lists rather than maps
+- [ ] Colour handling
+- [ ] SVG generation is poorly structured - lots of string interpolation. A DSL would be a lot nicer, or something like the approach in [Chunky SVG](https://github.com/mmmries/chunky_svg/), which in turn uses [XML Builder](https://github.com/joshnuss/xml_builder), but this needs a bit of thought to maintain performance and memory efficiency. XML Builder has implemented the XML generation using IO Lists.
+- [ ] Benchmarks - particularly for the situation where large datasets are getting updated frequently and served via LiveViews.
 
 
 ## Installation
