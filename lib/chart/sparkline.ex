@@ -11,6 +11,11 @@ defmodule Contex.Sparkline do
       |> set_default_style
   end
 
+  #TODO: Really need some validation...
+  def colours(%Sparkline{} = sparkline,  fill, line) do
+    %{sparkline | fill_colour: fill, line_colour: line}
+  end
+
   defp set_default_style(%Sparkline{} = sparkline) do
     %{sparkline | spot_radius: 2, spot_colour: "red", line_width: 1,
         line_colour: "rgba(0, 200, 50, 0.7)", fill_colour: "rgba(0, 200, 50, 0.2)",

@@ -70,6 +70,7 @@ defmodule Contex.ContinuousScale do
 
     domain_to_range_fn = case domain_width do
       0 -> fn x -> x end
+      0.0 -> fn x -> x end
       _ ->
         fn domain_val ->
           ratio = (domain_val - min_d) / domain_width
