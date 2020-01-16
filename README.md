@@ -86,8 +86,16 @@ def deps do
 end
 ```
 
-## Prior Art
+## Prior Art, Related Material & Alternatives
 Various details relating to scales, axes and SVG layout have been learnt from the excellent [D3](https://d3js.org/) library by [Mike Bostock](https://github.com/mbostock).
+
+The theory of translating data into graphics is also very well handled by [ggplot2](https://ggplot2.tidyverse.org/) and various papers by Hadley Wickham, such as [A Layered Grammar of Graphics](http://vita.had.co.nz/papers/layered-grammar.pdf)
+
+_Pure Elixir Alternatives_
+
+- [PlotEx](https://github.com/elcritch/plotex) - has good line & time-series support and more optimised for certain situations.
+- [Sasa Juric Homebrew](https://github.com/sasa1977/demo_system/) - graph.html.leex has examples of injecting data into SVGs for very specific use cases. 
+
 
 
 
