@@ -301,7 +301,7 @@ defmodule Contex.BarPlot do
   def set_val_col_names(%BarPlot{} = plot, val_col_names) when is_list(val_col_names) do
     {min, max} =
       get_overall_value_domain(plot, plot.data, val_col_names, plot.type)
-      |> fixup_val_range()
+      |> Utils.fixup_value_range()
 
     {r_start, r_end} = get_range(:value, plot)
 
@@ -337,10 +337,6 @@ defmodule Contex.BarPlot do
           combiner.(acc_extents, inner_extents)
         end )
   end
-
-  defp fixup_val_range({min, max}) when min == max and max > 0, do: {0, max}
-  defp fixup_val_range({min, max}) when min == max and max < 0, do: {max, 0}
-  defp fixup_val_range({min, max}), do: {min, max}
 
   defp midpoint({a, b}), do: (a + b) / 2.0
   defp width({a, b}), do: abs(a - b)

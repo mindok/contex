@@ -37,4 +37,8 @@ defmodule Contex.Utils do
   defp safe_combine(_, y, _) when is_number(y), do: y
   defp safe_combine(_, _, _), do: nil
 
+  def fixup_value_range({min, max}) when min == max and max > 0, do: {0, max}
+  def fixup_value_range({min, max}) when min == max and max < 0, do: {max, 0}
+  def fixup_value_range({min, max}), do: {min, max}
+
 end

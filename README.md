@@ -19,7 +19,7 @@ For example:
 Data can be represented within different chart types. Currently supported charts are `BarPlot`, `PointPlot`, `GanttChart` and `Sparkline`. Generally speaking, you can create a chart structure by calling `new(<DataSet>)` on the relevant module and Contex will take a reasonable guess at what you want. For example:
 
 ```elixir
-point_plot = PointPlot.new(100, 100, ds)
+point_plot = PointPlot.new(ds)
 ```
 
 Will make a new point plot with the first column used for the x-axis, the second for the y-axis, and the scales set to look ok.
@@ -63,6 +63,8 @@ There are quite a few things to tidy up to make this ready for the real world, a
 
 - [ ] Reasonable docs
 - [ ] Default styling
+- [ ] Multiple series in point plot
+- [ ] Line plot (probably option in point plot)
 - [ ] More test coverage - it has been built interactively using a liveview page for testing / refinement
 - [ ] Options handling - needs to be better structured and use keyword lists rather than maps
 - [ ] Colour handling

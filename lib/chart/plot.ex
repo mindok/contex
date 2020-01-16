@@ -192,7 +192,7 @@ end
 
 defimpl Contex.PlotContent, for: Contex.PointPlot do
   def to_svg(plot, _options), do: Contex.PointPlot.to_svg(plot)
-  def get_svg_legend(_plot), do: "" #Contex.PointPlot.get_legend_svg(plot)
+  def get_svg_legend(plot), do: Contex.PointPlot.get_svg_legend(plot)
   def set_size(plot, width, height), do: Contex.PointPlot.set_size(plot, width, height)
 end
 
