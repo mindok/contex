@@ -86,22 +86,21 @@ defmodule Contex.Plot do
     centre = margins.left + (content_width / 2.0)
     title_y = @top_title_margin
 
-    title_svg = case title do
-      "" -> ""
-      nil -> ""
-      _ -> ~s|<text class="exc-title" x="#{centre}" y="#{title_y}" text-anchor="middle">#{title}</text>|
+    title_svg = case is_non_empty_string(title) do
+      true -> ~s|<text class="exc-title" x="#{centre}" y="#{title_y}" text-anchor="middle">#{title}</text>|
+      _ -> ""
     end
 
-    subtitle_y = case title do
-      "" -> @top_subtitle_margin
-      nil -> @top_subtitle_margin
-      _ -> @top_subtitle_margin + @top_title_margin
+    subtitle_y = case is_non_empty_string(title) do
+      true -> @top_subtitle_margin + @top_title_margin
+      _ -> @top_subtitle_margin
     end
 
-    subtitle_svg = case subtitle do
-      "" -> ""
-      nil -> ""
-      _ -> ~s|<text class="exc-subtitle" x="#{centre}" y="#{subtitle_y}" text-anchor="middle">#{subtitle}</text>|
+    subtitle_svg = case is_non_empty_string(subtitle) do
+      true ->
+        ~s|<text class="exc-subtitle" x="#{centre}" y="#{subtitle_y}" text-anchor="middle">#{subtitle}</text>|
+      _ ->
+        ""
     end
 
     [title_svg, subtitle_svg]
@@ -115,16 +114,18 @@ defmodule Contex.Plot do
     y_label_x = -1.0 * (margins.top + (content_height / 2.0)) # -90 rotation screws with coordinates
     y_label_y = @y_axis_margin
 
-    x_label_svg = case x_label do
-      "" -> ""
-      nil -> ""
-      _ -> ~s|<text class="exc-subtitle" x="#{x_label_x}" y="#{x_label_y}" text-anchor="middle">#{x_label}</text>|
+    x_label_svg = case is_non_empty_string(x_label) do
+      true ->
+        ~s|<text class="exc-subtitle" x="#{x_label_x}" y="#{x_label_y}" text-anchor="middle">#{x_label}</text>|
+      _ ->
+        ""
     end
 
-    y_label_svg = case y_label do
-      "" -> ""
-      nil -> ""
-      _ -> ~s|<text transform="rotate(-90)" class="exc-subtitle" x="#{y_label_x}" y="#{y_label_y}" text-anchor="middle">#{y_label}</text>|
+    y_label_svg = case is_non_empty_string(y_label) do
+      true ->
+          ~s|<text transform="rotate(-90)" class="exc-subtitle" x="#{y_label_x}" y="#{y_label_y}" text-anchor="middle">#{y_label}</text>|
+      false ->
+          ""
     end
 
     [x_label_svg, y_label_svg]
@@ -143,64 +144,44 @@ defmodule Contex.Plot do
   end
 
   def calculate_left_margin(%Plot{}=plot) do
-    margin = case plot.plot_options.show_y_axis do
-      true -> @y_axis_tick_labels
-      _ -> 0
-    end
-
-    margin = margin + case plot.y_label do
-      nil -> 0
-      "" -> 0
-      _ -> @y_axis_margin
-    end
+    margin = 0
+    margin = margin + if plot.plot_options.show_y_axis, do: @y_axis_tick_labels, else: 0
+    margin = margin + if is_non_empty_string(plot.y_label), do: @y_axis_margin, else: 0
 
     margin
   end
 
   def calculate_right_margin(%Plot{}=plot) do
     margin = @default_padding
-
-    margin = margin + case plot.plot_options.legend_setting do
-      :legend_right -> @legend_width
-      _ -> 0
-    end
+    margin = margin + if (plot.plot_options.legend_setting == :legend_right), do: @legend_width, else: 0
 
     margin
   end
 
   def calculate_bottom_margin(%Plot{}=plot) do
-    margin =     margin = case plot.plot_options.show_x_axis do
-      true -> @x_axis_tick_labels
-      _ -> 0
-    end
-
-    margin = margin + case plot.x_label do
-      nil -> 0
-      "" -> 0
-      _ -> @x_axis_margin
-    end
+    margin = 0
+    margin = margin + if plot.plot_options.show_x_axis, do: @x_axis_tick_labels, else: 0
+    margin = margin + if is_non_empty_string(plot.x_label), do: @x_axis_margin, else: 0
 
     margin
   end
 
   def calculate_top_margin(%Plot{}=plot) do
     margin = @default_padding
-    margin = margin + case plot.title do
-      nil -> 0
-      "" -> 0
-      _ -> @top_title_margin + @default_padding
-    end
-
-    margin = margin + case plot.subtitle do
-      nil -> 0
-      "" -> 0
-      _ -> @top_subtitle_margin
-    end
+    margin = margin + if is_non_empty_string(plot.title), do: @top_title_margin + @default_padding, else: 0
+    margin = margin + if is_non_empty_string(plot.subtitle), do: @top_subtitle_margin, else: 0
 
     margin
   end
 
+  defp is_non_empty_string(val) when is_nil(val), do: false
+  defp is_non_empty_string(val) when val == "", do: false
+  defp is_non_empty_string(val) when is_binary(val), do: true
+  defp is_non_empty_string(_), do: false
+
 end
+
+
 
 #TODO: Probably move to appropriate module files...
 defimpl Contex.PlotContent, for: Contex.BarPlot do

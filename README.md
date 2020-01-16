@@ -1,13 +1,13 @@
-# Contex
+# ContEx
 
-Contex is a simple server side charting package for elixir.
+ContEx is a simple server side charting package for elixir.
 
-![Example Barchart](./samples/barchart.png "Example Barchart")
+![Example Charts](./samples/mashup.png "Example Charts")
 
 ## Core concepts
 
 ### Dataset 
-Contex uses a simple `Dataset` structure - a list of lists or a list of tuples together with a list of column names.
+ContEx uses a simple `Dataset` structure - a list of lists or a list of tuples together with a list of column names.
 
 For example:
 ```elixir
@@ -66,6 +66,7 @@ There are quite a few things to tidy up to make this ready for the real world, a
 - [ ] More test coverage - it has been built interactively using a liveview page for testing / refinement
 - [ ] Options handling - needs to be better structured and use keyword lists rather than maps
 - [ ] Colour handling
+- [ ] Plot overlays (e.g. line chart on bar chart)
 - [ ] SVG generation is poorly structured - lots of string interpolation. A DSL would be a lot nicer, or something like the approach in [Chunky SVG](https://github.com/mmmries/chunky_svg/), which in turn uses [XML Builder](https://github.com/joshnuss/xml_builder), but this needs a bit of thought to maintain performance and memory efficiency. XML Builder has implemented the XML generation using IO Lists.
 - [ ] Benchmarks - particularly for the situation where large datasets are getting updated frequently and served via LiveViews.
 
@@ -82,6 +83,13 @@ def deps do
   ]
 end
 ```
+
+## Prior Art
+Various details relating to scales, axes and SVG layout have been learnt from the excellent [D3](https://d3js.org/) library by [Mike Bostock](https://github.com/mbostock).
+
+
+
+
 
 
 

@@ -46,8 +46,8 @@ defmodule Contex.PointPlot do
       Axis.to_svg(axis_y),
       "<g>",
       get_svg_points(plot),
-      "</g>",
-      get_svg_line(plot)
+      "</g>"
+      #,get_svg_line(plot)
     ]
   end
 

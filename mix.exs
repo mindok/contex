@@ -10,7 +10,7 @@ defmodule Contex.MixProject do
       start_permanent: Mix.env() == :prod,
       description: description(),
       package: package(),
-      name: "Contex",
+      name: "ContEx",
       source_url: "https://github.com/mindok/contex",
       deps: deps()
     ]
@@ -21,12 +21,13 @@ defmodule Contex.MixProject do
   end
 
   defp description() do
-    "Contex - a charting library for Elixir."
+    "Contex - a server-side charting library for Elixir."
   end
 
   defp deps do
     [
-      {:timex, "~> 3.6"}
+      {:timex, "~> 3.6"},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]
@@ -36,8 +37,7 @@ defmodule Contex.MixProject do
     [
       name: "contex",
       # These are the default files included in the package
-      files: ~w(lib priv .formatter.exs mix.exs README* readme* LICENSE*
-                license* CHANGELOG* changelog* src),
+      files: ~w(lib mix.exs README* LICENSE*),
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/mindok/contex"}
     ]
