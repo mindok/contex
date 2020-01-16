@@ -61,9 +61,9 @@ Others under consideration:
 ### WARNING
 There are quite a few things to tidy up to make this ready for the real world, and the API is likely to be unstable for a little while yet...
 
-- [ ] Reasonable docs
+- [ ] Reasonable docs - the best resource currently is the accompanying [demo project](https://github.com/mindok/contex-samples)
 - [ ] Default styling
-- [ ] Multiple series in point plot
+- [x] Multiple series in point plot
 - [ ] Line plot (probably option in point plot)
 - [ ] More test coverage - it has been built interactively using a liveview page for testing / refinement
 - [ ] Options handling - needs to be better structured and use keyword lists rather than maps
