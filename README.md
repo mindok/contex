@@ -4,6 +4,10 @@ ContEx is a simple server side charting package for elixir.
 
 ![Example Charts](./samples/mashup.png "Example Charts")
 
+... and it works nicely in Phoenix LiveView
+
+![Animated Barchart](./samples/rolling.gif "Animated Barchart")
+
 ## Core concepts
 
 ### Dataset 
