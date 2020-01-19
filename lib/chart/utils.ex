@@ -39,6 +39,8 @@ defmodule Contex.Utils do
 
   def fixup_value_range({min, max}) when min == max and max > 0, do: {0, max}
   def fixup_value_range({min, max}) when min == max and max < 0, do: {max, 0}
+  def fixup_value_range({0, 0}), do: {0, 1}
+  def fixup_value_range({0.0, 0.0}), do: {0.0, 1.0}
   def fixup_value_range({min, max}), do: {min, max}
 
 end
