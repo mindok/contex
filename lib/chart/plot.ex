@@ -184,10 +184,10 @@ end
 
 
 #TODO: Probably move to appropriate module files...
-defimpl Contex.PlotContent, for: Contex.BarPlot do
-  def to_svg(plot, options), do: Contex.BarPlot.to_svg(plot, options)
-  def get_svg_legend(plot), do: Contex.BarPlot.get_svg_legend(plot)
-  def set_size(plot, width, height), do: Contex.BarPlot.set_size(plot, width, height)
+defimpl Contex.PlotContent, for: Contex.BarChart do
+  def to_svg(plot, options), do: Contex.BarChart.to_svg(plot, options)
+  def get_svg_legend(plot), do: Contex.BarChart.get_svg_legend(plot)
+  def set_size(plot, width, height), do: Contex.BarChart.set_size(plot, width, height)
 end
 
 defimpl Contex.PlotContent, for: Contex.PointPlot do

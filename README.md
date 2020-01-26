@@ -20,7 +20,7 @@ For example:
 ```
 
 ### Charts
-Data can be represented within different chart types. Currently supported charts are `BarPlot`, `PointPlot`, `GanttChart` and `Sparkline`. Generally speaking, you can create a chart structure by calling `new(<DataSet>)` on the relevant module and Contex will take a reasonable guess at what you want. For example:
+Data can be represented within different chart types. Currently supported charts are `BarChart`, `PointPlot`, `GanttChart` and `Sparkline`. Generally speaking, you can create a chart structure by calling `new(<DataSet>)` on the relevant module and Contex will take a reasonable guess at what you want. For example:
 
 ```elixir
 point_plot = PointPlot.new(ds)
@@ -28,7 +28,7 @@ point_plot = PointPlot.new(ds)
 
 Will make a new point plot with the first column used for the x-axis, the second for the y-axis, and the scales set to look ok.
 
-Each module has different option. For example, `BarPlot` allows you to set the `padding()` between the bar groups, specify whether you want `type()` to be `:grouped` or `:stacked`.
+Each module has different option. For example, `BarChart` allows you to set the `padding()` between the bar groups, specify whether you want `type()` to be `:grouped` or `:stacked`.
 
 Each chart type implements the `PlotContent` protocol which requires it to scale to a defined height and width, emit SVG and optionally emit SVG for a legend. Generally, you won't directly access this protocol however, because...
 
@@ -50,7 +50,7 @@ Plot.to_svg(plot)
 Scales are all about mapping attributes to plotting geometry. They handle transformation of data to screen coordinates (and other plotting attributes). They also handle calculation of tick intervals and the like where appropriate. Scales currently implemented are:
 
 - `ContinuousScale` : A linear continuous scale
-- `OrdinalScale` : For categories / discrete attributes. Used for plotting the category axis in a `BarPlot`.
+- `OrdinalScale` : For categories / discrete attributes. Used for plotting the category axis in a `BarChart`.
 - `CategoryColourScale` : Maps unique attributes into colours
 - `TimeScale` : A continuous timescale for `DateTime` and `NaiveDateTime` data types
 

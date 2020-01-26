@@ -7,10 +7,10 @@ defmodule Contex.PointPlot do
   alias Contex.Axis
   alias Contex.Utils
 
-  defstruct [:data, :width, :height, :x_col, :y_cols, :fill_col, :size_col, :x_scale, :y_scale, :fill_scale, :colour_palette]
+  defstruct [:dataset, :width, :height, :x_col, :y_cols, :fill_col, :size_col, :x_scale, :y_scale, :fill_scale, :colour_palette]
 
-  def new(%Dataset{} = data) do
-    %PointPlot{data: data, width: 100, height: 100}
+  def new(%Dataset{} = dataset) do
+    %PointPlot{dataset: dataset, width: 100, height: 100}
     |> defaults()
   end
 
@@ -18,8 +18,8 @@ defmodule Contex.PointPlot do
     x_col_index = 0
     y_col_index = 1
 
-    x_col_name = Dataset.column_name(plot.data, x_col_index)
-    y_col_names = [Dataset.column_name(plot.data, y_col_index)]
+    x_col_name = Dataset.column_name(plot.dataset, x_col_index)
+    y_col_names = [Dataset.column_name(plot.dataset, y_col_index)]
 
     %{plot | colour_palette: :default}
     |> set_x_col_name(x_col_name)
@@ -73,7 +73,7 @@ defmodule Contex.PointPlot do
     end
   end
 
-  defp get_svg_points(%PointPlot{data: dataset} = plot) do
+  defp get_svg_points(%PointPlot{dataset: dataset} = plot) do
     x_col_index = Dataset.column_index(dataset, plot.x_col)
     y_col_indices = Enum.map(plot.y_cols, fn col -> Dataset.column_index(dataset, col) end)
 
@@ -85,7 +85,7 @@ defmodule Contex.PointPlot do
     end)
   end
 
-  defp get_svg_line(%PointPlot{data: dataset, x_scale: x_scale, y_scale: y_scale} = plot) do
+  defp get_svg_line(%PointPlot{dataset: dataset, x_scale: x_scale, y_scale: y_scale} = plot) do
     x_col_index = Dataset.column_index(dataset, plot.x_col)
     y_col_index = Dataset.column_index(dataset, plot.y_col)
     x_tx_fn = x_scale.domain_to_range_fn
@@ -93,9 +93,9 @@ defmodule Contex.PointPlot do
 
     style = ~s|stroke="red" stroke-width="2" fill="none" stroke-dasharray="13,2" stroke-linejoin="round" |
 
-    last_item = Enum.count(dataset.data) - 1
+    last_item = Enum.count(dataset.dataset) - 1
     path = ["M",
-        dataset.data
+        dataset.dataset
          |> Enum.map(fn row ->
               x = Dataset.value(row, x_col_index)
               y = Dataset.value(row, y_col_index)
@@ -150,13 +150,13 @@ defmodule Contex.PointPlot do
   defp get_svg_point(_x, _y, _fill), do: ""
 
   def set_x_col_name(%PointPlot{width: width} = plot, x_col_name) do
-    x_scale = create_scale_for_column(plot.data, x_col_name, {0, width})
+    x_scale = create_scale_for_column(plot.dataset, x_col_name, {0, width})
     %{plot | x_col: x_col_name, x_scale: x_scale}
   end
 
   def set_y_col_names(%PointPlot{height: height} = plot, y_col_names) when is_list(y_col_names) do
     {min, max} =
-      get_overall_domain(plot.data, y_col_names)
+      get_overall_domain(plot.dataset, y_col_names)
       |> Utils.fixup_value_range()
 
     y_scale = ContinuousScale.new_linear()
@@ -170,19 +170,19 @@ defmodule Contex.PointPlot do
     %{plot | y_cols: y_col_names, y_scale: y_scale, fill_scale: series_fill_colours}
   end
 
-  defp get_overall_domain(data, col_names) do
+  defp get_overall_domain(dataset, col_names) do
     combiner = fn {min1, max1}, {min2, max2} -> {Utils.safe_min(min1, min2), Utils.safe_max(max1, max2)} end
 
     Enum.reduce(col_names, {nil, nil}, fn col, acc_extents ->
-          inner_extents = Dataset.column_extents(data, col)
+          inner_extents = Dataset.column_extents(dataset, col)
           combiner.(acc_extents, inner_extents)
         end )
   end
 
-  defp create_scale_for_column(data, column, {r_min, r_max}) do
-    {min, max} = Dataset.column_extents(data, column)
+  defp create_scale_for_column(dataset, column, {r_min, r_max}) do
+    {min, max} = Dataset.column_extents(dataset, column)
 
-    case Dataset.guess_column_type(data, column) do
+    case Dataset.guess_column_type(dataset, column) do
       :datetime ->
         TimeScale.new()
           |> TimeScale.domain(min, max)
@@ -195,7 +195,7 @@ defmodule Contex.PointPlot do
   end
 
   def set_colour_col_name(%PointPlot{} = plot, colour_col_name) do
-    vals = Dataset.unique_values(plot.data, colour_col_name)
+    vals = Dataset.unique_values(plot.dataset, colour_col_name)
     colour_scale = CategoryColourScale.new(vals)
 
     %{plot | fill_col: colour_col_name, fill_scale: colour_scale}

@@ -6,22 +6,22 @@ alias Contex.Dataset
 alias Contex.Axis
 alias Contex.Utils
 
-defstruct [:data, :width, :height, :category_col, :task_col, :show_task_labels, :interval_cols, :time_scale, :task_scale, :padding, :category_scale, :phx_event_handler, id_col: ""]
+defstruct [:dataset, :width, :height, :category_col, :task_col, :show_task_labels, :interval_cols, :time_scale, :task_scale, :padding, :category_scale, :phx_event_handler, id_col: ""]
 
-  def new(%Dataset{} = data) do
-    %GanttChart{data: data, width: 100, height: 100}
+  def new(%Dataset{} = dataset) do
+    %GanttChart{dataset: dataset, width: 100, height: 100}
     |> defaults()
   end
 
-  def defaults(%GanttChart{data: data} = plot) do
+  def defaults(%GanttChart{dataset: dataset} = plot) do
     cat_col_index = 0
     task_col_index = 1
     start_col_index = 2
     end_col_index = 3
 
     %{plot | padding: 2, show_task_labels: true}
-    |> set_category_task_cols(Dataset.column_name(data, cat_col_index), Dataset.column_name(data, task_col_index))
-    |> set_task_interval_cols({Dataset.column_name(data, start_col_index), Dataset.column_name(data, end_col_index)})
+    |> set_category_task_cols(Dataset.column_name(dataset, cat_col_index), Dataset.column_name(dataset, task_col_index))
+    |> set_task_interval_cols({Dataset.column_name(dataset, start_col_index), Dataset.column_name(dataset, end_col_index)})
   end
 
   # TODO: replace with option setting
@@ -37,9 +37,9 @@ defstruct [:data, :width, :height, :category_col, :task_col, :show_task_labels, 
     |> set_task_interval_cols(plot.interval_cols)
   end
 
-  def set_category_task_cols(%GanttChart{data: data, height: height, padding: padding} = plot, cat_col_name, task_col_name) do
-    tasks = Dataset.unique_values(data, task_col_name)
-    categories = Dataset.unique_values(data, cat_col_name)
+  def set_category_task_cols(%GanttChart{dataset: dataset, height: height, padding: padding} = plot, cat_col_name, task_col_name) do
+    tasks = Dataset.unique_values(dataset, task_col_name)
+    categories = Dataset.unique_values(dataset, cat_col_name)
 
     task_scale = OrdinalScale.new(tasks)
       |> Scale.set_range(0, height)
@@ -50,9 +50,9 @@ defstruct [:data, :width, :height, :category_col, :task_col, :show_task_labels, 
     %{plot | category_col: cat_col_name, task_col: task_col_name , task_scale: task_scale, category_scale: cat_scale}
   end
 
-  def set_task_interval_cols(%GanttChart{data: data, width: width} = plot, {start_col, end_col}) do
-    {min, _} = Dataset.column_extents(data, start_col)
-    {_, max} = Dataset.column_extents(data, end_col)
+  def set_task_interval_cols(%GanttChart{dataset: dataset, width: width} = plot, {start_col, end_col}) do
+    {min, _} = Dataset.column_extents(dataset, start_col)
+    {_, max} = Dataset.column_extents(dataset, end_col)
 
     time_scale =TimeScale.new()
       |> TimeScale.domain(min, max)
@@ -89,8 +89,8 @@ defstruct [:data, :width, :height, :category_col, :task_col, :show_task_labels, 
     ]
   end
 
-  defp get_category_rects_svg(%GanttChart{data: data, category_col: cat_col_name, category_scale: cat_scale}=plot) do
-    categories = Dataset.unique_values(data, cat_col_name)
+  defp get_category_rects_svg(%GanttChart{dataset: dataset, category_col: cat_col_name, category_scale: cat_scale}=plot) do
+    categories = Dataset.unique_values(dataset, cat_col_name)
 
     Enum.map(categories, fn cat ->
       fill = CategoryColourScale.colour_for_value(cat_scale, cat)
@@ -116,7 +116,7 @@ defstruct [:data, :width, :height, :category_col, :task_col, :show_task_labels, 
     ]
   end
 
-  defp get_svg_bars(%GanttChart{data: dataset, task_col: task_col, category_col: cat_col, interval_cols: {start_col, end_col}} = plot) do
+  defp get_svg_bars(%GanttChart{dataset: dataset, task_col: task_col, category_col: cat_col, interval_cols: {start_col, end_col}} = plot) do
     task_col_index = Dataset.column_index(dataset, task_col)
     cat_col_index = Dataset.column_index(dataset, cat_col)
     start_col_index = Dataset.column_index(dataset, start_col)
@@ -164,7 +164,7 @@ defstruct [:data, :width, :height, :category_col, :task_col, :show_task_labels, 
   defp get_bar_event_handler(_row, %GanttChart{phx_event_handler: phx_event_handler, id_col: ""}, category, task) when is_binary(phx_event_handler) and phx_event_handler != "" do
       ~s| phx-value-category="#{category}" phx-value-task="#{task}" phx-click="#{phx_event_handler}"|
   end
-  defp get_bar_event_handler(row, %GanttChart{phx_event_handler: phx_event_handler, id_col: id_col, data: dataset}, _category, _task) when is_binary(phx_event_handler) and phx_event_handler != "" do
+  defp get_bar_event_handler(row, %GanttChart{phx_event_handler: phx_event_handler, id_col: id_col, dataset: dataset}, _category, _task) when is_binary(phx_event_handler) and phx_event_handler != "" do
     id_col_index = Dataset.column_index(dataset, id_col)
     id = Dataset.value(row, id_col_index)
     ~s| phx-value-id="#{id}" phx-click="#{phx_event_handler}"|
@@ -173,7 +173,7 @@ defstruct [:data, :width, :height, :category_col, :task_col, :show_task_labels, 
     ""
   end
 
-  defp get_category_band(%GanttChart{task_scale: task_scale, data: dataset}=plot, category) do
+  defp get_category_band(%GanttChart{task_scale: task_scale, dataset: dataset}=plot, category) do
     task_col_index = Dataset.column_index(dataset, plot.task_col)
     cat_col_index = Dataset.column_index(dataset, plot.category_col)
 

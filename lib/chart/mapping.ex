@@ -1,13 +1,14 @@
 defmodule Contex.Mapping do
-  @moduledoc """
-  CURRENTLY NOT USED....
-  Manages the mapping between generic data and the elements required to render specific plot types
-  Along the lines of ggplot -> aes() (Aesthetic mapping)
-  """
+  @moduledoc false
   alias __MODULE__
 
   defstruct [:x, :y, :colour, :size, :x_index, :y_index, :colour_index, :size_index]
 
+  @doc """
+  CURRENTLY NOT USED....
+  Manages the mapping between generic data and the elements required to render specific plot types
+  Along the lines of ggplot -> aes() (Aesthetic mapping)
+  """
   def new(x, y, opts \\ []) do
     mapping = new(opts)
     %{mapping | x: x, y: y}

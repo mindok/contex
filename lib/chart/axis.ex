@@ -1,4 +1,34 @@
 defmodule Contex.Axis do
+  @moduledoc """
+  `Contex.Axis` represents the visual appearance of a `Contex.Scale`
+
+  In general terms, an Axis is responsible for rendering a `Contex.Scale` where the scale is used to position
+  a graphical element.
+
+  As an end-user of the Contex you won't need to worry too much about Axes - the specific
+  plot types take care of them. Things like styling and scales are handled elsewhere. However,
+  if you are building a new plot type you will need to understand how they work.
+
+  Axes can be drawn with ticks in different locations relative to the Axis based on the orientation.
+  For example, when `:orientation` is `:top`, the axis is drawn as a horizontal line with the ticks
+  above and the tick text above that.
+
+  `:rotation` is used to optionally rotate the labels and can either by 45 or 90 (anything else is considered to be 0).
+
+  `:tick_size_inner` and `:tick_size_outer` control the line lengths of the ticks.
+
+  `:tick_padding` controls the gap between the end of the tick mark and the tick text.
+
+  `:flip_factor` is for internal use. Whatever you set it to will be ignored.
+
+  An offset relative to the containing SVG element's origin is used to position the axis line.
+  For example, an x-axis drawn at the bottom of the plot will typically be offset by the height
+  of the plot content. The different plot types look after this internally.
+
+  There are some layout heuristics to calculate text sizes and offsets based on axis orientation and whether the
+  tick labels are rotated.
+  """
+
   alias __MODULE__
   alias Contex.Scale
 
@@ -6,22 +36,55 @@ defmodule Contex.Axis do
 
   @orientations [:top, :left, :right, :bottom]
 
-
+  @doc """
+  Create a new axis struct with orientation being one of :top, :left, :right, :bottom
+  """
   def new(scale, orientation) when orientation in @orientations do
     %Axis{scale: scale, orientation: orientation}
   end
 
+  @doc """
+  Create a new axis struct with orientation set to `:top`.
+
+  Equivalent to `Axis.new(scale, :top)`
+  """
   def new_top_axis(scale), do: new(scale, :top)
+
+  @doc """
+  Create a new axis struct with orientation set to `:bottom`.
+
+  Equivalent to `Axis.new(scale, :bottom)`
+  """
   def new_bottom_axis(scale), do: new(scale, :bottom)
+
+  @doc """
+  Create a new axis struct with orientation set to `:left`.
+
+  Equivalent to `Axis.new(scale, :left)`
+  """
   def new_left_axis(scale), do: new(scale, :left)
+
+  @doc """
+  Create a new axis struct with orientation set to `:right`.
+
+  Equivalent to `Axis.new(scale, :right)`
+  """
   def new_right_axis(scale), do: new(scale, :right)
 
+  @doc """
+  Sets the offset for where the axis will be drawn. The offset will either be horizontal
+  or vertical depending on the orientation of the axis.
+  """
   def set_offset(%Axis{} = axis, offset) do
     %{axis | offset: offset}
   end
 
-  # Returns IO List for axis. Assumes the containing group handles the transform to the correct location
+  @doc """
+  Generates the SVG content for the axis (axis line, tick mark, tick labels). The coordinate system
+  will be in the coordinate system of the containing plot (i.e. the range of the `Contex.Scale` specified for the axis)
+  """
   def to_svg(%Axis{scale: scale} = axis) do
+  # Returns IO List for axis. Assumes the containing group handles the transform to the correct location
     axis = %{axis | flip_factor: get_flip_factor(axis.orientation)}
     {range0, range1} = get_adjusted_range(scale)
 
@@ -35,6 +98,9 @@ defmodule Contex.Axis do
     ]
   end
 
+  @doc """
+  Generates grid-lines for each tick in the `Contex.Scale` specified for the axis.
+  """
   def gridlines_to_svg(%Axis{} = axis) do
     [
       "<g> ",

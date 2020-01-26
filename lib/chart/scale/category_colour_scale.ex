@@ -3,6 +3,8 @@ defmodule Contex.CategoryColourScale do
 
   defstruct [:values, :colour_palette, :colour_map]
 
+  @type colour_palette() :: nil | :default | :pastel1 | :warm | list()
+
   @default_colour "fa8866"
 
   def new(raw_values) when is_list(raw_values) do
@@ -12,6 +14,8 @@ defmodule Contex.CategoryColourScale do
     |> set_palette(:default)
   end
 
+  @spec set_palette(Contex.CategoryColourScale.t(), colour_palette()) ::
+          Contex.CategoryColourScale.t()
   def set_palette(%CategoryColourScale{} = scale, nil), do: set_palette(scale, :default)
 
   def set_palette(%CategoryColourScale{} = scale, palette) when is_atom(palette) do
@@ -32,6 +36,7 @@ defmodule Contex.CategoryColourScale do
     end
   end
 
+  @spec colour_at_index(colour_palette(), integer) :: any
   def colour_at_index(palette, index) when is_atom(palette) and is_integer(index) do
     case get_palette(palette) do
       nil -> @default_colour
