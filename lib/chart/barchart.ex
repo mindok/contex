@@ -23,7 +23,7 @@ shown. You can force the range using `force_value_range/2`
 
 """
   alias __MODULE__
-  alias Contex.{Scale, ContinuousScale, OrdinalScale}
+  alias Contex.{Scale, ContinuousLinearScale, OrdinalScale}
   alias Contex.CategoryColourScale
   alias Contex.Dataset
   alias Contex.Axis
@@ -122,7 +122,7 @@ shown. You can force the range using `force_value_range/2`
   @doc """
   Overrides the default colours.
 
-  Colours can either be a named palette defined in `Contex.CategoryColourScale` or a list of string representing hex code
+  Colours can either be a named palette defined in `Contex.CategoryColourScale` or a list of strings representing hex code
   of the colour as per CSS colour hex codes, but without the #. For example:
 
     ```
@@ -401,7 +401,7 @@ shown. You can force the range using `force_value_range/2`
 
     {r_start, r_end} = get_range(:value, plot)
 
-    val_scale = ContinuousScale.new_linear() |> ContinuousScale.domain(min, max) |> Scale.set_range(r_start, r_end)
+    val_scale = ContinuousLinearScale.new() |> ContinuousLinearScale.domain(min, max) |> Scale.set_range(r_start, r_end)
 
     series_fill_colours
       = CategoryColourScale.new(val_col_names)

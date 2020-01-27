@@ -1,7 +1,7 @@
 defmodule Contex.PointPlot do
 
   alias __MODULE__
-  alias Contex.{Scale, ContinuousScale, TimeScale}
+  alias Contex.{Scale, ContinuousLinearScale, TimeScale}
   alias Contex.CategoryColourScale
   alias Contex.Dataset
   alias Contex.Axis
@@ -93,9 +93,9 @@ defmodule Contex.PointPlot do
 
     style = ~s|stroke="red" stroke-width="2" fill="none" stroke-dasharray="13,2" stroke-linejoin="round" |
 
-    last_item = Enum.count(dataset.dataset) - 1
+    last_item = Enum.count(dataset.data) - 1
     path = ["M",
-        dataset.dataset
+        dataset.data
          |> Enum.map(fn row ->
               x = Dataset.value(row, x_col_index)
               y = Dataset.value(row, y_col_index)
@@ -159,8 +159,8 @@ defmodule Contex.PointPlot do
       get_overall_domain(plot.dataset, y_col_names)
       |> Utils.fixup_value_range()
 
-    y_scale = ContinuousScale.new_linear()
-      |> ContinuousScale.domain(min, max)
+    y_scale = ContinuousLinearScale.new()
+      |> ContinuousLinearScale.domain(min, max)
       |> Scale.set_range(height, 0)
 
     series_fill_colours
@@ -188,8 +188,8 @@ defmodule Contex.PointPlot do
           |> TimeScale.domain(min, max)
           |> Scale.set_range(r_min, r_max)
       :number ->
-        ContinuousScale.new_linear()
-          |> ContinuousScale.domain(min, max)
+        ContinuousLinearScale.new()
+          |> ContinuousLinearScale.domain(min, max)
           |> Scale.set_range(r_min, r_max)
     end
   end

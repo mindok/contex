@@ -12,7 +12,9 @@ defmodule Contex.MixProject do
       package: package(),
       name: "ContEx",
       source_url: "https://github.com/mindok/contex",
-      deps: deps()
+      homepage_url: "https://contex-charts.org/",
+      deps: deps(),
+      docs: docs()
     ]
   end
 
@@ -28,6 +30,13 @@ defmodule Contex.MixProject do
     [
       {:timex, "~> 3.6"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
+    ]
+  end
+
+  defp docs do
+    [
+      main: "Contex",
+      logo: "assets/logo.png"
     ]
   end
 

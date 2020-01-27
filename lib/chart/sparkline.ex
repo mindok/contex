@@ -1,13 +1,13 @@
 defmodule Contex.Sparkline do
   alias __MODULE__
-  alias Contex.{ContinuousScale, Scale}
+  alias Contex.{ContinuousLinearScale, Scale}
 
   defstruct [:data, :extents, :length, :spot_radius, :spot_colour,
       :line_width, :line_colour, :fill_colour, :y_transform,
       :height, :width]
 
   def new(data) when is_list(data) do
-    %Sparkline{data: data, extents: ContinuousScale.extents(data), length: length(data)}
+    %Sparkline{data: data, extents: ContinuousLinearScale.extents(data), length: length(data)}
       |> set_default_style
   end
 
@@ -27,7 +27,7 @@ defmodule Contex.Sparkline do
     height = height + (2 * line_width)
     {min, max} = sparkline.extents
     vb_height = max - min
-    scale = ContinuousScale.new_linear() |> ContinuousScale.domain(sparkline.data) |> Scale.set_range(height, 0)
+    scale = ContinuousLinearScale.new() |> ContinuousLinearScale.domain(sparkline.data) |> Scale.set_range(height, 0)
     sparkline = %{sparkline | y_transform: scale.domain_to_range_fn}
 
     output =

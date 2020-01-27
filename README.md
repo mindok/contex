@@ -49,7 +49,7 @@ Plot.to_svg(plot)
 ### Scales
 Scales are all about mapping attributes to plotting geometry. They handle transformation of data to screen coordinates (and other plotting attributes). They also handle calculation of tick intervals and the like where appropriate. Scales currently implemented are:
 
-- `ContinuousScale` : A linear continuous scale
+- `ContinuousLinearScale` : A linear continuous scale
 - `OrdinalScale` : For categories / discrete attributes. Used for plotting the category axis in a `BarChart`.
 - `CategoryColourScale` : Maps unique attributes into colours
 - `TimeScale` : A continuous timescale for `DateTime` and `NaiveDateTime` data types
