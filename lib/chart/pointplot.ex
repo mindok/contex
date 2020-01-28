@@ -1,5 +1,19 @@
 defmodule Contex.PointPlot do
+@moduledoc """
+A simple point plot, plotting points showing y values against x values.
 
+It is possible to specify multiple y columns with the same x column. It is not
+yet possible to specify multiple independent series.
+
+The x column can either be numeric or date time data. If numeric, a
+`Contex.ContinuousLinearScale` is used to scale the values to the plot,
+and if date time, a `Contex.TimeScale` is used.
+
+Fill colours for each y column can be specified with `colours/2`.
+
+A column in the dataset can optionally be used to control the colours. See
+`colours/2` and `set_colour_col_name/2`
+"""
   alias __MODULE__
   alias Contex.{Scale, ContinuousLinearScale, TimeScale}
   alias Contex.CategoryColourScale
@@ -9,11 +23,24 @@ defmodule Contex.PointPlot do
 
   defstruct [:dataset, :width, :height, :x_col, :y_cols, :fill_col, :size_col, :x_scale, :y_scale, :fill_scale, :colour_palette]
 
+  @doc """
+  Create a new point plot definition and apply defaults.
+  """
+  @spec new(Contex.Dataset.t()) :: Contex.PointPlot.t()
   def new(%Dataset{} = dataset) do
     %PointPlot{dataset: dataset, width: 100, height: 100}
     |> defaults()
   end
 
+  @doc """
+  Sets the default values for the plot.
+
+  By default, the first column in the dataset is used for the x values and the second column
+  for the y values.
+
+  The colour palette is set to :default.
+  """
+  @spec defaults(Contex.PointPlot.t()) :: Contex.PointPlot.t()
   def defaults(%PointPlot{} = plot) do
     x_col_index = 0
     y_col_index = 1
@@ -26,6 +53,19 @@ defmodule Contex.PointPlot do
     |> set_y_col_names(y_col_names)
   end
 
+  @doc """
+  Set the colour palette for fill colours.
+
+  Where multiple y columns are defined for the plot, a different colour will be used for
+  each column.
+
+  If a single y column is defined and a colour column is defined (see `set_colour_col_name/2`),
+  a different colour will be used for each unique value in the colour column.
+
+  If a single y column is defined and no colour column is defined, the first colour
+  in the supplied colour palette will be used to plot the points.
+  """
+  @spec colours(Contex.PointPlot.t(), Contex.CategoryColourScale.colour_palette()) :: Contex.PointPlot.t()
   def colours(plot, colour_palette) when is_list(colour_palette) or is_atom(colour_palette) do
     %{plot | colour_palette: colour_palette}
     |> set_y_col_names(plot.y_cols)
@@ -35,6 +75,7 @@ defmodule Contex.PointPlot do
     |> set_y_col_names(plot.y_cols)
   end
 
+  @doc false
   def set_size(%PointPlot{} = plot, width, height) do
     # We pretend to set the x & y columns to force a recalculation of scales - may be expensive.
     # We only really need to set the range, not recalculate the domain
@@ -43,11 +84,13 @@ defmodule Contex.PointPlot do
     |> set_y_col_names(plot.y_cols)
   end
 
+  @doc false
   def get_svg_legend(%PointPlot{fill_scale: scale}) do
     Contex.Legend.to_svg(scale)
   end
   def get_svg_legend(_), do: ""
 
+  @doc false
   def to_svg(%PointPlot{x_scale: x_scale, y_scale: y_scale} = plot) do
     axis_x = get_x_axis(x_scale, plot.height)
     axis_y = Axis.new_left_axis(y_scale) |> Axis.set_offset(plot.width)
@@ -149,11 +192,26 @@ defmodule Contex.PointPlot do
   end
   defp get_svg_point(_x, _y, _fill), do: ""
 
+  @doc """
+  Specify which column in the dataset is used for the x values.
+
+  This column must contain numeric or date time data.
+  """
+  @spec set_x_col_name(Contex.PointPlot.t(), Contex.Dataset.column_name()) :: Contex.PointPlot.t()
   def set_x_col_name(%PointPlot{width: width} = plot, x_col_name) do
     x_scale = create_scale_for_column(plot.dataset, x_col_name, {0, width})
     %{plot | x_col: x_col_name, x_scale: x_scale}
   end
 
+  @doc """
+  Specify which column(s) in the dataset is/are used for the y values.
+
+  These columns must contain numeric data.
+
+  Where more than one y column is specified the colours are used to identify data from
+  each column.
+  """
+  @spec set_y_col_names(Contex.PointPlot.t(), [Contex.Dataset.column_name()]) :: Contex.PointPlot.t()
   def set_y_col_names(%PointPlot{height: height} = plot, y_col_names) when is_list(y_col_names) do
     {min, max} =
       get_overall_domain(plot.dataset, y_col_names)
@@ -194,6 +252,12 @@ defmodule Contex.PointPlot do
     end
   end
 
+  @doc """
+  If a single y column is specified, it is possible to use another column to control the point colour.
+
+  Note: This is ignored if there are multiple y columns.
+  """
+  @spec set_colour_col_name(Contex.PointPlot.t(), Contex.Dataset.column_name()) :: Contex.PointPlot.t()
   def set_colour_col_name(%PointPlot{} = plot, colour_col_name) do
     vals = Dataset.unique_values(plot.dataset, colour_col_name)
     colour_scale = CategoryColourScale.new(vals)
@@ -201,11 +265,4 @@ defmodule Contex.PointPlot do
     %{plot | fill_col: colour_col_name, fill_scale: colour_scale}
   end
 
-  def set_x_range(%PointPlot{x_scale: scale} = plot, start, finish) when not is_nil(scale) do
-    %{plot | x_scale: Scale.set_range(scale, start, finish)}
-  end
-
-  def set_y_range(%PointPlot{y_scale: scale} = plot, start, finish) when not is_nil(scale) do
-    %{plot | y_scale: Scale.set_range(scale, start, finish)}
-  end
 end

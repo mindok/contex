@@ -1,15 +1,37 @@
 defprotocol Contex.PlotContent do
+  @moduledoc """
+  Defines what a charting component needs to implement to be rendered within a `Contex.Plot`
+  """
+
+  @doc """
+  Generates svg as a string or improper list of strings *without* the SVG containing element.
+  """
   def to_svg(plot, options)
+
+  @doc """
+  Generates svg content for a legend appropriate for the plot content.
+  """
   def get_svg_legend(plot)
+
+  @doc """
+  Sets the size for the plot content. This is called after the main layout and margin calculations
+  are performed by the container plot.
+  """
   def set_size(plot, width, height)
 end
 
 
 defmodule Contex.Plot do
+  @moduledoc """
+  Manages the layout of various plot elements, including titles, axis labels, legends etc and calculates
+  appropriate margins depending on the options set.
+  """
   alias __MODULE__
   alias Contex.PlotContent
 
   defstruct [:title, :subtitle, :x_label, :y_label, :height, :width, :plot_content, :margins, :plot_options]
+
+  @type plot_text() :: String.t() | nil
 
   @default_padding 10
   @top_title_margin 20
@@ -20,35 +42,62 @@ defmodule Contex.Plot do
   @x_axis_margin 20
   @x_axis_tick_labels 70
 
+  @doc """
+  Creates a new plot with specified plot content.
+  """
+  @spec new(integer(), integer(), Contex.PlotContent.t()) :: Contex.Plot.t()
   def new(width, height, plot_content) do
     plot_options = %{show_x_axis: true, show_y_axis: true, legend_setting: :legend_none }
     %Plot{plot_content: plot_content, width: width, height: height, plot_options: plot_options}
-    |> calculate_margins
+    |> calculate_margins()
   end
 
+  @doc """
+  Updates options for the plot.
+
+  TODO: There's quite a lot more work to do here. Currently the allowed plot options
+  are `:show_x_axis` (boolean), `:show_y_axis` (boolean), and `:legend_setting` - one of
+  `:legend_none` or `:legend_right`. These are currently passed as a map rather than keyword
+  list.
+  """
   #TODO: Allow overriding of margins
   def plot_options(%Plot{}=plot, new_plot_options) do
     existing_plot_options = plot.plot_options
     %{plot | plot_options: Map.merge(existing_plot_options, new_plot_options)}
-    |> calculate_margins
+    |> calculate_margins()
   end
 
+  @doc """
+  Sets the title and sub-title for the plot. Empty string or nil will remove the
+  title or sub-title
+  """
+  @spec titles(Contex.Plot.t(), plot_text(), plot_text()) :: Contex.Plot.t()
   def titles(%Plot{}=plot, title, subtitle) do
     %{plot | title: title, subtitle: subtitle}
-    |> calculate_margins
+    |> calculate_margins()
   end
 
+  @doc """
+  Sets the x-axis & y-axis labels for the plot. Empty string or nil will remove them.
+  """
+  @spec axis_labels(Contex.Plot.t(), plot_text(), plot_text()) :: Contex.Plot.t()
   def axis_labels(%Plot{}=plot, x_label, y_label) do
     %{plot | x_label: x_label, y_label: y_label}
-    |> calculate_margins
+    |> calculate_margins()
   end
 
+  @doc """
+  Updates the size for the plot
+  """
+  @spec size(Contex.Plot.t(), integer(), integer()) :: Contex.Plot.t()
   def size(%Plot{}=plot, width, height) do
     %{plot | width: width, height: height}
-    |> calculate_margins
+    |> calculate_margins()
   end
 
-
+  @doc """
+  Generates SVG output marked as safe for the configured plot.
+  """
   def to_svg(%Plot{width: width, height: height, plot_content: plot_content}=plot) do
     %{left: left, right: right, top: top, bottom: bottom} = plot.margins
     content_height = height - (top + bottom)
@@ -143,7 +192,7 @@ defmodule Contex.Plot do
     %{plot | margins: margins}
   end
 
-  def calculate_left_margin(%Plot{}=plot) do
+  defp calculate_left_margin(%Plot{}=plot) do
     margin = 0
     margin = margin + if plot.plot_options.show_y_axis, do: @y_axis_tick_labels, else: 0
     margin = margin + if is_non_empty_string(plot.y_label), do: @y_axis_margin, else: 0
@@ -151,14 +200,14 @@ defmodule Contex.Plot do
     margin
   end
 
-  def calculate_right_margin(%Plot{}=plot) do
+  defp calculate_right_margin(%Plot{}=plot) do
     margin = @default_padding
     margin = margin + if (plot.plot_options.legend_setting == :legend_right), do: @legend_width, else: 0
 
     margin
   end
 
-  def calculate_bottom_margin(%Plot{}=plot) do
+  defp calculate_bottom_margin(%Plot{}=plot) do
     margin = 0
     margin = margin + if plot.plot_options.show_x_axis, do: @x_axis_tick_labels, else: 0
     margin = margin + if is_non_empty_string(plot.x_label), do: @x_axis_margin, else: 0
@@ -166,7 +215,7 @@ defmodule Contex.Plot do
     margin
   end
 
-  def calculate_top_margin(%Plot{}=plot) do
+  defp calculate_top_margin(%Plot{}=plot) do
     margin = @default_padding
     margin = margin + if is_non_empty_string(plot.title), do: @top_title_margin + @default_padding, else: 0
     margin = margin + if is_non_empty_string(plot.subtitle), do: @top_subtitle_margin, else: 0

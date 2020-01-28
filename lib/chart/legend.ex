@@ -1,4 +1,9 @@
 defprotocol Contex.Legend do
+  @moduledoc """
+  Protocal for generating a legend.
+
+  Implemented by specific scale modules
+  """
   def to_svg(scale, invert \\ false)
 end
 

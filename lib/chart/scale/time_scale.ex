@@ -1,8 +1,21 @@
 defmodule Contex.TimeScale do
+  @moduledoc """
+  A time scale to map date and time data to a plotting coordinate system.
+
+  Almost identical `Contex.ContinuousLinearScale` in terms of concepts and
+  usage, except it applies to `DateTime` and `NaiveDateTime` domain data
+  types.
+
+  `TimeScale` handles the complexities of calculating nice tick intervals etc
+  for almost any time range between a few seconds and a few years.
+
+  """
   alias __MODULE__
   alias Timex.Format.DateTime.Formatters.Default, as: DateFormatter
 
   alias Contex.Utils
+
+  @type datetimes() :: NaiveDateTime.t() | DateTime.t()
 
   # Approximate durations in ms for calculating ideal tick intervals
   # Modelled from https://github.com/d3/d3-scale/blob/v2.2.2/src/time.js
@@ -42,17 +55,31 @@ defmodule Contex.TimeScale do
     :domain_to_range_fn, :range_to_domain_fn, :interval_count, :tick_interval,
     :custom_tick_formatter, :display_format]
 
+  @doc """
+  Creates a new TimeScale struct with basic defaults set
+  """
+  @spec new :: Contex.TimeScale.t()
   def new() do
     %TimeScale{range: {0.0, 1.0}, interval_count: 10}
   end
 
+  @doc """
+  Specifies the number of intervals the scale should display.
+
+  Default is 10.
+  """
+  @spec interval_count(Contex.TimeScale.t(), integer()) :: Contex.TimeScale.t()
   def interval_count(%TimeScale{} = scale, interval_count) when is_integer(interval_count) and interval_count > 1 do
     %{scale | interval_count: interval_count}
-    |> nice
-    |> update_transform_funcs
+    |> nice()
+    |> update_transform_funcs()
   end
   def interval_count(%TimeScale{} = scale, _), do: scale
 
+  @doc """
+  Define the data domain for the scale
+  """
+  @spec domain(Contex.TimeScale.t(), datetimes(), datetimes()) :: Contex.TimeScale.t()
   def domain(%TimeScale{} = scale, min, max) do
     # We can be flexible with the range start > end, but the domain needs to start from the min
     {d_min, d_max} = case Utils.date_compare(min, max) do
@@ -61,9 +88,16 @@ defmodule Contex.TimeScale do
     end
 
     %{scale | domain: {d_min, d_max}}
-    |> nice
-    |> update_transform_funcs
+    |> nice()
+    |> update_transform_funcs()
   end
+
+  @doc """
+  Define the data domain for the scale from a list of data.
+
+  Extents will be calculated by the scale.
+  """
+  @spec domain(Contex.TimeScale.t(), list(datetimes())) :: Contex.TimeScale.t()
   def domain(%TimeScale{} = scale, data) when is_list(data) do
     {min, max} = extents(data)
     domain(scale, min, max)
@@ -102,6 +136,7 @@ defmodule Contex.TimeScale do
       end)
   end
 
+  @doc false
   def add_interval(dt, :second, intervals), do: Timex.shift(dt, seconds: intervals)
   def add_interval(dt, :minute, intervals), do: Timex.shift(dt, minutes: intervals)
   def add_interval(dt, :hour, intervals), do: Timex.shift(dt, hours: intervals)
@@ -126,6 +161,7 @@ defmodule Contex.TimeScale do
   defp guess_display_format({:month, _, _}), do: "{Mshort} {YYYY}"
   defp guess_display_format({:year, _, _}), do: "{YYYY}"
 
+  @doc false
   def update_transform_funcs(%TimeScale{nice_domain: {min_d, max_d}, range: {min_r, max_r}} = scale)
        when is_number(min_r) and is_number(max_r)
     do
@@ -157,7 +193,7 @@ defmodule Contex.TimeScale do
   end
   def update_transform_funcs(%TimeScale{} = scale), do: scale
 
-  def extents(data) do
+  defp extents(data) do
     Enum.reduce(data, {nil, nil}, fn x, {min, max} ->
       {Utils.safe_min(x, min), Utils.safe_max(x, max)}
     end)

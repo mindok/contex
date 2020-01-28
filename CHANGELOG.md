@@ -1,10 +1,13 @@
 # ContEx Change Log
 
 ## In progress (v0.2.0 dev - commits to master)
-- Documentation for overall package, BarChart, Axis, Scale, CategoryColourScale, ContinuousLinearScale
+- Documentation for all modules
+- Created type specs for the public API
 - Renamed :data to :dataset in various plot types to avoid ambiguity
 - ** BREAKING ** Renamed BarPlot to BarChart
 - ** POTENTIALLY BREAKING ** Renamed ContinuousScale to ContinuousLinearScale, renamed constructor from new_linear() to new(). Used internally, so shouldn't cause any issues.
+- ** POTENTIALLY BREAKING ** Made a number of margin calculation functions in Plot private. Shouldn't have been used externally anyway.
+- ** POTENTIALLY BREAKING ** Removed set_x_range and set_y_range from PointPlot. No longer used as range is set by Plot size calcs.
 - Fixed incorrect closed path in sparkline
 - Allowed forcing of value range in `BarChart` (`BarChart.force_value_range\2`)
 - Changed `BarChart` colour handling to pass through to `ColourCategoryScale`

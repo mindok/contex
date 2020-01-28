@@ -1,4 +1,30 @@
 defmodule Contex.Sparkline do
+  @moduledoc """
+  Generates a simple sparkline from an array of numbers.
+
+  Note that this does not follow the pattern for other types of plot. It is not designed
+  to be embedded within a `Contex.Plot` and, because it only relies on a single list
+  of numbers, does not use data wrapped in a `Contex.Dataset`.
+
+  Usage is exceptionally simple:
+
+  ```
+    data = [0, 5, 10, 15, 12, 12, 15, 14, 20, 14, 10, 15, 15]
+    Sparkline.new(data) |> Sparkline.draw() # Emits svg sparkline
+  ```
+
+  The colour defaults to a green line with a faded green fill, but can be overridden
+  with `colours/3`. Unlike other colours in Contex, these colours are how you would
+  specify them in CSS - e.g.
+  ```
+    Sparkline.new(data)
+    |> Sparkline.colours("#fad48e", "#ff9838")
+    |> Sparkline.draw()
+  ```
+
+  The size defaults to 20 pixels high and 100 wide. You can override by updating
+  `:height` and `:width` directly in the `Sparkline` struct before call `draw/1`.
+  """
   alias __MODULE__
   alias Contex.{ContinuousLinearScale, Scale}
 
@@ -6,14 +32,31 @@ defmodule Contex.Sparkline do
       :line_width, :line_colour, :fill_colour, :y_transform,
       :height, :width]
 
+  @doc """
+  Create a new sparkline struct from some data.
+  """
+  @spec new([number()]) :: Contex.Sparkline.t()
   def new(data) when is_list(data) do
     %Sparkline{data: data, extents: ContinuousLinearScale.extents(data), length: length(data)}
       |> set_default_style
   end
 
-  #TODO: Really need some validation...
+  @doc """
+  Override line and fill colours for the sparkline.
+
+  Note that colours should be specified as you would in CSS - they are passed through
+  directly into the SVG. For example:
+
+  ```
+    Sparkline.new(data)
+    |> Sparkline.colours("#fad48e", "#ff9838")
+    |> Sparkline.draw()
+  ```
+  """
+  @spec colours(Contex.Sparkline.t(), String.t(), String.t()) :: Contex.Sparkline.t()
   def colours(%Sparkline{} = sparkline,  fill, line) do
-    %{sparkline | fill_colour: fill, line_colour: line}
+  #TODO: Really need some validation...
+  %{sparkline | fill_colour: fill, line_colour: line}
   end
 
   defp set_default_style(%Sparkline{} = sparkline) do
@@ -22,6 +65,10 @@ defmodule Contex.Sparkline do
         height: 20, width: 100}
   end
 
+  @doc """
+  Renders the sparkline to svg, including the svg wrapper, as a string or improper string list that
+  is marked safe.
+  """
   def draw(%Sparkline{height: height, width: width, line_width: line_width} = sparkline) do
     vb_width = sparkline.length + 1
     height = height + (2 * line_width)

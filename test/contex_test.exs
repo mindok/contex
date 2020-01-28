@@ -4,6 +4,8 @@ defmodule ContexTest do
   alias Contex.Dataset
 
   doctest Contex
+  doctest Contex.Dataset
+  doctest Contex.OrdinalScale
 
   describe "Dataset tests" do
     test "Dataset column lookup" do
@@ -48,9 +50,9 @@ defmodule ContexTest do
       values = ["Fred", "Bob", "Fred", "Bill"]
       palette = ["Red", "Green", "Blue"]
 
-      default_colour = CategoryColourScale.get_default_colour()
-
       scale = CategoryColourScale.new(values) |> CategoryColourScale.set_palette(palette)
+
+      default_colour = CategoryColourScale.get_default_colour(scale)
 
       assert CategoryColourScale.colour_for_value(scale, "Fred") == "Red"
       assert CategoryColourScale.colour_for_value(scale, "Bill") == "Blue"

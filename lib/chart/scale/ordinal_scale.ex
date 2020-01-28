@@ -1,23 +1,70 @@
 defmodule Contex.OrdinalScale do
+  @moduledoc """
+  An ordinal scale to map discrete values (text or numeric) to a plotting coordinate system.
+
+  An ordinal scale is commonly used for the category axis in barcharts. It has to be able
+  to generate the centre-point of the bar (e.g. for tick annotations) as well as the
+  available width the bar or bar-group has to fill.
+
+  In order to do that the ordinal scale requires a 'padding' option to be set (defaults to 0.5 in the scale)
+  that defines the gaps between the bars / categories. The ordinal scale has two mapping functions for
+  the data domain to the plotting range. One returns the centre point (`range_to_domain_fn`) and one
+  returns the "band" the category can occupy (`domain_to_range_band_fn`).
+
+  An `OrdinalScale` is initialised with a list of values which represent the categories. The scale generates
+  a tick for each value in that list.
+
+  Typical usage of this scale would be as follows:
+
+      iex> category_scale
+      ...> = Contex.OrdinalScale.new(["Hippo", "Turtle", "Rabbit"])
+      ...> |> Contex.Scale.set_range(0.0, 9.0)
+      ...> |> Contex.OrdinalScale.padding(2)
+      ...> category_scale.domain_to_range_fn.("Turtle")
+      4.5
+      iex> category_scale.domain_to_range_band_fn.("Hippo")
+      {1.0, 2.0}
+      iex> category_scale.domain_to_range_band_fn.("Turtle")
+      {4.0, 5.0}
+  """
   alias __MODULE__
 
   defstruct [:domain, :range, :padding, :domain_to_range_fn, :range_to_domain_fn, :domain_to_range_band_fn]
 
+  @doc """
+  Creates a new ordinal scale.
+  """
+  @spec new(list()) :: Contex.OrdinalScale.t()
   def new(domain) when is_list(domain) do
     %OrdinalScale{domain: domain, padding: 0.5}
   end
 
-  def domain(%OrdinalScale{} = scale, data) when is_list(data) do
-    %{scale | domain: data}
-    |> update_transform_funcs
+  @doc """
+  Updates the domain data for the scale.
+  """
+  @spec domain(Contex.OrdinalScale.t(), list()) :: Contex.OrdinalScale.t()
+  def domain(%OrdinalScale{} = ordinal_scale, data) when is_list(data) do
+    %{ordinal_scale | domain: data}
+    |> update_transform_funcs()
   end
 
+  @doc """
+  Sets the padding between the categories for the scale.
+
+  Defaults to 0.5.
+
+  Defined in terms of plotting coordinates.
+
+  *Note* that if the padding is greater than the calculated width of each category
+  you might get strange effects (e.g. the end of a band being before the beginning)
+  """
   def padding(%OrdinalScale{} = scale, padding) when is_number(padding) do
     # We need to update the transform functions if we change the padding as the band calculations need it
     %{scale | padding: padding}
-    |> update_transform_funcs
+    |> update_transform_funcs()
   end
 
+  @doc false
   def update_transform_funcs(%OrdinalScale{domain: domain, range: {start_r, end_r}, padding: padding} = scale)
   when is_list(domain) and is_number(start_r) and is_number(end_r) and is_number(padding)
     do
@@ -74,13 +121,18 @@ defmodule Contex.OrdinalScale do
     end
   def update_transform_funcs(%OrdinalScale{} = scale), do: scale
 
+  @doc """
+  Returns the band for the nominated category in terms of plotting coordinate system.
+
+  If the category isn't found, the start of the plotting range is returned.
+  """
+  @spec get_band(Contex.OrdinalScale.t(), any) :: {number(), number()}
   def get_band(%OrdinalScale{domain_to_range_band_fn: domain_to_range_band_fn}, domain_value)
     when is_function(domain_to_range_band_fn) do
       domain_to_range_band_fn.(domain_value)
   end
 
   defimpl Contex.Scale do
-    @spec ticks_domain(Contex.OrdinalScale.t()) :: any
     def ticks_domain(%OrdinalScale{domain: domain}), do: domain
 
     def ticks_range(%OrdinalScale{domain_to_range_fn: transform_func} = scale) when is_function(transform_func) do
@@ -98,7 +150,7 @@ defmodule Contex.OrdinalScale do
 
     def set_range(%OrdinalScale{} = scale, start, finish) when is_number(start) and is_number(finish) do
       %{scale | range: {start, finish}}
-      |> OrdinalScale.update_transform_funcs
+      |> OrdinalScale.update_transform_funcs()
     end
     def set_range(%OrdinalScale{} = scale, {start, finish}) when is_number(start) and is_number(finish), do: set_range(scale, start, finish)
 
