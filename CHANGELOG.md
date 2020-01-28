@@ -1,6 +1,6 @@
 # ContEx Change Log
 
-## In progress (v0.2.0 dev - commits to master)
+## v0.2.0 : 2020-01-28
 - Documentation for all modules
 - Created type specs for the public API
 - Renamed :data to :dataset in various plot types to avoid ambiguity
