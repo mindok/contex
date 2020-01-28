@@ -65,7 +65,7 @@ Others under consideration:
 ### WARNING
 There are quite a few things to tidy up to make this ready for the real world, and the API is likely to be unstable for a little while yet...
 
-- [ ] Reasonable docs - the best resource currently is the accompanying [demo project](https://github.com/mindok/contex-samples)
+- [x] Reasonable docs - the best resource currently is the accompanying [demo project](https://github.com/mindok/contex-samples)
 - [ ] Default styling
 - [x] Multiple series in point plot
 - [ ] Line plot (probably option in point plot)
