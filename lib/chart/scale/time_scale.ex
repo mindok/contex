@@ -29,26 +29,26 @@ defmodule Contex.TimeScale do
 
   #Tuple defines: 1&2 - actual time intervals to calculate tick offsets & 3, approximate time interval to determine if this is the best option
   @default_tick_intervals [
-    {:second, 1, @duration_sec},
-    {:second, 5, @duration_sec * 5},
-    {:second, 15, @duration_sec * 15},
-    {:second, 30, @duration_sec * 30},
-    {:minute, 1, @duration_min},
-    {:minute, 5, @duration_min * 5},
-    {:minute, 15, @duration_min * 15},
-    {:minute, 30, @duration_min * 30},
-    {:hour, 1, @duration_hour },
-    {:hour, 3, @duration_hour * 3},
-    {:hour, 6, @duration_hour * 6},
-    {:hour, 12, @duration_hour * 12},
-    {:day, 1, @duration_day },
-    {:day, 2, @duration_day * 2},
-    {:day, 5, @duration_day * 5},
+    {:seconds, 1, @duration_sec},
+    {:seconds, 5, @duration_sec * 5},
+    {:seconds, 15, @duration_sec * 15},
+    {:seconds, 30, @duration_sec * 30},
+    {:minutes, 1, @duration_min},
+    {:minutes, 5, @duration_min * 5},
+    {:minutes, 15, @duration_min * 15},
+    {:minutes, 30, @duration_min * 30},
+    {:hours, 1, @duration_hour },
+    {:hours, 3, @duration_hour * 3},
+    {:hours, 6, @duration_hour * 6},
+    {:hours, 12, @duration_hour * 12},
+    {:days, 1, @duration_day },
+    {:days, 2, @duration_day * 2},
+    {:days, 5, @duration_day * 5},
     # {:week, 1, @duration_week }, #TODO: Need to work on tick_interval lookup function & related to make this work
-    {:day, 10, @duration_day * 10},
-    {:month, 1, @duration_month },
-    {:month, 3, @duration_month * 3},
-    {:year, 1, @duration_year}
+    {:days, 10, @duration_day * 10},
+    {:months, 1, @duration_month },
+    {:months, 3, @duration_month * 3},
+    {:years, 1, @duration_year}
   ]
 
   defstruct [:domain, :nice_domain, :range,
@@ -70,7 +70,8 @@ defmodule Contex.TimeScale do
   """
   @spec interval_count(Contex.TimeScale.t(), integer()) :: Contex.TimeScale.t()
   def interval_count(%TimeScale{} = scale, interval_count) when is_integer(interval_count) and interval_count > 1 do
-    %{scale | interval_count: interval_count}
+    scale
+    |> struct(interval_count: interval_count)
     |> nice()
     |> update_transform_funcs()
   end
@@ -87,7 +88,8 @@ defmodule Contex.TimeScale do
       _ -> {max, min}
     end
 
-    %{scale | domain: {d_min, d_max}}
+    scale
+    |> struct(domain: {d_min, d_max})
     |> nice()
     |> update_transform_funcs()
   end
@@ -122,11 +124,8 @@ defmodule Contex.TimeScale do
   defp nice(%TimeScale{} = scale), do: scale
 
   defp lookup_tick_interval(raw_interval) when is_number(raw_interval) do
-    result = Enum.find(@default_tick_intervals, fn {_,_,duration} -> duration >= raw_interval end)
-    case result do
-      nil -> Enum.take(@default_tick_intervals, -1)
-      v -> v
-    end
+    default = List.last(@default_tick_intervals)
+    Enum.find(@default_tick_intervals, default, &elem(&1, 2) >= raw_interval)
   end
 
   defp calculate_end_interval(start, target, {interval_type, interval_size, _}, max_steps) do
@@ -137,29 +136,24 @@ defmodule Contex.TimeScale do
   end
 
   @doc false
-  def add_interval(dt, :second, intervals), do: Timex.shift(dt, seconds: intervals)
-  def add_interval(dt, :minute, intervals), do: Timex.shift(dt, minutes: intervals)
-  def add_interval(dt, :hour, intervals), do: Timex.shift(dt, hours: intervals)
-  def add_interval(dt, :day, intervals), do: Timex.shift(dt, days: intervals)
-  def add_interval(dt, :month, intervals), do: Timex.shift(dt, months: intervals)
-  def add_interval(dt, :year, intervals), do: Timex.shift(dt, years: intervals)
+  def add_interval(dt, interval_type, intervals), do: Timex.shift(dt,[{interval_type, intervals}])
 
   #NOTE: Don't try this at home kiddies. Relies on internal representations of DateTime and NaiveDateTime
-  defp round_down_to(dt, {:second, n, _}), do: %{dt | microsecond: {0,0}, second: round_down_multiple(dt.second, n)}
-  defp round_down_to(dt, {:minute, n, _}), do: %{dt | microsecond: {0,0}, second: 0, minute: round_down_multiple(dt.minute, n)}
-  defp round_down_to(dt, {:hour, n, _}), do: %{dt | microsecond: {0,0}, second: 0, minute: 0, hour: round_down_multiple(dt.hour, n)}
-  defp round_down_to(dt, {:day, 1, _}), do: %{dt | microsecond: {0,0}, second: 0, minute: 0, hour: 0}
-  defp round_down_to(dt, {:day, n, _}), do: %{dt | microsecond: {0,0}, second: 0, minute: 0, hour: 0, day: round_down_multiple(dt.day, n) + 1}
-  defp round_down_to(dt, {:month, n, _}), do: %{dt | microsecond: {0,0}, second: 0, minute: 0, hour: 0, day: 1, month: round_down_multiple(dt.month, n) + 1}
-  defp round_down_to(dt, {:year, 1, _}), do: %{dt | microsecond: {0,0}, second: 0, minute: 0, hour: 0, day: 1, month: 1}
+  defp round_down_to(dt, {:seconds, n, _}), do: %{dt | microsecond: {0,0}, second: round_down_multiple(dt.second, n)}
+  defp round_down_to(dt, {:minutes, n, _}), do: %{dt | microsecond: {0,0}, second: 0, minute: round_down_multiple(dt.minute, n)}
+  defp round_down_to(dt, {:hours, n, _}), do: %{dt | microsecond: {0,0}, second: 0, minute: 0, hour: round_down_multiple(dt.hour, n)}
+  defp round_down_to(dt, {:days, 1, _}), do: %{dt | microsecond: {0,0}, second: 0, minute: 0, hour: 0}
+  defp round_down_to(dt, {:days, n, _}), do: %{dt | microsecond: {0,0}, second: 0, minute: 0, hour: 0, day: round_down_multiple(dt.day, n) + 1}
+  defp round_down_to(dt, {:months, n, _}), do: %{dt | microsecond: {0,0}, second: 0, minute: 0, hour: 0, day: 1, month: round_down_multiple(dt.month, n) + 1}
+  defp round_down_to(dt, {:years, 1, _}), do: %{dt | microsecond: {0,0}, second: 0, minute: 0, hour: 0, day: 1, month: 1}
 
-  defp guess_display_format({:second, _, _}), do: "{m}:{s}"
-  defp guess_display_format({:minute, _, _}), do: "{h24}:{m}:{s}"
-  defp guess_display_format({:hour, 1, _}), do: "{ISOtime}"
-  defp guess_display_format({:hour, _, _}), do: "{D} {Mshort} {h24}:{m}"
-  defp guess_display_format({:day, _, _}), do: "{ISOdate}"
-  defp guess_display_format({:month, _, _}), do: "{Mshort} {YYYY}"
-  defp guess_display_format({:year, _, _}), do: "{YYYY}"
+  defp guess_display_format({:seconds, _, _}), do: "{m}:{s}"
+  defp guess_display_format({:minutes, _, _}), do: "{h24}:{m}:{s}"
+  defp guess_display_format({:hours, 1, _}), do: "{ISOtime}"
+  defp guess_display_format({:hours, _, _}), do: "{D} {Mshort} {h24}:{m}"
+  defp guess_display_format({:days, _, _}), do: "{ISOdate}"
+  defp guess_display_format({:months, _, _}), do: "{Mshort} {YYYY}"
+  defp guess_display_format({:years, _, _}), do: "{YYYY}"
 
   @doc false
   def update_transform_funcs(%TimeScale{nice_domain: {min_d, max_d}, range: {min_r, max_r}} = scale)

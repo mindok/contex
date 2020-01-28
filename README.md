@@ -67,6 +67,7 @@ There are quite a few things to tidy up to make this ready for the real world, a
 
 - [x] Reasonable docs - the best resource currently is the accompanying [demo project](https://github.com/mindok/contex-samples)
 - [ ] Default styling
+- [ ] Upgrade Elixir required version to 1.10 and fix up some of the data comparison operators to
 - [x] Multiple series in point plot
 - [ ] Line plot (probably option in point plot)
 - [ ] More test coverage - it has been built interactively using a liveview page for testing / refinement

@@ -11,13 +11,10 @@ defmodule Contex.Utils do
   defp date_min(a, b), do: if date_compare(a, b) == :lt, do: a, else: b
   defp date_max(a, b), do: if date_compare(a, b) != :lt, do: a, else: b
 
-  def safe_min(nil, nil), do: nil
-  def safe_min(nil, b), do: b
-  def safe_min(a, nil), do: a
   def safe_min(%DateTime{}=a, %DateTime{}=b), do: date_min(a, b)
   def safe_min(%NaiveDateTime{}=a, %NaiveDateTime{}=b), do: date_min(a, b)
   def safe_min(a, b) when is_number(a) and is_number(b), do: min(a,b)
-  def safe_min(_, _), do: nil
+  def safe_min(a, b), do: a || b
 
   def safe_max(nil, nil), do: nil
   def safe_max(nil, b), do: b
