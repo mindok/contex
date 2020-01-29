@@ -75,7 +75,7 @@ defmodule Contex.Sparkline do
     {min, max} = sparkline.extents
     vb_height = max - min
     scale = ContinuousLinearScale.new() |> ContinuousLinearScale.domain(sparkline.data) |> Scale.set_range(height, 0)
-    sparkline = %{sparkline | y_transform: scale.domain_to_range_fn}
+    sparkline = %{sparkline | y_transform: Scale.domain_to_range_fn(scale)}
 
     output =
     ~s"""

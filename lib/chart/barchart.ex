@@ -280,7 +280,7 @@ shown. You can force the range using `force_value_range/2`
   defp prepare_bar_values(series_values, scale, :stacked) do
     {results, _last_val} = Enum.reduce(series_values, {[], 0}, fn data_val, {points, last_val} ->
       end_val = data_val + last_val
-      new = {scale.domain_to_range_fn.(last_val), scale.domain_to_range_fn.(end_val)}
+      new = {Scale.domain_to_range(scale, last_val), Scale.domain_to_range(scale, end_val)}
       {[new | points], end_val}
     end)
     Enum.reverse(results)
@@ -289,7 +289,7 @@ shown. You can force the range using `force_value_range/2`
     {scale_min, _} = Scale.get_range(scale)
 
     results = Enum.reduce(series_values, [], fn data_val, points ->
-      range_val = scale.domain_to_range_fn.(data_val)
+      range_val = Scale.domain_to_range(scale, data_val)
       [{scale_min, range_val} | points]
     end)
 

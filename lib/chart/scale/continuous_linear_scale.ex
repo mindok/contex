@@ -19,7 +19,7 @@ defmodule Contex.ContinuousLinearScale do
 
   By default the scale creates 10 tick intervals.
 
-  When domain and range are both set, the scale creates transform functions to map each way
+  When domain and range are both set, the scale makes transform functions available to map each way
   between the domain and range that are then available to the various plots to map data
   to plotting coordinate systems, and potentially vice-versa.
 
@@ -35,16 +35,16 @@ defmodule Contex.ContinuousLinearScale do
   Translating a value to plotting coordinates would then look like this:
 
   ```
-  plot_y = y_scale.domain_to_range_fn.(y_value)
+  plot_y = Scale.domain_to_range(y_scale, y_value)
   ```
 
-  `ContinuousLinearScale` also implements the `Contex.Scale` protocol that provides a nicer way to call the
-  transform functions, but in reality, calculation of plotting coordinates is typically done in tight loops
-  so you are more likely to do something like:
+  `ContinuousLinearScale` implements the `Contex.Scale` protocol that provides a nicer way to access the
+  transform functions. Calculation of plotting coordinates is typically done in tight loops
+  so you are more likely to do something like than translating a single value as per the above example:
 
   ```
-    x_tx_fn = x_scale.domain_to_range_fn
-    y_tx_fn = y_scale.domain_to_range_fn
+    x_tx_fn = Scale.domain_to_range_fn(x_scale)
+    y_tx_fn = Scale.domain_to_range_fn(y_scale)
 
     points_to_plot = Enum.map(big_load_of_data, fn %{x: x, y: y}=_row ->
             {x_tx_fn.(x), y_tx_fn.(y)}
@@ -56,9 +56,15 @@ defmodule Contex.ContinuousLinearScale do
   alias __MODULE__
   alias Contex.Utils
 
-  defstruct [:domain, :nice_domain, :range,
-    :domain_to_range_fn, :range_to_domain_fn, :interval_count, :interval_size,
-    :display_decimals, :custom_tick_formatter]
+  defstruct [
+    :domain,
+    :nice_domain,
+    :range,
+    :interval_count,
+    :interval_size,
+    :display_decimals,
+    :custom_tick_formatter
+  ]
 
   @doc """
   Creates a new scale with defaults
@@ -78,9 +84,9 @@ defmodule Contex.ContinuousLinearScale do
   """
   @spec interval_count(Contex.ContinuousLinearScale.t(), integer()) :: Contex.ContinuousLinearScale.t()
   def interval_count(%ContinuousLinearScale{} = scale, interval_count) when is_integer(interval_count) and interval_count > 1 do
-    %{scale | interval_count: interval_count}
-    |> nice
-    |> update_transform_funcs
+    scale
+    |> struct(interval_count: interval_count)
+    |> nice()
   end
   def interval_count(%ContinuousLinearScale{} = scale, _), do: scale
 
@@ -95,9 +101,9 @@ defmodule Contex.ContinuousLinearScale do
       _ -> {max, min}
     end
 
-    %{scale | domain: {d_min, d_max}}
+    scale
+    |> struct(domain: {d_min, d_max})
     |> nice()
-    |> update_transform_funcs()
   end
 
   @doc """
@@ -141,13 +147,14 @@ defmodule Contex.ContinuousLinearScale do
   defp guess_display_decimals(power_of_ten) do 1 + (-1 * round(power_of_ten)) end
 
   @doc false
-  def update_transform_funcs(%ContinuousLinearScale{nice_domain: {min_d, max_d}, range: {min_r, max_r}} = scale)
-       when is_number(min_d) and is_number(max_d) and is_number(min_r) and is_number(max_r)
+  def get_domain_to_range_function(%ContinuousLinearScale{nice_domain: {min_d, max_d}, range: {min_r, max_r}})
+      when is_number(min_d) and is_number(max_d) and is_number(min_r) and is_number(max_r)
     do
+
     domain_width = max_d - min_d
     range_width = max_r - min_r
 
-    domain_to_range_fn = case domain_width do
+    case domain_width do
       0 -> fn x -> x end
       0.0 -> fn x -> x end
       _ ->
@@ -156,8 +163,19 @@ defmodule Contex.ContinuousLinearScale do
           min_r + (ratio * range_width)
         end
     end
+  end
 
-    range_to_domain_fn = case range_width do
+  def get_domain_to_range_function(_), do: fn x -> x end
+
+  @doc false
+  def get_range_to_domain_function(%ContinuousLinearScale{nice_domain: {min_d, max_d}, range: {min_r, max_r}})
+    when is_number(min_d) and is_number(max_d) and is_number(min_r) and is_number(max_r)
+  do
+
+    domain_width = max_d - min_d
+    range_width = max_r - min_r
+
+    case range_width do
       0 -> fn x -> x end
       0.0 -> fn x -> x end
       _ ->
@@ -166,10 +184,9 @@ defmodule Contex.ContinuousLinearScale do
           min_d + (ratio * domain_width)
         end
     end
-
-    %{scale | domain_to_range_fn: domain_to_range_fn, range_to_domain_fn: range_to_domain_fn}
   end
-  def update_transform_funcs(%ContinuousLinearScale{} = scale), do: scale
+
+  def get_range_to_domain_function(_), do: fn x -> x end
 
   @doc false
   def extents(data) do
@@ -177,7 +194,7 @@ defmodule Contex.ContinuousLinearScale do
   end
 
   defimpl Contex.Scale do
-    def domain_to_range_fn(%ContinuousLinearScale{domain_to_range_fn: domain_to_range_fn}), do: domain_to_range_fn
+    def domain_to_range_fn(%ContinuousLinearScale{} = scale), do: ContinuousLinearScale.get_domain_to_range_function(scale)
 
     def ticks_domain(%ContinuousLinearScale{nice_domain: {min_d, _}, interval_count: interval_count, interval_size: interval_size})
       when is_number(min_d) and is_number(interval_count) and is_number(interval_size)
@@ -187,12 +204,14 @@ defmodule Contex.ContinuousLinearScale do
     end
     def ticks_domain(_), do: []
 
-    def ticks_range(%ContinuousLinearScale{domain_to_range_fn: transform_func} = scale) when is_function(transform_func) do
+    def ticks_range(%ContinuousLinearScale{} = scale) do
+      transform_func = ContinuousLinearScale.get_domain_to_range_function(scale)
       ticks_domain(scale)
       |> Enum.map(transform_func)
     end
 
-    def domain_to_range(%ContinuousLinearScale{domain_to_range_fn: transform_func}, range_val) when is_function(transform_func) do
+    def domain_to_range(%ContinuousLinearScale{} = scale, range_val)  do
+      transform_func = ContinuousLinearScale.get_domain_to_range_function(scale)
       transform_func.(range_val)
     end
 
@@ -200,7 +219,6 @@ defmodule Contex.ContinuousLinearScale do
 
     def set_range(%ContinuousLinearScale{} = scale, start, finish) when is_number(start) and is_number(finish) do
       %{scale | range: {start, finish}}
-      |> ContinuousLinearScale.update_transform_funcs
     end
     def set_range(%ContinuousLinearScale{} = scale, {start, finish}) when is_number(start) and is_number(finish), do: set_range(scale, start, finish)
 
@@ -217,6 +235,5 @@ defmodule Contex.ContinuousLinearScale do
     defp format_tick_text(tick, _, _), do: :erlang.float_to_binary(tick, [:compact, decimals: 0])
 
   end
-
 
 end

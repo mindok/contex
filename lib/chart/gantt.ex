@@ -182,8 +182,8 @@ defstruct [:dataset, :width, :height, :category_col, :task_col, :show_task_label
 
     {task_band_min, task_band_max} = OrdinalScale.get_band(task_scale, task_data)
     fill = CategoryColourScale.colour_for_value(cat_scale, cat_data)
-    start_x = time_scale.domain_to_range_fn.(start_time)
-    end_x = time_scale.domain_to_range_fn.(end_time)
+    start_x = Scale.domain_to_range(time_scale, start_time)
+    end_x = Scale.domain_to_range(time_scale, end_time)
     width = end_x - start_x
     height = abs(task_band_max - task_band_min)
 

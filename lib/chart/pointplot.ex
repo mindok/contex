@@ -85,8 +85,16 @@ A column in the dataset can optionally be used to control the colours. See
   end
 
   @doc false
+  def get_svg_legend(%PointPlot{y_cols: y_cols, fill_col: fill_col}=plot) when length(y_cols) > 0 or is_nil(fill_col) do
+    # We do the point plotting with a index to look up the colours. For the legend we need the names
+    series_fill_colours
+      = CategoryColourScale.new(y_cols)
+      |> CategoryColourScale.set_palette(plot.colour_palette)
+
+    Contex.Legend.to_svg(series_fill_colours)
+  end
   def get_svg_legend(%PointPlot{fill_scale: scale}) do
-    Contex.Legend.to_svg(scale)
+      Contex.Legend.to_svg(scale)
   end
   def get_svg_legend(_), do: ""
 
@@ -116,7 +124,10 @@ A column in the dataset can optionally be used to control the colours. See
     end
   end
 
-  defp get_svg_points(%PointPlot{dataset: dataset} = plot) do
+  defp get_svg_points(%PointPlot{dataset: dataset, x_scale: x_scale, y_scale: y_scale} = plot) do
+    x_tx_fn = Scale.domain_to_range_fn(x_scale)
+    y_tx_fn = Scale.domain_to_range_fn(y_scale)
+
     x_col_index = Dataset.column_index(dataset, plot.x_col)
     y_col_indices = Enum.map(plot.y_cols, fn col -> Dataset.column_index(dataset, col) end)
 
@@ -124,15 +135,15 @@ A column in the dataset can optionally be used to control the colours. See
 
     dataset.data
     |> Enum.map(fn row ->
-      get_svg_point(row, plot, x_col_index, y_col_indices, fill_col_index)
+      get_svg_point(row, x_tx_fn, y_tx_fn, plot.fill_scale, x_col_index, y_col_indices, fill_col_index)
     end)
   end
 
   defp get_svg_line(%PointPlot{dataset: dataset, x_scale: x_scale, y_scale: y_scale} = plot) do
     x_col_index = Dataset.column_index(dataset, plot.x_col)
     y_col_index = Dataset.column_index(dataset, plot.y_col)
-    x_tx_fn = x_scale.domain_to_range_fn
-    y_tx_fn = y_scale.domain_to_range_fn
+    x_tx_fn = Scale.domain_to_range_fn(x_scale)
+    y_tx_fn = Scale.domain_to_range_fn(y_scale)
 
     style = ~s|stroke="red" stroke-width="2" fill="none" stroke-dasharray="13,2" stroke-linejoin="round" |
 
@@ -157,32 +168,32 @@ A column in the dataset can optionally be used to control the colours. See
   end
 
 
-  defp get_svg_point(row, %PointPlot{x_scale: x_scale, y_scale: y_scale, fill_scale: fill_scale}=plot, x_col_index, [y_col_index]=y_col_indices, fill_col_index) when length(y_col_indices) == 1 do
+  defp get_svg_point(row, x_tx_fn, y_tx_fn, fill_scale, x_col_index, [y_col_index]=y_col_indices, fill_col_index) when length(y_col_indices) == 1 do
     x_data = Dataset.value(row, x_col_index)
     y_data = Dataset.value(row, y_col_index)
 
     fill_data = if is_integer(fill_col_index) and fill_col_index >= 0 do
       Dataset.value(row, fill_col_index)
     else
-      Enum.at(plot.y_cols, 0)
+      0
     end
 
-    x = x_scale.domain_to_range_fn.(x_data)
-    y = y_scale.domain_to_range_fn.(y_data)
+    x = x_tx_fn.(x_data)
+    y = y_tx_fn.(y_data)
     fill = CategoryColourScale.colour_for_value(fill_scale, fill_data)
 
     get_svg_point(x, y, fill)
   end
 
-  defp get_svg_point(row, %PointPlot{x_scale: x_scale, y_scale: y_scale, fill_scale: fill_scale, y_cols: y_cols}, x_col_index, y_col_indices, _fill_col_index) do
+  defp get_svg_point(row, x_tx_fn, y_tx_fn, fill_scale, x_col_index, y_col_indices, _fill_col_index) do
     x_data = Dataset.value(row, x_col_index)
-    x = x_scale.domain_to_range_fn.(x_data)
+    x = x_tx_fn.(x_data)
 
-    Enum.zip(y_col_indices, y_cols)
-    |> Enum.map(fn {index, name} ->
-      y_data = Dataset.value(row, index)
-      y = y_scale.domain_to_range_fn.(y_data)
-      fill = CategoryColourScale.colour_for_value(fill_scale, name)
+    Enum.with_index(y_col_indices)
+    |> Enum.map(fn {col_index, index} ->
+      y_data = Dataset.value(row, col_index)
+      y = y_tx_fn.(y_data)
+      fill = CategoryColourScale.colour_for_value(fill_scale, index)
       get_svg_point(x, y, fill)
     end)
   end
@@ -221,8 +232,10 @@ A column in the dataset can optionally be used to control the colours. See
       |> ContinuousLinearScale.domain(min, max)
       |> Scale.set_range(height, 0)
 
+    fill_indices = Enum.with_index(y_col_names) |> Enum.map(fn {_, index} -> index end)
+
     series_fill_colours
-      = CategoryColourScale.new(y_col_names)
+      = CategoryColourScale.new(fill_indices)
       |> CategoryColourScale.set_palette(plot.colour_palette)
 
     %{plot | y_cols: y_col_names, y_scale: y_scale, fill_scale: series_fill_colours}

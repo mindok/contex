@@ -51,9 +51,15 @@ defmodule Contex.TimeScale do
     {:years, 1, @duration_year}
   ]
 
-  defstruct [:domain, :nice_domain, :range,
-    :domain_to_range_fn, :range_to_domain_fn, :interval_count, :tick_interval,
-    :custom_tick_formatter, :display_format]
+  defstruct [
+    :domain,
+    :nice_domain,
+    :range,
+    :interval_count,
+    :tick_interval,
+    :custom_tick_formatter,
+    :display_format
+  ]
 
   @doc """
   Creates a new TimeScale struct with basic defaults set
@@ -73,7 +79,6 @@ defmodule Contex.TimeScale do
     scale
     |> struct(interval_count: interval_count)
     |> nice()
-    |> update_transform_funcs()
   end
   def interval_count(%TimeScale{} = scale, _), do: scale
 
@@ -91,7 +96,6 @@ defmodule Contex.TimeScale do
     scale
     |> struct(domain: {d_min, d_max})
     |> nice()
-    |> update_transform_funcs()
   end
 
   @doc """
@@ -156,7 +160,7 @@ defmodule Contex.TimeScale do
   defp guess_display_format({:years, _, _}), do: "{YYYY}"
 
   @doc false
-  def update_transform_funcs(%TimeScale{nice_domain: {min_d, max_d}, range: {min_r, max_r}} = scale)
+  def get_domain_to_range_function(%TimeScale{nice_domain: {min_d, max_d}, range: {min_r, max_r}})
        when is_number(min_r) and is_number(max_r)
     do
     domain_width = Timex.diff(max_d, min_d, :microsecond)
@@ -164,7 +168,7 @@ defmodule Contex.TimeScale do
 
     range_width = max_r - min_r
 
-    domain_to_range_fn = case domain_width do
+    case domain_width do
       0 -> fn x -> x end
       _ ->
         fn domain_val ->
@@ -173,19 +177,29 @@ defmodule Contex.TimeScale do
           min_r + (ratio * range_width)
         end
     end
-
-    range_to_domain_fn = case range_width do
-      0 -> fn x -> x end
-      _ ->
-        fn range_val ->
-          ratio = (range_val - min_r) / range_width
-          Timex.add(min_d, Timex.Duration.from_microseconds(trunc(ratio * domain_width)))
-        end
-    end
-
-    %{scale | domain_to_range_fn: domain_to_range_fn, range_to_domain_fn: range_to_domain_fn}
   end
-  def update_transform_funcs(%TimeScale{} = scale), do: scale
+
+  def get_domain_to_range_function(_), do: fn x -> x end
+
+  @doc false
+  def get_range_to_domain_function(%TimeScale{nice_domain: {min_d, max_d}, range: {min_r, max_r}})
+    when is_number(min_r) and is_number(max_r)
+    do
+      domain_width = Timex.diff(max_d, min_d, :microsecond)
+      range_width = max_r - min_r
+
+      case range_width do
+        0 -> fn x -> x end
+        _ ->
+          fn range_val ->
+            ratio = (range_val - min_r) / range_width
+            Timex.add(min_d, Timex.Duration.from_microseconds(trunc(ratio * domain_width)))
+          end
+      end
+  end
+
+  def get_range_to_domain_function(_), do: fn x -> x end
+
 
   defp extents(data) do
     Enum.reduce(data, {nil, nil}, fn x, {min, max} ->
@@ -197,7 +211,7 @@ defmodule Contex.TimeScale do
 
 
   defimpl Contex.Scale do
-    def domain_to_range_fn(%TimeScale{domain_to_range_fn: domain_to_range_fn}), do: domain_to_range_fn
+    def domain_to_range_fn(%TimeScale{}=scale), do: TimeScale.get_domain_to_range_function(scale)
 
     def ticks_domain(%TimeScale{nice_domain: {min_d, _}, interval_count: interval_count, tick_interval: {interval_type, interval_size, _}})
       when is_number(interval_count)
@@ -207,12 +221,14 @@ defmodule Contex.TimeScale do
     end
     def ticks_domain(_), do: []
 
-    def ticks_range(%TimeScale{domain_to_range_fn: transform_func} = scale) when is_function(transform_func) do
+    def ticks_range(%TimeScale{} = scale) do
+      transform_func = TimeScale.get_domain_to_range_function(scale)
       ticks_domain(scale)
       |> Enum.map(transform_func)
     end
 
-    def domain_to_range(%TimeScale{domain_to_range_fn: transform_func}, range_val) when is_function(transform_func) do
+    def domain_to_range(%TimeScale{}=scale, range_val) do
+      transform_func = TimeScale.get_domain_to_range_function(scale)
       transform_func.(range_val)
     end
 
@@ -220,7 +236,6 @@ defmodule Contex.TimeScale do
 
     def set_range(%TimeScale{} = scale, start, finish) when is_number(start) and is_number(finish) do
       %{scale | range: {start, finish}}
-      |> TimeScale.update_transform_funcs
     end
     def set_range(%TimeScale{} = scale, {start, finish}) when is_number(start) and is_number(finish), do: set_range(scale, start, finish)
 
