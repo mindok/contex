@@ -33,6 +33,7 @@ shown. You can force the range using `force_value_range/2`
         :type, :orientation, :padding, :data_labels, :colour_palette, :series_fill_colours, :custom_value_formatter,
         :phx_event_handler, :select_item, :value_range]
 
+  @type t() :: %__MODULE__{}
   @type orientation() :: :vertical | :horizontal
   @type plot_type() :: :stacked | :grouped
   @type selected_item() :: %{category: any(), series: any()}

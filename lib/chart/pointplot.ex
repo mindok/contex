@@ -23,6 +23,8 @@ A column in the dataset can optionally be used to control the colours. See
 
   defstruct [:dataset, :width, :height, :x_col, :y_cols, :fill_col, :size_col, :x_scale, :y_scale, :fill_scale, :colour_palette]
 
+  @type t() :: %__MODULE__{}
+
   @doc """
   Create a new point plot definition and apply defaults.
   """

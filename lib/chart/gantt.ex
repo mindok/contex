@@ -22,6 +22,9 @@ alias Contex.Utils
 
 defstruct [:dataset, :width, :height, :category_col, :task_col, :show_task_labels, :interval_cols, :time_scale, :task_scale, :padding, :category_scale, :phx_event_handler, id_col: ""]
 
+
+  @type t() :: %__MODULE__{}
+
   @doc """
   Create a new Gantt Chart definition and apply defaults.
   """

@@ -32,6 +32,8 @@ defmodule Contex.Sparkline do
       :line_width, :line_colour, :fill_colour, :y_transform,
       :height, :width]
 
+  @type t() :: %__MODULE__{}
+
   @doc """
   Create a new sparkline struct from some data.
   """

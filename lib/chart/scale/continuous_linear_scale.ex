@@ -66,6 +66,8 @@ defmodule Contex.ContinuousLinearScale do
     :custom_tick_formatter
   ]
 
+  @type t() :: %__MODULE__{}
+
   @doc """
   Creates a new scale with defaults
   """

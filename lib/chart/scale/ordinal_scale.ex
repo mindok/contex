@@ -31,6 +31,8 @@ defmodule Contex.OrdinalScale do
 
   defstruct [:domain, :range, :padding, :domain_to_range_fn, :range_to_domain_fn, :domain_to_range_band_fn]
 
+  @type t() :: %__MODULE__{}
+
   @doc """
   Creates a new ordinal scale.
   """

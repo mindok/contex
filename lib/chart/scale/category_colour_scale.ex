@@ -49,6 +49,7 @@ defmodule Contex.CategoryColourScale do
 
   defstruct [:values, :colour_palette, :colour_map, :default_colour]
 
+  @type t() :: %__MODULE__{}
   @type colour_palette() :: nil | :default | :pastel1 | :warm | list()
 
   @default_colour "fa8866"

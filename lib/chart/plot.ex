@@ -31,6 +31,7 @@ defmodule Contex.Plot do
 
   defstruct [:title, :subtitle, :x_label, :y_label, :height, :width, :plot_content, :margins, :plot_options]
 
+  @type t() :: %__MODULE__{}
   @type plot_text() :: String.t() | nil
 
   @default_padding 10

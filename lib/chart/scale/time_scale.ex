@@ -61,6 +61,8 @@ defmodule Contex.TimeScale do
     :display_format
   ]
 
+  @type t() :: %__MODULE__{}
+
   @doc """
   Creates a new TimeScale struct with basic defaults set
   """

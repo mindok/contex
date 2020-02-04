@@ -51,6 +51,7 @@ the size of each array or tuple in the data. If there are any issues finding a v
   @type column_name() :: String.t() | integer()
   @type column_type() :: :datetime | :number | :string | :unknown | nil
   @type row() :: list() | tuple()
+  @type t() :: %__MODULE__{}
 
   @doc """
   Creates a new Dataset wrapper around some data.
