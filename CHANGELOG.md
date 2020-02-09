@@ -1,5 +1,12 @@
 # ContEx Change Log
 
+## v0.3.0 : In progress
+- Added test coverage for some components. Thanks @srowley
+- Refactored SVG generation to minimise, or at least isolate, messy string interpolation, as per @elcritch suggestion. More to do on code tidy up.
+- Improved Timescale code. Thanks for suggestions from [Eiji](https://elixirforum.com/u/eiji/)
+- Replaced Enum with Stream in (as yet to be activated) line generation code in PointPlot as per @elcritch suggestion.
+- Fixed up some typespecs to stop Elixir 1.10 complaining. More to do to make the module struct specs right.
+
 ## v0.2.0 : 2020-01-28
 - Documentation for all modules
 - Created type specs for the public API

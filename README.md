@@ -67,15 +67,15 @@ There are quite a few things to tidy up to make this ready for the real world, a
 
 - [x] Reasonable docs - the best resource currently is the accompanying [demo project](https://github.com/mindok/contex-samples)
 - [ ] Default styling
-- [ ] Upgrade Elixir required version to 1.10 and fix up some of the data comparison operators to
+- [ ] Upgrade Elixir required version to 1.10 and fix up some of the data comparison operators to use the new sort capabilities. Holding off on this for a while so we don't force an unwanted Elixir upgrade.
 - [x] Multiple series in point plot
 - [ ] Line plot (probably option in point plot)
-- [ ] More test coverage - it has been built interactively using a liveview page for testing / refinement
+- [x] Some test coverage - it has been built interactively using a liveview page for testing / refinement. Thanks to @srowley for getting some test coverage in place.
+- [ ] More test coverage... An approach for comparing "blessed" output SVG would make sense, including handling minor difference in spacing or element attribute order.
 - [ ] Options handling - needs to be better structured and use keyword lists rather than maps
 - [ ] Colour handling
 - [ ] Plot overlays (e.g. line chart on bar chart)
-- [ ] SVG generation is poorly structured - lots of string interpolation. A DSL would be a lot nicer, or something like the approach in [Chunky SVG](https://github.com/mmmries/chunky_svg/), which in turn uses [XML Builder](https://github.com/joshnuss/xml_builder), but this needs a bit of thought to maintain performance and memory efficiency. XML Builder has implemented the XML generation using IO Lists.
-- [ ] Benchmarks - particularly for the situation where large datasets are getting updated frequently and served via LiveViews.
+- [x] SVG generation is poorly structured - lots of string interpolation. - [ ] Benchmarks - particularly for the situation where large datasets are getting updated frequently and served via LiveViews.
 
 
 ## Installation
