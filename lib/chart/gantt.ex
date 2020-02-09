@@ -14,6 +14,9 @@ a tooltip functionality to display the title when the mouse hovers over the cont
 
 By default, the first four columns of the supplied dataset are used for the category, task, start time and end time.
 """
+
+import Contex.SVG
+
 alias __MODULE__
 alias Contex.{Scale, OrdinalScale, TimeScale, CategoryColourScale}
 alias Contex.Dataset
@@ -144,24 +147,26 @@ defstruct [:dataset, :width, :height, :category_col, :task_col, :show_task_label
 
     Enum.map(categories, fn cat ->
       fill = CategoryColourScale.colour_for_value(cat_scale, cat)
-      band = get_category_band(plot, cat)
-      width = plot.width
-      height = width(band) + 2 # Minor adjustment to remove gap...
-      {y, _}=band
-      y = y - 1 # Minor adjustment to remove gap...
+      band = get_category_band(plot, cat) |> adjust_category_band()
+      x_extents = {0, plot.width}
 
       # TODO: When we have a colour manipulation library we can fade the colour. Until then, we'll draw a transparent white box on top
-      [~s|<rect x="#{0}" y="#{y}" width="#{width}" height="#{height}" style="fill: ##{fill};" fill-opacity="0.2"></rect>|,
-      ~s|<rect x="#{0}" y="#{y}" width="#{width}" height="#{height}" style="fill: #FFFFFF;" fill-opacity="0.3"></rect>|,
-      get_category_tick_svg(cat, band)]
+      [
+        rect(x_extents, band, "", fill: fill, opacity: "0.2"),
+        rect(x_extents, band, "", fill: "FFFFFF", opacity: "0.3"),
+        get_category_tick_svg(cat, band)
+      ]
     end)
   end
+
+  # Adjust band to fill gap
+  defp adjust_category_band({y1, y2}), do: {y1 - 1, y2 + 1}
 
   defp get_category_tick_svg(text, {_min_y, max_y}=_band) do
     #y = midpoint(band)
     y = max_y
     [~s|<g class="exc-tick" font-size="10" text-anchor="start" transform="translate(0, #{y})">|,
-      ~s|<text x="2" dy="-0.32em" alignment-baseline="baseline">#{text}</text>|,
+      text(text, x: "2", dy: "-0.32em", alignment_baseline: "baseline"),
       "</g>"
     ]
   end
@@ -183,20 +188,17 @@ defstruct [:dataset, :width, :height, :category_col, :task_col, :show_task_label
     end_time = Dataset.value(row, end_col_index)
     title = ~s|#{task_data}: #{start_time} -> #{end_time}|
 
-    {task_band_min, task_band_max} = OrdinalScale.get_band(task_scale, task_data)
+    task_band = OrdinalScale.get_band(task_scale, task_data)
     fill = CategoryColourScale.colour_for_value(cat_scale, cat_data)
     start_x = Scale.domain_to_range(time_scale, start_time)
     end_x = Scale.domain_to_range(time_scale, end_time)
-    width = end_x - start_x
-    height = abs(task_band_max - task_band_min)
 
-    event_handler = get_bar_event_handler(row, plot, cat_data, task_data)
+    opts = get_bar_event_handler_opts(row, plot, cat_data, task_data) ++ [fill: fill]
 
-    [~s|<rect x="#{start_x}" y="#{task_band_min}" width="#{width}" height="#{height}" #{event_handler}|,
-    ~s| style="fill: ##{fill};" >|,
-    "<title>", title , "</title>",
-    "</rect>",
-    get_svg_bar_label(plot, {start_x, end_x}, task_data, {task_band_min, task_band_max})]
+    [
+      rect({start_x, end_x}, task_band, title(title), opts),
+      get_svg_bar_label(plot, {start_x, end_x}, task_data, task_band)
+    ]
   end
 
   defp get_svg_bar_label(%GanttChart{show_task_labels: false}, _, _, _), do: ""
@@ -208,20 +210,20 @@ defstruct [:dataset, :width, :height, :category_col, :task_col, :show_task_label
       true -> {bar_end + 2, "exc-barlabel-out", "start"}
       _ -> {bar_start + 5, "exc-barlabel-in", "start"}
     end
-    ~s|<text x="#{text_x}" y="#{text_y}" text-anchor="#{anchor}" class="#{class}" dominant-baseline="central">#{label}</text>|
+
+    text(text_x, text_y, label, anchor: anchor, dominant_baseline: "central", class: class)
   end
 
-  defp get_bar_event_handler(_row, %GanttChart{phx_event_handler: phx_event_handler, id_col: ""}, category, task) when is_binary(phx_event_handler) and phx_event_handler != "" do
-      ~s| phx-value-category="#{category}" phx-value-task="#{task}" phx-click="#{phx_event_handler}"|
+  defp get_bar_event_handler_opts(_row, %GanttChart{phx_event_handler: phx_event_handler, id_col: ""}, category, task) when is_binary(phx_event_handler) and phx_event_handler != "" do
+    [category: "#{category}", task: task, phx_click: phx_event_handler]
   end
-  defp get_bar_event_handler(row, %GanttChart{phx_event_handler: phx_event_handler, id_col: id_col, dataset: dataset}, _category, _task) when is_binary(phx_event_handler) and phx_event_handler != "" do
+  defp get_bar_event_handler_opts(row, %GanttChart{phx_event_handler: phx_event_handler, id_col: id_col, dataset: dataset}, _category, _task) when is_binary(phx_event_handler) and phx_event_handler != "" do
     id_col_index = Dataset.column_index(dataset, id_col)
     id = Dataset.value(row, id_col_index)
-    ~s| phx-value-id="#{id}" phx-click="#{phx_event_handler}"|
+
+    [id: "#{id}", phx_click: phx_event_handler]
   end
-  defp get_bar_event_handler(_row, %GanttChart{}=_plot, _category, _task) do
-    ""
-  end
+  defp get_bar_event_handler_opts(_row, %GanttChart{}=_plot, _category, _task), do: []
 
   defp get_category_band(%GanttChart{task_scale: task_scale, dataset: dataset}=plot, category) do
     task_col_index = Dataset.column_index(dataset, plot.task_col)

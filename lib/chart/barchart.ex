@@ -22,6 +22,9 @@ maximum value for any category and series. This may not work. For example, in th
 shown. You can force the range using `force_value_range/2`
 
 """
+
+  import Contex.SVG
+
   alias __MODULE__
   alias Contex.{Scale, ContinuousLinearScale, OrdinalScale}
   alias Contex.CategoryColourScale
@@ -259,19 +262,20 @@ shown. You can force the range using `force_value_range/2`
   defp get_bar_event_handlers(%BarChart{phx_event_handler: phx_event_handler, value_cols: value_cols}, category, series_values) when is_binary(phx_event_handler) and phx_event_handler != "" do
     Enum.zip(value_cols, series_values)
     |> Enum.map(fn {col, value} ->
-      ~s| phx-value-category="#{category}" phx-value-series="#{col}" phx-value-value="#{value}" phx-click="#{phx_event_handler}"|
+      [category: category, series: col, value: value, phx_click: phx_event_handler]
     end)
   end
-  defp get_bar_event_handlers(%BarChart{value_cols: value_cols}, _, _), do: Enum.map(value_cols, fn _ -> "" end)
+  defp get_bar_event_handlers(%BarChart{value_cols: value_cols}, _, _), do: Enum.map(value_cols, fn _ -> [] end)
 
+  @bar_faded_opacity "0.3"
   defp get_bar_opacities(%BarChart{select_item: %{category: selected_category, series: _selected_series}, value_cols: value_cols}, category) when selected_category != category do
-    Enum.map(value_cols, fn _ -> ~s|fill-opacity="0.3"| end)
+    Enum.map(value_cols, fn _ -> @bar_faded_opacity end)
   end
   defp get_bar_opacities(%BarChart{select_item: %{category: _selected_category, series: selected_series}, value_cols: value_cols}, _category) do
     Enum.map(value_cols, fn col ->
       case col == selected_series do
         true -> ""
-        _ -> ~s|fill-opacity="0.3"|
+        _ -> @bar_faded_opacity
       end
     end)
   end
@@ -304,13 +308,10 @@ shown. You can force the range using `force_value_range/2`
     adjusted_bands = Enum.map(indices, fn index -> adjust_cat_band(cat_band, index, count, plot.type, plot.orientation) end)
 
     rects = Enum.zip([bar_values, fills, labels, adjusted_bands, event_handlers, opacities])
-    |> Enum.map(fn {bar_value, fill, label, adjusted_band, event_handler, opacity} ->
-      {x, y, width, height} = get_bar_rect_coords(plot.orientation, adjusted_band, bar_value)
-
-      [~s|<rect x="#{x}" y="#{y}" width="#{width}" height="#{height}" #{event_handler}|,
-      ~s| style="fill: ##{fill};" #{opacity}>|,
-      ~s|<title>#{label}</title>|,
-      "</rect>"]
+    |> Enum.map(fn {bar_value, fill, label, adjusted_band, event_opts, opacity} ->
+      {x, y} = get_bar_rect_coords(plot.orientation, adjusted_band, bar_value)
+      opts = [fill: fill, opacity: opacity] ++ event_opts
+      rect(x, y, title(label), opts)
     end)
 
     texts = case (count < 4) and plot.data_labels do
@@ -338,22 +339,8 @@ shown. You can force the range using `force_value_range/2`
     {cat_band_start + (index * interval), cat_band_start + ((index + 1) * interval)}
   end
 
-  defp get_bar_rect_coords(:horizontal, {cat_band_min, cat_band_max}, {bar_start, bar_end}) do
-    x = bar_start
-    height = abs(cat_band_max - cat_band_min)
-    width = abs(bar_end - bar_start)
-    y = cat_band_max
-
-    {x, y, width, height}
-  end
-  defp get_bar_rect_coords(:vertical, {cat_band_min, cat_band_max}, {bar_start, bar_end}) do
-    x = cat_band_min
-    width = abs(cat_band_max - cat_band_min)
-    height = abs(bar_start - bar_end)
-    y = bar_end
-
-    {x, y, width, height}
-  end
+  defp get_bar_rect_coords(:horizontal, cat_band, bar_extents), do: {bar_extents, cat_band}
+  defp get_bar_rect_coords(:vertical, cat_band, bar_extents), do: {cat_band, bar_extents}
 
   defp get_svg_bar_label(:horizontal, {_, bar_end}=bar, label, cat_band, _plot) do
     text_y = midpoint(cat_band)
@@ -363,7 +350,8 @@ shown. You can force the range using `force_value_range/2`
       true -> {bar_end + 2, "exc-barlabel-out", "start"}
       _ -> {midpoint(bar), "exc-barlabel-in", "middle"}
     end
-    ~s|<text x="#{text_x}" y="#{text_y}" text-anchor="#{anchor}" class="#{class}" dominant-baseline="central">#{label}</text>|
+
+    text(text_x, text_y, label, text_anchor: anchor, class: class, dominant_baseline: "central")
   end
 
   defp get_svg_bar_label(_, {bar_start, _}=bar, label, cat_band, _plot) do
@@ -374,7 +362,7 @@ shown. You can force the range using `force_value_range/2`
       _ -> {bar_start - 10, "exc-barlabel-out"}
     end
 
-    ~s|<text x="#{text_x}" y="#{text_y}" text-anchor="middle" class="#{class}">#{label}</text>|
+    text(text_x, text_y, label, text_anchor: "middle", class: class)
   end
 
   @doc """

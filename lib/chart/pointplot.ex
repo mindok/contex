@@ -14,6 +14,9 @@ Fill colours for each y column can be specified with `colours/2`.
 A column in the dataset can optionally be used to control the colours. See
 `colours/2` and `set_colour_col_name/2`
 """
+
+  import Contex.SVG
+
   alias __MODULE__
   alias Contex.{Scale, ContinuousLinearScale, TimeScale}
   alias Contex.CategoryColourScale
@@ -152,12 +155,12 @@ A column in the dataset can optionally be used to control the colours. See
     last_item = Enum.count(dataset.data) - 1
     path = ["M",
         dataset.data
-         |> Enum.map(fn row ->
+         |> Stream.map(fn row ->
               x = Dataset.value(row, x_col_index)
               y = Dataset.value(row, y_col_index)
               {x_tx_fn.(x), y_tx_fn.(y)}
             end)
-         |> Enum.with_index()
+         |> Stream.with_index()
          |> Enum.map(fn {{x_plot, y_plot}, i} ->
             case i < last_item do
               true -> ~s|#{x_plot} #{y_plot} L |
@@ -201,7 +204,7 @@ A column in the dataset can optionally be used to control the colours. See
   end
 
   defp get_svg_point(x, y, fill) when is_number(x) and is_number(y) do
-    [~s|<circle cx="#{x}" cy="#{y}"|, ~s| r="3" style="fill: ##{fill};"></circle>|]
+    circle(x, y, 3, fill: fill)
   end
   defp get_svg_point(_x, _y, _fill), do: ""
 

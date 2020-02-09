@@ -5,7 +5,7 @@ defmodule ContexPointPlotTest do
   import SweetXml
 
   setup do
-    plot = 
+    plot =
       Dataset.new([{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}], ["aa", "bb", "cccc", "d"])
       |> PointPlot.new()
     %{plot: plot}
@@ -27,8 +27,8 @@ defmodule ContexPointPlotTest do
   describe "defaults/1" do
     test "returns a PointPlot struct with default properties", %{plot: plot} do
       assert plot.colour_palette == :default
-      assert plot.x_col == "aa" 
-      assert plot.y_cols == ["bb"] 
+      assert plot.x_col == "aa"
+      assert plot.y_cols == ["bb"]
     end
   end
 
@@ -38,17 +38,17 @@ defmodule ContexPointPlotTest do
   describe "colours/2" do
     test "accepts a list of (whatever)", %{plot: plot} do
       colours = ["blah", "blurgh", "blee"]
-      plot = PointPlot.colours(plot, colours) 
+      plot = PointPlot.colours(plot, colours)
       assert plot.colour_palette == colours
     end
 
     test "accepts an atom (any atom)", %{plot: plot} do
-      plot = PointPlot.colours(plot, :meat) 
+      plot = PointPlot.colours(plot, :meat)
       assert plot.colour_palette == :meat
     end
 
     test "sets the palette to :default without an atom or list", %{plot: plot} do
-      plot = PointPlot.colours(plot, 12345) 
+      plot = PointPlot.colours(plot, 12345)
       assert plot.colour_palette == :default
     end
   end
@@ -68,12 +68,12 @@ defmodule ContexPointPlotTest do
         Contex.Plot.new(150, 150, plot)
         |> Contex.Plot.plot_options(%{legend_setting: :legend_right})
         |> Contex.Plot.to_svg()
-      
+
       legend =
-        IO.chardata_to_string(svg) 
-        |> xpath(~x"//g[@class='exc-legend']", 
+        IO.chardata_to_string(svg)
+        |> xpath(~x"//g[@class='exc-legend']",
              box: [
-               ~x"./rect", 
+               ~x"./rect",
                x: ~x"./@x"s,
                y: ~x"./@y"s,
                height: ~x"./@height"s,
@@ -81,7 +81,7 @@ defmodule ContexPointPlotTest do
                style: ~x"./@style"s
              ],
              text: [
-               ~x"./text", 
+               ~x"./text",
                x: ~x"./@x"s,
                y: ~x"./@y"s,
                text_anchor: ~x"./@text-anchor"s,
@@ -109,26 +109,26 @@ defmodule ContexPointPlotTest do
       ])
     end
 
-    # Axis svg not tested as it is for practical purposes handled 
+    # Axis svg not tested as it is for practical purposes handled
     # by Contex.Axis, which is tested by ContexAxisTest
     test "returns properly constructed chart", %{plot: plot} do
       points_map =
         PointPlot.to_svg(plot)
         |> plot_iodata_to_map()
 
-      assert ["fill: #1f77b4;"] ==
+      assert ["fill:#1f77b4;"] ==
         Enum.map(points_map, fn point -> Map.get(point, :style) end)
         |> Enum.uniq()
 
       assert [{57.143, 42.857}, {100, 0}, {0, 100}] ==
-        Enum.map(points_map, fn point -> 
+        Enum.map(points_map, fn point ->
           {Map.get(point, :cx)
            |> String.to_float()
            |> Float.round(3),
            Map.get(point, :cy)
            |> String.to_float()
            |> Float.round(3)
-          } 
+          }
         end)
     end
 
@@ -164,7 +164,7 @@ defmodule ContexPointPlotTest do
   describe "set_y_col_names/2" do
     test "sets y column(s) to specified dataset column(s)", %{plot: plot} do
       plot = PointPlot.set_y_col_names(plot, ["aa", "bb"])
-      assert plot.y_cols == ["aa", "bb"] 
+      assert plot.y_cols == ["aa", "bb"]
     end
   end
 
