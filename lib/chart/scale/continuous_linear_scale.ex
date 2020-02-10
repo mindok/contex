@@ -230,7 +230,7 @@ defmodule Contex.ContinuousLinearScale do
     end
 
     defp format_tick_text(tick, _, custom_tick_formatter) when is_function(custom_tick_formatter), do: custom_tick_formatter.(tick)
-    defp format_tick_text(tick, _, _) when is_integer(tick), do: tick
+    defp format_tick_text(tick, _, _) when is_integer(tick), do: to_string(tick)
     defp format_tick_text(tick, display_decimals, _) when display_decimals > 0 do
       :erlang.float_to_binary(tick, [decimals: display_decimals])
     end
