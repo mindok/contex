@@ -196,5 +196,36 @@ defmodule ContexPlotTest do
         end
       )
     end
+
+    test "renders integer data as bar labels" do
+      test_data =
+        Dataset.new([["aa", 42, 8.222222222]], [
+          "Category",
+          "Series 1",
+          "Series 2"
+        ])
+
+      plot_content =
+        BarChart.new(test_data)
+        |> BarChart.set_val_col_names(["Series 1", "Series 2"])
+
+      plot = Plot.new(500, 400, plot_content)
+
+      assert {:safe, svg} =
+               Plot.titles(plot, "The Title", "The Sub")
+               |> Plot.to_svg()
+
+      results =
+        svg
+        |> IO.chardata_to_string()
+        |> xpath(~x"/svg",
+          barlabels: [
+            ~x".//text[@class='exc-barlabel-in']"l,
+            text: ~x"./text()"s
+          ]
+        )
+
+      assert results.barlabels == [%{text: "42"}, %{text: "8.2"}]
+    end
   end
 end

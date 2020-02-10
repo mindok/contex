@@ -259,7 +259,13 @@ shown. You can force the range using `force_value_range/2`
 
     cat_band = OrdinalScale.get_band(category_scale, cat_data)
     bar_values = prepare_bar_values(series_values, value_scale, plot.type)
-    labels = Enum.map(series_values, fn val -> Scale.get_formatted_tick(value_scale, val) end)
+
+    labels =
+      Enum.map(series_values, fn val ->
+        Scale.get_formatted_tick(value_scale, val)
+        |> to_string()
+      end)
+
     event_handlers = get_bar_event_handlers(plot, cat_data, series_values)
     opacities = get_bar_opacities(plot, cat_data)
 
