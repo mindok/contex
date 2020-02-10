@@ -1,14 +1,14 @@
 defmodule ContexPlotTest do
   use ExUnit.Case
 
-  alias Contex.{Plot, Dataset, PointPlot}
+  alias Contex.{Plot, Dataset, PointPlot, BarChart}
   import SweetXml
 
   setup do
-    plot = 
+    plot =
       Dataset.new([{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}], ["aa", "bb", "cccc", "d"])
       |> PointPlot.new()
-    
+
     plot = Plot.new(150, 200, plot)
     %{plot: plot}
   end
@@ -166,6 +166,35 @@ defmodule ContexPlotTest do
       assert svg.y_axis_label == %{text: "Y Side", x: "-82.5", y: "20"}
       assert svg.y_axis_label == %{text: "Y Side", x: "-82.5", y: "20"}
       assert svg.legend_transform == "translate(50, 65)"
+    end
+
+    test "raises error when category missing" do
+      test_data =
+        Dataset.new([["aa", 2, 3, 4], ["bb", 5, 6, 4]], [
+          "Category",
+          "Series 1",
+          "Series 2",
+          "Other Series"
+        ])
+
+      plot_content =
+        BarChart.new(test_data)
+        |> BarChart.set_val_col_names(["Series 1", "Series 2", "Wrong Name"])
+
+      plot = Plot.new(500, 400, plot_content)
+
+      plot =
+        Plot.titles(plot, "The Title", "The Sub")
+        |> Plot.axis_labels("X Side", "Y Side")
+        |> Plot.plot_options(%{legend_setting: :legend_right})
+
+      assert_raise(
+        RuntimeError,
+        "Missing header \"Wrong Name\"",
+        fn ->
+          Plot.to_svg(plot)
+        end
+      )
     end
   end
 end

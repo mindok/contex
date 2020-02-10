@@ -237,7 +237,14 @@ shown. You can force the range using `force_value_range/2`
 
   defp get_svg_bars(%BarChart{dataset: dataset} = plot) do
     cat_col_index = Dataset.column_index(dataset, plot.category_col)
-    val_col_indices = Enum.map(plot.value_cols, fn col -> Dataset.column_index(dataset, col) end)
+
+    val_col_indices =
+      Enum.map(plot.value_cols, fn col ->
+        case Dataset.column_index(dataset, col) do
+          nil -> raise "Missing header \"#{col}\""
+          index -> index
+        end
+      end)
 
     series_fill_colours = plot.series_fill_colours
     fills = Enum.map(plot.value_cols, fn column -> CategoryColourScale.colour_for_value(series_fill_colours, column) end)
