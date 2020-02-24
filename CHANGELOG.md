@@ -6,6 +6,7 @@
 - Improved Timescale code. Thanks for suggestions from [Eiji](https://elixirforum.com/u/eiji/)
 - Replaced Enum with Stream in (as yet to be activated) line generation code in PointPlot as per @elcritch suggestion.
 - Fixed up some typespecs to stop Elixir 1.10 complaining. More to do to make the module struct specs right.
+- Removed Timex dependency. 
 
 ## v0.2.0 : 2020-01-28
 - Documentation for all modules

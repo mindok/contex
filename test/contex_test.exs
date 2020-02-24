@@ -3,4 +3,5 @@ defmodule ContexTest do
 
   doctest Contex
   doctest Contex.OrdinalScale
+  doctest Contex.Utils
 end

@@ -28,7 +28,7 @@ defmodule Contex.MixProject do
 
   defp deps do
     [
-      {:timex, "~> 3.6"},
+      {:nimble_strftime, "~> 0.1.0"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:sweet_xml, "~> 0.6.6", only: :test}
     ]
