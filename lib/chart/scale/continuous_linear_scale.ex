@@ -140,7 +140,7 @@ defmodule Contex.ContinuousLinearScale do
   end
   defp nice(%ContinuousLinearScale{} = scale), do: scale
 
-  @axis_interval_breaks [0.1, 0.2, 0.25, 0.4, 0.5, 0.75, 1.0, 2.0, 2.5, 4.0, 5.0, 7.5, 10.0]
+  @axis_interval_breaks [0.1, 0.2, 0.25, 0.4, 0.5, 1.0, 2.0, 2.5, 4.0, 5.0, 10.0]
   defp lookup_axis_interval(raw_interval) when is_float(raw_interval) do
     Enum.find(@axis_interval_breaks, fn x -> x >= raw_interval end)
   end

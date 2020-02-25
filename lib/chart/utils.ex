@@ -32,9 +32,24 @@ defmodule Contex.Utils do
   ~U[2015-02-28 03:00:00Z]
   """
   def date_add(dt, amount_to_add, :years), do: shift_by(dt, amount_to_add, :years)
-  def date_add(dt, amount_to_add, :months), do: shift_by(dt, amount_to_add, :months)
+
+  def date_add(dt, amount_to_add, :months) do
+    new_date = shift_by(dt, amount_to_add, :months)
+
+    if is_last_day_of_month(dt) do
+      ldom_new = :calendar.last_day_of_the_month(new_date.year, new_date.month)
+      %{new_date | day: ldom_new}
+    else
+      new_date
+    end
+  end
+
   def date_add(%DateTime{}=dt, amount_to_add, unit), do: DateTime.add(dt, amount_to_add, unit)
   def date_add(%NaiveDateTime{}=dt, amount_to_add, unit), do: NaiveDateTime.add(dt, amount_to_add, unit)
+
+  defp is_last_day_of_month(%{year: year, month: month, day: day}) do
+    :calendar.last_day_of_the_month(year, month) == day
+  end
 
   defp date_min(a, b), do: if date_compare(a, b) == :lt, do: a, else: b
   defp date_max(a, b), do: if date_compare(a, b) != :lt, do: a, else: b

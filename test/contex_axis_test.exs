@@ -7,11 +7,11 @@ defmodule ContexAxisTest do
   defp axis_map(axis) do
     Axis.to_svg(axis)
     |> IO.chardata_to_string()
-    |> xpath(~x"/g", 
+    |> xpath(~x"/g",
       transform: ~x"./@transform"s,
       text_anchor: ~x"./@text-anchor"s,
       path: [
-        ~x"./path", 
+        ~x"./path",
         d: ~x"./@d"s
       ],
       ticks: [
@@ -34,21 +34,33 @@ defmodule ContexAxisTest do
   end
 
   setup do
-    axis = Axis.new("foo", :top)
+    scale = ContinuousLinearScale.new()
+    axis = Axis.new(scale, :top)
     %{axis: axis}
   end
 
-  # TODO
-  # Seems likes type of value passed as a scale should be validated
   describe "new/1" do
-    test "returns an axis struct given (anything for) scale and a valid orientation", %{axis: axis} do
-      assert axis.scale == "foo" 
-      assert axis.orientation == :top 
+    test "returns an axis struct given scale and a valid orientation" do
+      scale = ContinuousLinearScale.new()
+      axis = Axis.new(scale, :top)
+      assert axis.orientation == :top
+      assert axis.scale == scale
     end
 
     test "raises when given an invalid orientation" do
       assert_raise FunctionClauseError, fn -> Axis.new("foo", :cattywompus) end
     end
+
+    test "raises for not a scale" do
+      assert_raise ArgumentError, fn -> Axis.new("foo", :top) end
+    end
+
+    test "raises for scale that does not implement required protocol" do
+      # A scale, but not one that can be plotted on an Axis...
+      scale = Contex.CategoryColourScale.new([5, 10, 15], :default)
+      assert_raise ArgumentError, fn -> Axis.new(scale, :top) end
+    end
+
   end
 
   describe "new_top_axis/1" do
@@ -89,7 +101,7 @@ defmodule ContexAxisTest do
 
   describe "to_svg(%Axis{orientation: :right})" do
     setup do
-      axis = 
+      axis =
         ContinuousLinearScale.new()
         |> ContinuousLinearScale.domain(0, 1)
         |> Axis.new(:right)
@@ -102,7 +114,7 @@ defmodule ContexAxisTest do
 
     test "sets text-anchor 'start'", %{axis_map: axis_map} do
       assert axis_map.text_anchor == "start"
-    end  
+    end
 
     test "positions axis line properly", %{axis_map: axis_map} do
       assert axis_map.path.d == "M6,0.5H0.5V1.5H6"
@@ -111,7 +123,7 @@ defmodule ContexAxisTest do
     test "positions tick marks properly", %{axis_map: axis_map} do
       assert ["(0, 0.5)", "(0, 0.7)", "(0, 0.9)", "(0, 1.1)", "(0, 1.3)", "(0, 1.5)"] ==
         Enum.map(axis_map.ticks, fn tick -> Map.get(tick, :transform) end)
-        |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end) 
+        |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end)
 
       assert ["6"] ==
         Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:line, :x2]) end)
@@ -128,7 +140,7 @@ defmodule ContexAxisTest do
 
   describe "to_svg(%Axis{orientation: :bottom})" do
     setup do
-      axis = 
+      axis =
         ContinuousLinearScale.new()
         |> ContinuousLinearScale.domain(0, 1)
         |> Axis.new(:bottom)
@@ -150,7 +162,7 @@ defmodule ContexAxisTest do
     test "positions tick marks properly", %{axis_map: axis_map} do
       assert ["(0.5,0)", "(0.7,0)", "(0.9,0)", "(1.1,0)", "(1.3,0)", "(1.5,0)"] ==
         Enum.map(axis_map.ticks, fn tick -> Map.get(tick, :transform) end)
-        |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end) 
+        |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end)
 
       assert ["6"] ==
         Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:line, :y2]) end)
@@ -167,7 +179,7 @@ defmodule ContexAxisTest do
 
   describe "to_svg(%Axis{orientation: :top})" do
     setup do
-      axis = 
+      axis =
         ContinuousLinearScale.new()
         |> ContinuousLinearScale.domain(0, 1)
         |> Axis.new(:top)
@@ -191,7 +203,7 @@ defmodule ContexAxisTest do
     test "positions tick marks properly", %{axis_map: axis_map} do
       assert ["(0.5,0)", "(0.7,0)", "(0.9,0)", "(1.1,0)", "(1.3,0)", "(1.5,0)"] ==
         Enum.map(axis_map.ticks, fn tick -> Map.get(tick, :transform) end)
-        |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end) 
+        |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end)
 
       assert ["-6"] ==
         Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:line, :y2]) end)
@@ -208,7 +220,7 @@ defmodule ContexAxisTest do
 
   describe "to_svg(%Axis{orientation: :left})" do
     setup do
-      axis = 
+      axis =
         ContinuousLinearScale.new()
         |> ContinuousLinearScale.domain(0, 1)
         |> Axis.new(:left)
@@ -221,7 +233,7 @@ defmodule ContexAxisTest do
 
     test "sets text-anchor to 'end'", %{axis_map: axis_map} do
       assert axis_map.text_anchor == "end"
-    end  
+    end
 
     test "positions axis line properly", %{axis_map: axis_map} do
       assert axis_map.path.d == "M-6,0.5H0.5V1.5H-6"
@@ -230,7 +242,7 @@ defmodule ContexAxisTest do
     test "positions tick marks properly", %{axis_map: axis_map} do
       assert ["(0, 0.5)", "(0, 0.7)", "(0, 0.9)", "(0, 1.1)", "(0, 1.3)", "(0, 1.5)"] ==
         Enum.map(axis_map.ticks, fn tick -> Map.get(tick, :transform) end)
-        |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end) 
+        |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end)
 
       assert ["-6"] ==
         Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:line, :x2]) end)

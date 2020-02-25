@@ -68,7 +68,7 @@ defmodule Contex.TimeScale do
   """
   @spec new :: Contex.TimeScale.t()
   def new() do
-    %TimeScale{range: {0.0, 1.0}, interval_count: 10}
+    %TimeScale{range: {0.0, 1.0}, interval_count: 11}
   end
 
   @doc """
@@ -155,14 +155,27 @@ defmodule Contex.TimeScale do
   defp round_down_to(dt, {:hours, n, _}), do: %{dt | microsecond: {0,0}, second: 0, minute: 0, hour: round_down_multiple(dt.hour, n)}
   defp round_down_to(dt, {:days, 1, _}), do: %{dt | microsecond: {0,0}, second: 0, minute: 0, hour: 0}
   defp round_down_to(dt, {:days, n, _}), do: %{dt | microsecond: {0,0}, second: 0, minute: 0, hour: 0, day: round_down_multiple(dt.day, n) + 1}
-  defp round_down_to(dt, {:months, n, _}), do: %{dt | microsecond: {0,0}, second: 0, minute: 0, hour: 0, day: 1, month: round_down_multiple(dt.month, n) + 1}
+  defp round_down_to(dt, {:months, 1, _}), do: %{dt | microsecond: {0,0}, second: 0, minute: 0, hour: 0, day: 1}
+  defp round_down_to(dt, {:months, n, _}), do: round_down_month(dt, n)
   defp round_down_to(dt, {:years, 1, _}), do: %{dt | microsecond: {0,0}, second: 0, minute: 0, hour: 0, day: 1, month: 1}
+
+  defp round_down_month(dt, n) do
+    month = round_down_multiple(dt.month, n)
+    year = dt.year
+
+    {month, year} = case month > 0 do
+      true -> {month, year}
+      _ -> {month + 12, year - 1}
+    end
+    day = :calendar.last_day_of_the_month(year, month)
+    %{dt | microsecond: {0,0}, second: 0, minute: 0, hour: 0, day: day, month: month, year: year}
+  end
 
   defp guess_display_format({:seconds, _, _}), do: "%M:%S"
   defp guess_display_format({:minutes, _, _}), do: "%H:%M:%S"
   defp guess_display_format({:hours, 1, _}), do: "%H:%M:%S"
   defp guess_display_format({:hours, _, _}), do: "%d %b %H:%M"
-  defp guess_display_format({:days, _, _}), do: "%Y-%m-%d"
+  defp guess_display_format({:days, _, _}), do: "%d %b"
   defp guess_display_format({:months, _, _}), do: "%b %Y"
   defp guess_display_format({:years, _, _}), do: "%Y"
 

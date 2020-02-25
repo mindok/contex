@@ -32,14 +32,31 @@ defmodule Contex.Axis do
   alias __MODULE__
   alias Contex.Scale
 
-  defstruct [:scale, :orientation, rotation: 0, tick_size_inner: 6, tick_size_outer: 6, tick_padding: 3, flip_factor: 1, offset: 0]
+  defstruct [
+    :scale,
+    :orientation,
+    rotation: 0,
+    tick_size_inner: 6,
+    tick_size_outer: 6,
+    tick_padding: 3,
+    flip_factor: 1,
+    offset: 0
+  ]
 
   @orientations [:top, :left, :right, :bottom]
+
+  @type t() :: %__MODULE__{}
+  @type orientations() :: :top | :left | :right | :bottom
 
   @doc """
   Create a new axis struct with orientation being one of :top, :left, :right, :bottom
   """
+  @spec new(Contex.Scale.t(), orientations()) :: __MODULE__.t()
   def new(scale, orientation) when orientation in @orientations do
+    if is_nil(Contex.Scale.impl_for(scale)) do
+      raise ArgumentError, message: "scale must implement Contex.Scale protocol"
+    end
+
     %Axis{scale: scale, orientation: orientation}
   end
 
@@ -48,6 +65,7 @@ defmodule Contex.Axis do
 
   Equivalent to `Axis.new(scale, :top)`
   """
+  @spec new_top_axis(Contex.Scale.t()) :: __MODULE__.t()
   def new_top_axis(scale), do: new(scale, :top)
 
   @doc """
@@ -55,6 +73,7 @@ defmodule Contex.Axis do
 
   Equivalent to `Axis.new(scale, :bottom)`
   """
+  @spec new_bottom_axis(Contex.Scale.t()) :: __MODULE__.t()
   def new_bottom_axis(scale), do: new(scale, :bottom)
 
   @doc """
@@ -62,6 +81,7 @@ defmodule Contex.Axis do
 
   Equivalent to `Axis.new(scale, :left)`
   """
+  @spec new_left_axis(Contex.Scale.t()) :: __MODULE__.t()
   def new_left_axis(scale), do: new(scale, :left)
 
   @doc """
@@ -69,12 +89,14 @@ defmodule Contex.Axis do
 
   Equivalent to `Axis.new(scale, :right)`
   """
+  @spec new_right_axis(Contex.Scale.t()) :: __MODULE__.t()
   def new_right_axis(scale), do: new(scale, :right)
 
   @doc """
   Sets the offset for where the axis will be drawn. The offset will either be horizontal
   or vertical depending on the orientation of the axis.
   """
+  @spec set_offset(__MODULE__.t(), number()) :: __MODULE__.t()
   def set_offset(%Axis{} = axis, offset) do
     %{axis | offset: offset}
   end
