@@ -44,8 +44,20 @@ shown. You can force the range using `force_value_range/2`
   @doc """
   Creates a new barchart from a dataset and sets defaults
   """
-  @spec new(Contex.Dataset.t(), orientation()) :: Contex.BarChart.t()
-  def new(%Dataset{} = dataset, orientation \\ :vertical) do
+  @spec new(Contex.Dataset.t(), keyword() | orientation()) :: Contex.BarChart.t()
+  def new(dataset, options_or_orientation \\ :vertical)
+
+  def new(%Dataset{} = dataset, options) when is_list(options) do
+    orientation =
+      case Keyword.get(options, :orientation) do
+        :horizontal -> :horizontal
+        _ -> nil
+      end
+    %BarChart{dataset: dataset, width: 100, height: 100, orientation: orientation, value_range: nil}
+    |> defaults()
+  end
+
+  def new(%Dataset{} = dataset, orientation) do
     %BarChart{dataset: dataset, width: 100, height: 100, orientation: orientation, value_range: nil}
     |> defaults()
   end

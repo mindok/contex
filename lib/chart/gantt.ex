@@ -31,8 +31,8 @@ defstruct [:dataset, :width, :height, :category_col, :task_col, :show_task_label
   @doc """
   Create a new Gantt Chart definition and apply defaults.
   """
-  @spec new(Contex.Dataset.t()) :: Contex.GanttChart.t()
-  def new(%Dataset{} = dataset) do
+  @spec new(Contex.Dataset.t(), keyword()) :: Contex.GanttChart.t()
+  def new(%Dataset{} = dataset, _options \\ []) do
     %GanttChart{dataset: dataset, width: 100, height: 100}
     |> defaults()
   end
