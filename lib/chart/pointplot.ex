@@ -31,8 +31,8 @@ A column in the dataset can optionally be used to control the colours. See
   @doc """
   Create a new point plot definition and apply defaults.
   """
-  @spec new(Contex.Dataset.t()) :: Contex.PointPlot.t()
-  def new(%Dataset{} = dataset) do
+  @spec new(Contex.Dataset.t(), keyword()) :: Contex.PointPlot.t()
+  def new(%Dataset{} = dataset, _options \\ []) do
     %PointPlot{dataset: dataset, width: 100, height: 100}
     |> defaults()
   end

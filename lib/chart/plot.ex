@@ -27,12 +27,19 @@ defmodule Contex.Plot do
   appropriate margins depending on the options set.
   """
   alias __MODULE__
-  alias Contex.PlotContent
+  alias Contex.{Dataset, PlotContent}
 
   defstruct [:title, :subtitle, :x_label, :y_label, :height, :width, :plot_content, :margins, :plot_options]
 
   @type t() :: %__MODULE__{}
   @type plot_text() :: String.t() | nil
+  @type row() :: list() | tuple()
+
+  @default_plot_options [
+    show_x_axis: true,
+    show_y_axis: true,
+    legend_setting: :legend_none
+  ]
 
   @default_padding 10
   @top_title_margin 20
@@ -42,6 +49,35 @@ defmodule Contex.Plot do
   @legend_width 100
   @x_axis_margin 20
   @x_axis_tick_labels 70
+
+  @doc """
+  Creates a new plot with specified dataset and plot type. Other plot attributes can be set via a
+  keyword list of options.
+  """
+  @spec new(Contex.Dataset.t(), module(), integer(), integer(), keyword()) :: Contex.Plot.t()
+  def new(%Dataset{}=dataset, type, width, height, attrs \\ []) do
+    # TODO
+    # Seems like should just add new/3 to PlotContent protocol,
+    # but my efforts to do this failed. This works but requires
+    # every plot type to have a new/2 signature even if the second
+    # (options) argument is unnecessary.
+    plot_content = apply(type, :new, [dataset, attrs])
+    attributes =
+      Keyword.merge(@default_plot_options, attrs)
+      |> parse_attributes()
+
+    %Plot{
+      title: attributes.title,
+      subtitle: attributes.subtitle,
+      x_label: attributes.x_label,
+      y_label: attributes.y_label,
+      width: width,
+      height: height,
+      plot_content: plot_content,
+      plot_options: attributes.plot_options
+    }
+    |> calculate_margins()
+  end
 
   @doc """
   Creates a new plot with specified plot content.
@@ -54,12 +90,55 @@ defmodule Contex.Plot do
   end
 
   @doc """
-  Updates options for the plot.
+  Replaces the plot dataset and updates the plot content. Accepts list of lists/tuples
+  representing the new data and a list of strings with new headers.
+  """
+  @spec dataset(Contex.Plot.t(), list(row()), list(String.t())):: Contex.Plot.t()
+  def dataset(%Plot{}=plot, data, headers) do
+    dataset = Dataset.new(data, headers)
+    plot_content = apply(plot.plot_content.__struct__, :new, [dataset])
+    %{plot | plot_content: plot_content}
+  end
 
-  TODO: There's quite a lot more work to do here. Currently the allowed plot options
-  are `:show_x_axis` (boolean), `:show_y_axis` (boolean), and `:legend_setting` - one of
-  `:legend_none` or `:legend_right`. These are currently passed as a map rather than keyword
-  list.
+  @doc """
+  Replaces the plot dataset and updates the plot content. Accepts a dataset or a list of lists/tuples
+  representing the new data. The plot's dataset's original headers are preserved.
+  """
+  @spec dataset(Contex.Plot.t(), Contex.Dataset.t() | list(row())):: Contex.Plot.t()
+  def dataset(%Plot{}=plot, %Dataset{}=dataset) do
+    plot_content = apply(plot.plot_content.__struct__, :new, [dataset])
+    %{plot | plot_content: plot_content}
+  end
+
+  def dataset(%Plot{}=plot, data) do
+    dataset =
+      case plot.plot_content.dataset.headers do
+        nil ->
+          Dataset.new(data)
+        headers ->
+          Dataset.new(data, headers)
+      end
+    plot_content = apply(plot.plot_content.__struct__, :new, [dataset])
+    %{plot | plot_content: plot_content}
+  end
+
+  @doc """
+  Updates attributes for the plot. Takes a keyword list of attributes, which can include both "plot options"
+  items passed individually as well as `:title`, `:subtitle`, `:x_label` and `:y_label`.
+  """
+  @spec attributes(Contex.Plot.t(), keyword()) :: Contex.Plot.t()
+  def attributes(%Plot{}=plot, attrs) do
+    attributes_map = Enum.into(attrs, %{})
+    plot_options = Map.merge(plot.plot_options, Map.take(attributes_map, [:show_x_axis, :show_y_axis, :legend_setting]))
+
+    plot
+    |> Map.merge(Map.take(attributes_map, [:title, :subtitle, :x_label, :y_label, :width, :height]))
+    |> Map.put(:plot_options, plot_options)
+    |> calculate_margins()
+  end
+
+  @doc """
+  Updates plot options for the plot.
   """
   #TODO: Allow overriding of margins
   def plot_options(%Plot{}=plot, new_plot_options) do
@@ -74,8 +153,7 @@ defmodule Contex.Plot do
   """
   @spec titles(Contex.Plot.t(), plot_text(), plot_text()) :: Contex.Plot.t()
   def titles(%Plot{}=plot, title, subtitle) do
-    %{plot | title: title, subtitle: subtitle}
-    |> calculate_margins()
+    Plot.attributes(plot, title: title, subtitle: subtitle)
   end
 
   @doc """
@@ -83,8 +161,7 @@ defmodule Contex.Plot do
   """
   @spec axis_labels(Contex.Plot.t(), plot_text(), plot_text()) :: Contex.Plot.t()
   def axis_labels(%Plot{}=plot, x_label, y_label) do
-    %{plot | x_label: x_label, y_label: y_label}
-    |> calculate_margins()
+    Plot.attributes(plot, x_label: x_label, y_label: y_label)
   end
 
   @doc """
@@ -92,8 +169,7 @@ defmodule Contex.Plot do
   """
   @spec size(Contex.Plot.t(), integer(), integer()) :: Contex.Plot.t()
   def size(%Plot{}=plot, width, height) do
-    %{plot | width: width, height: height}
-    |> calculate_margins()
+    Plot.attributes(plot, width: width, height: height)
   end
 
   @doc """
@@ -181,6 +257,16 @@ defmodule Contex.Plot do
     [x_label_svg, y_label_svg]
   end
   defp get_axis_labels_svg(_, _, _), do: ""
+
+  defp parse_attributes(attrs) do
+    %{
+      title: Keyword.get(attrs, :title),
+      subtitle: Keyword.get(attrs, :subtitle),
+      x_label: Keyword.get(attrs, :x_label),
+      y_label: Keyword.get(attrs, :y_label),
+      plot_options: Enum.into(Keyword.take(attrs, [:show_x_axis, :show_y_axis, :legend_setting]), %{})
+    }
+  end
 
   defp calculate_margins(%Plot{}=plot) do
     left = calculate_left_margin(plot)

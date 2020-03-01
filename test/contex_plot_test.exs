@@ -13,6 +13,59 @@ defmodule ContexPlotTest do
     %{plot: plot}
   end
 
+  describe "new/5" do
+    test "returns a Plot struct with default options and margins" do
+      plot =
+        Dataset.new([{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}], ["aa", "bb", "cccc", "d"])
+        |> Plot.new(PointPlot, 150, 200)
+
+      assert plot.width == 150
+      assert plot.height == 200
+      assert plot.plot_options == %{
+        show_x_axis: true,
+        show_y_axis: true,
+        legend_setting: :legend_none
+      }
+      assert plot.margins == %{
+        left: 70,
+        top: 10,
+        right: 10,
+        bottom: 70
+      }
+    end
+
+    test "Sets orientation on BarChart" do
+      plot =
+        Dataset.new([{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}], ["aa", "bb", "cccc", "d"])
+        |> Plot.new(BarChart, 150, 200, orientation: :horizontal)
+
+      assert plot.plot_content.orientation == :horizontal
+    end
+
+    test "returns a Plot struct using assigned attributes" do
+      plot =
+        Dataset.new([{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}], ["aa", "bb", "cccc", "d"])
+        |> Plot.new(
+          PointPlot,
+          150,
+          200,
+          title: "Title",
+          x_label: "X Label",
+          legend_setting: :legend_right
+        )
+
+      assert plot.title == "Title"
+      assert plot.x_label == "X Label"
+      assert plot.plot_options.legend_setting == :legend_right
+      assert plot.margins == %{
+        left: 70,
+        top: 40,
+        right: 110,
+        bottom: 90
+      }
+    end
+  end
+
   describe "new/3" do
     test "returns a Plot struct with default options and margins", %{plot: plot} do
       assert plot.width == 150
@@ -27,6 +80,51 @@ defmodule ContexPlotTest do
         top: 10,
         right: 10,
         bottom: 70
+      }
+    end
+  end
+
+  describe "dataset/3" do
+    test "given two lists updates the dataset and headers", %{plot: plot} do
+      plot = Plot.dataset(plot, [{1,2}, {3,4}], ["x", "y"])
+      assert plot.plot_content.dataset.data == [{1, 2}, {3, 4}]
+      assert plot.plot_content.dataset.headers == ["x", "y"]
+    end
+  end
+
+  describe "dataset/2" do
+    test "given a Dataset updates the dataset", %{plot: plot} do
+      dataset = Dataset.new([{1,2}, {3,4}],["first", "second"])
+      plot = Plot.dataset(plot, dataset)
+      assert plot.plot_content.dataset.headers == ["first", "second"]
+      assert plot.plot_content.dataset.data == [{1, 2}, {3, 4}]
+    end
+
+    test "given one list updates the dataset, preserving headers", %{plot: plot} do
+      headers = plot.plot_content.dataset.headers
+      plot = Plot.dataset(plot, [{1,2}, {3,4}])
+      assert plot.plot_content.dataset.data == [{1, 2}, {3, 4}]
+      assert plot.plot_content.dataset.headers == headers
+    end
+  end
+
+  describe "attributes/2" do
+    test "updates provided attributes", %{plot: plot} do
+      plot = Plot.attributes(plot, title: "Title", x_label: "X Label", legend_setting: :legend_right)
+
+      assert plot.title == "Title"
+      assert plot.x_label == "X Label"
+      assert plot.plot_options.legend_setting == :legend_right
+    end
+
+    test "recalculates margins", %{plot: plot} do
+      plot = Plot.attributes(plot, title: "Title", x_label: "X Label", legend_setting: :legend_right)
+
+      assert plot.margins == %{
+        left: 70,
+        top: 40,
+        right: 110,
+        bottom: 90
       }
     end
   end
