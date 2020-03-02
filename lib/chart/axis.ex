@@ -211,7 +211,9 @@ defmodule Contex.Axis do
     dim = get_tick_dimension(axis)
     text_adjust = get_svg_tick_text_adjust(axis)
 
-    tick = Scale.get_formatted_tick(scale, tick)
+    tick
+      = Scale.get_formatted_tick(scale, tick)
+        |> Contex.SVG.Sanitize.basic_sanitize()
 
     ~s|<text #{dim}="#{k * offset}" #{text_adjust}>#{tick}</text>|
   end

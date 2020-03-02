@@ -8,6 +8,8 @@ defprotocol Contex.Legend do
 end
 
 defimpl Contex.Legend, for: Contex.CategoryColourScale do
+  import Contex.SVG
+
   alias Contex.CategoryColourScale
 
   def to_svg(scale, invert \\ false) do
@@ -21,10 +23,13 @@ defimpl Contex.Legend, for: Contex.CategoryColourScale do
     |> Enum.map(fn {val, index} ->
         fill = CategoryColourScale.colour_for_value(scale, val)
         y = index * 21
-        [~s|<rect x="0" y="#{y}" width="18" height="18" style="fill: ##{fill};"></rect>|,
-        ~s|<text x="23" y="#{y + 9}" text-anchor="start" dominant-baseline="central">#{val}</text>|]
+        [
+          rect({0, 18}, {y, y + 18}, "", fill: fill),
+          text(23, y + 9, val, text_anchor: "start", dominant_baseline: "central")
+        ]
       end)
 
     [~s|<g class="exc-legend">|, legend_items, "</g>"]
   end
+
 end

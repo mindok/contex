@@ -26,6 +26,7 @@ defmodule Contex.Plot do
   Manages the layout of various plot elements, including titles, axis labels, legends etc and calculates
   appropriate margins depending on the options set.
   """
+  import Contex.SVG
   alias __MODULE__
   alias Contex.{Dataset, PlotContent}
 
@@ -213,7 +214,8 @@ defmodule Contex.Plot do
     title_y = @top_title_margin
 
     title_svg = case is_non_empty_string(title) do
-      true -> ~s|<text class="exc-title" x="#{centre}" y="#{title_y}" text-anchor="middle">#{title}</text>|
+      true ->
+        text(centre, title_y, title, class: "exc-title", text_anchor: "middle")
       _ -> ""
     end
 
@@ -224,7 +226,7 @@ defmodule Contex.Plot do
 
     subtitle_svg = case is_non_empty_string(subtitle) do
       true ->
-        ~s|<text class="exc-subtitle" x="#{centre}" y="#{subtitle_y}" text-anchor="middle">#{subtitle}</text>|
+        text(centre, subtitle_y, subtitle, class: "exc-subtitle", text_anchor: "middle")
       _ ->
         ""
     end
@@ -242,14 +244,14 @@ defmodule Contex.Plot do
 
     x_label_svg = case is_non_empty_string(x_label) do
       true ->
-        ~s|<text class="exc-subtitle" x="#{x_label_x}" y="#{x_label_y}" text-anchor="middle">#{x_label}</text>|
+        text(x_label_x, x_label_y, x_label, class: "exc-subtitle", text_anchor: "middle")
       _ ->
         ""
     end
 
     y_label_svg = case is_non_empty_string(y_label) do
       true ->
-          ~s|<text transform="rotate(-90)" class="exc-subtitle" x="#{y_label_x}" y="#{y_label_y}" text-anchor="middle">#{y_label}</text>|
+        text(y_label_x, y_label_y, y_label, class: "exc-subtitle", text_anchor: "middle", transform: "rotate(-90)")
       false ->
           ""
     end
@@ -314,7 +316,6 @@ defmodule Contex.Plot do
   defp is_non_empty_string(val) when val == "", do: false
   defp is_non_empty_string(val) when is_binary(val), do: true
   defp is_non_empty_string(_), do: false
-
 end
 
 

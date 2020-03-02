@@ -11,7 +11,7 @@ Convenience functions for generating SVG output
       ~s|x="#{x}" y="#{y}"|,
       attrs,
       ">",
-      content,
+      clean(content),
       "</text>"
     ]
   end
@@ -23,7 +23,7 @@ Convenience functions for generating SVG output
       "<text ",
       attrs,
       ">",
-      content,
+      clean(content),
       "</text>"
     ]
   end
@@ -35,16 +35,16 @@ Convenience functions for generating SVG output
       "<title ",
       attrs,
       ">",
-      content,
+      clean(content),
       "</title>"
     ]
   end
 
-  def rect({_x1, _x2}=x, {_y1, _y2}=y, inner_content, opts \\ []) do
-    width = width(x)
-    height = width(y)
-    y = min(y)
-    x = min(x)
+  def rect({_x1, _x2}=x_extents, {_y1, _y2}=y_extents, inner_content, opts \\ []) do
+    width = width(x_extents)
+    height = width(y_extents)
+    y = min(y_extents)
+    x = min(x_extents)
 
     attrs = opts_to_attrs(opts)
 
@@ -77,15 +77,15 @@ Convenience functions for generating SVG output
   defp opts_to_attrs([{:phx_click, val} | t], attrs),
     do: opts_to_attrs(t, [[" phx-click=\"", val, "\""] | attrs])
   defp opts_to_attrs([{:series, val} | t], attrs),
-    do: opts_to_attrs(t, [[" phx-value-series=\"", "#{val}", "\""] | attrs])
+    do: opts_to_attrs(t, [[" phx-value-series=\"", "#{clean(val)}", "\""] | attrs])
   defp opts_to_attrs([{:category, val} | t], attrs),
-    do: opts_to_attrs(t, [[" phx-value-category=\"", "#{val}", "\""] | attrs])
+    do: opts_to_attrs(t, [[" phx-value-category=\"", "#{clean(val)}", "\""] | attrs])
   defp opts_to_attrs([{:value, val} | t], attrs),
-    do: opts_to_attrs(t, [[" phx-value-value=\"", "#{val}", "\""] | attrs])
+    do: opts_to_attrs(t, [[" phx-value-value=\"", "#{clean(val)}", "\""] | attrs])
   defp opts_to_attrs([{:id, val} | t], attrs),
     do: opts_to_attrs(t, [[" phx-value-id=\"", "#{val}", "\""] | attrs])
   defp opts_to_attrs([{:task, val} | t], attrs),
-    do: opts_to_attrs(t, [[" phx-value-task=\"", "#{val}", "\""] | attrs])
+    do: opts_to_attrs(t, [[" phx-value-task=\"", "#{clean(val)}", "\""] | attrs])
   #TODO: This is going to break down with more complex styles
   defp opts_to_attrs([{:fill, val} | t], attrs),
     do: opts_to_attrs(t, [[" style=\"fill:#", val, ";\""] | attrs])
@@ -103,12 +103,14 @@ Convenience functions for generating SVG output
     do: opts_to_attrs(t, [[" alignment-baseline=\"", val, "\""] | attrs])
 
   defp opts_to_attrs([{key, val} | t], attrs) when is_atom(key),
-    do: opts_to_attrs(t, [[" ", Atom.to_string(key), "=\"", val, "\""] | attrs])
+    do: opts_to_attrs(t, [[" ", Atom.to_string(key), "=\"", clean(val), "\""] | attrs])
   defp opts_to_attrs([{key, val} | t], attrs) when is_binary(key),
-    do: opts_to_attrs(t, [[" ", key, "=\"", val, "\""] | attrs])
+    do: opts_to_attrs(t, [[" ", key, "=\"", clean(val), "\""] | attrs])
   defp opts_to_attrs([], attrs), do: attrs
 
   defp width({a, b}), do: abs(a - b)
   defp min({a, b}), do: min(a,b)
+
+  defp clean(s), do: Contex.SVG.Sanitize.basic_sanitize(s)
 
 end
