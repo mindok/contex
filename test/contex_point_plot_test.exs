@@ -61,41 +61,6 @@ defmodule ContexPointPlotTest do
     end
   end
 
-  describe "get_svg_legend/1" do
-
-    test "returns properly formatted legend", %{plot: plot} do
-      {:safe, svg} =
-        Contex.Plot.new(150, 150, plot)
-        |> Contex.Plot.plot_options(%{legend_setting: :legend_right})
-        |> Contex.Plot.to_svg()
-
-      legend =
-        IO.chardata_to_string(svg)
-        |> xpath(~x"//g[@class='exc-legend']",
-             box: [
-               ~x"./rect",
-               x: ~x"./@x"s,
-               y: ~x"./@y"s,
-               height: ~x"./@height"s,
-               width: ~x"./@width"s,
-               style: ~x"./@style"s
-             ],
-             text: [
-               ~x"./text",
-               x: ~x"./@x"s,
-               y: ~x"./@y"s,
-               text_anchor: ~x"./@text-anchor"s,
-               dominant_baseline: ~x"./@dominant-baseline"s,
-               text: ~x"./text()"s
-             ]
-           )
-
-      # The other attributes are not tested because they are hard-coded.
-      assert %{y: "0", style: "fill:#1f77b4;"} = legend.box
-      assert %{y: "9", text: "bb"} = legend.text
-    end
-  end
-
   describe "to_svg/1" do
 
     defp plot_iodata_to_map(plot_iodata) do
