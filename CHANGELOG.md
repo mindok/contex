@@ -1,6 +1,7 @@
 # ContEx Change Log
 
 ## v0.3.0 : In Progress
+- Added simplified chart creation API. Thanks @srowley. The existing API remains as-is
 - Added test coverage for some components. Thanks @srowley
 - Refactored SVG generation to minimise, or at least isolate, messy string interpolation, as per @elcritch suggestion. More to do on code tidy up.
 - Improved Timescale code. Thanks for suggestions from [Eiji](https://elixirforum.com/u/eiji/)
@@ -9,6 +10,7 @@
 - Removed Timex dependency.
 - A number of bug fixes in TimeScales, plus additional type guards
 - Added basic sanitization of possible user inputs (titles, axis labels, category names from data). Sanitization approach is somewhat naive - basically any text is run through a copy of the `Plug.HTML.html_escape`.
+- Fixed scaling bug in sparkline when data range was small
 
 ## v0.2.0 : 2020-01-28
 - Documentation for all modules

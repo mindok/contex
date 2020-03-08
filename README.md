@@ -75,7 +75,8 @@ There are quite a few things to tidy up to make this ready for the real world, a
 - [ ] Options handling - needs to be better structured and use keyword lists rather than maps
 - [ ] Colour handling
 - [ ] Plot overlays (e.g. line chart on bar chart)
-- [x] SVG generation is poorly structured - lots of string interpolation. - [ ] Benchmarks - particularly for the situation where large datasets are getting updated frequently and served via LiveViews.
+- [x] SVG generation is poorly structured - lots of string interpolation. 
+- [ ] Benchmarks - particularly for the situation where large datasets are getting updated frequently and served via LiveViews.
 
 
 ## Installation

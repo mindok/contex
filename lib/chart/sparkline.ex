@@ -57,8 +57,8 @@ defmodule Contex.Sparkline do
   """
   @spec colours(Contex.Sparkline.t(), String.t(), String.t()) :: Contex.Sparkline.t()
   def colours(%Sparkline{} = sparkline,  fill, line) do
-  #TODO: Really need some validation...
-  %{sparkline | fill_colour: fill, line_colour: line}
+    #TODO: Really need some validation...
+    %{sparkline | fill_colour: fill, line_colour: line}
   end
 
   defp set_default_style(%Sparkline{} = sparkline) do
@@ -73,16 +73,19 @@ defmodule Contex.Sparkline do
   """
   def draw(%Sparkline{height: height, width: width, line_width: line_width} = sparkline) do
     vb_width = sparkline.length + 1
-    height = height + (2 * line_width)
-    {min, max} = sparkline.extents
-    vb_height = max - min
-    scale = ContinuousLinearScale.new() |> ContinuousLinearScale.domain(sparkline.data) |> Scale.set_range(height, 0)
+    vb_height = height - (2 * line_width)
+
+    scale
+      = ContinuousLinearScale.new()
+        |> ContinuousLinearScale.domain(sparkline.data)
+        |> Scale.set_range(vb_height, 0)
+
     sparkline = %{sparkline | y_transform: Scale.domain_to_range_fn(scale)}
 
     output =
     ~s"""
-       <svg height="#{height}" width="#{width}" viewBox="0 #{min - line_width} #{vb_width} #{vb_height}" preserveAspectRatio="none" role="img">
-        <path d="#{get_closed_path(sparkline)}" #{get_fill_style(sparkline)}></path>
+       <svg height="#{height}" width="#{width}" viewBox="0 0 #{vb_width} #{vb_height}" preserveAspectRatio="none" role="img">
+        <path d="#{get_closed_path(sparkline, vb_height)}" #{get_fill_style(sparkline)}></path>
         <path d="#{get_path(sparkline)}" #{get_line_style(sparkline)}></path>
       </svg>
     """
@@ -98,12 +101,10 @@ defmodule Contex.Sparkline do
     ~s|stroke="none" fill="#{fill_colour}"|
   end
 
-  defp get_closed_path(%Sparkline{extents: {min, max}} = sparkline) do
-    height = max - min
-
+  defp get_closed_path(%Sparkline{} = sparkline, vb_height) do
     # Same as the open path, except we drop down, run back to height,height (aka 0,0) and close it...
     open_path = get_path(sparkline)
-    [open_path, "V #{height} L 0 #{height} Z"]
+    [open_path, "V #{vb_height} L 0 #{vb_height} Z"]
   end
 
   # This is the IO List approach
