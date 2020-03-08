@@ -79,16 +79,23 @@ defstruct [:dataset, :width, :height, :category_col, :task_col, :show_task_label
   @spec set_category_task_cols(Contex.GanttChart.t(), Contex.Dataset.column_name(), Contex.Dataset.column_name()) ::
           Contex.GanttChart.t()
   def set_category_task_cols(%GanttChart{dataset: dataset, height: height, padding: padding} = plot, cat_col_name, task_col_name) do
-    tasks = Dataset.unique_values(dataset, task_col_name)
-    categories = Dataset.unique_values(dataset, cat_col_name)
+    with {:ok, []} <- Dataset.check_column_names(plot.dataset, cat_col_name),
+         {:ok, []} <- Dataset.check_column_names(plot.dataset, task_col_name) do
 
-    task_scale = OrdinalScale.new(tasks)
-      |> Scale.set_range(0, height)
-      |> OrdinalScale.padding(padding)
+      tasks = Dataset.unique_values(dataset, task_col_name)
+      categories = Dataset.unique_values(dataset, cat_col_name)
 
-    cat_scale = CategoryColourScale.new(categories)
+      task_scale = OrdinalScale.new(tasks)
+        |> Scale.set_range(0, height)
+        |> OrdinalScale.padding(padding)
 
-    %{plot | category_col: cat_col_name, task_col: task_col_name , task_scale: task_scale, category_scale: cat_scale}
+      cat_scale = CategoryColourScale.new(categories)
+
+      %{plot | category_col: cat_col_name, task_col: task_col_name , task_scale: task_scale, category_scale: cat_scale}
+    else
+      {:error, missing_column} ->
+      raise "Column \"#{missing_column}\" not in the dataset."
+    end
   end
 
   @doc """
@@ -97,14 +104,20 @@ defstruct [:dataset, :width, :height, :category_col, :task_col, :show_task_label
   @spec set_task_interval_cols(Contex.GanttChart.t(), {Contex.Dataset.column_name(), Contex.Dataset.column_name()}) ::
           Contex.GanttChart.t()
   def set_task_interval_cols(%GanttChart{dataset: dataset, width: width} = plot, {start_col, end_col}) do
-    {min, _} = Dataset.column_extents(dataset, start_col)
-    {_, max} = Dataset.column_extents(dataset, end_col)
+    with {:ok, []} <- Dataset.check_column_names(plot.dataset, start_col),
+         {:ok, []} <- Dataset.check_column_names(plot.dataset, end_col) do
+      {min, _} = Dataset.column_extents(dataset, start_col)
+      {_, max} = Dataset.column_extents(dataset, end_col)
 
-    time_scale =TimeScale.new()
-      |> TimeScale.domain(min, max)
-      |> Scale.set_range(0, width)
+      time_scale =TimeScale.new()
+        |> TimeScale.domain(min, max)
+        |> Scale.set_range(0, width)
 
-    %{plot | interval_cols: {start_col, end_col}, time_scale: time_scale}
+      %{plot | interval_cols: {start_col, end_col}, time_scale: time_scale}
+    else
+      {:error, missing_column} ->
+      raise "Column \"#{missing_column}\" not in the dataset."
+    end
   end
 
   @doc """
@@ -122,7 +135,15 @@ defstruct [:dataset, :width, :height, :category_col, :task_col, :show_task_label
   """
   @spec set_id_col(Contex.GanttChart.t(), Contex.Dataset.column_name()) :: Contex.GanttChart.t()
   def set_id_col(%GanttChart{}=plot, id_col_name) do
-    %{plot | id_col: id_col_name}
+    case Dataset.check_column_names(plot.dataset, id_col_name) do
+      {:ok, []} ->
+        %{plot | id_col: id_col_name}
+
+      {:error, missing_column} ->
+        raise "Column \"#{missing_column}\" not in the dataset."
+
+      _ -> plot
+    end
   end
 
   @doc false

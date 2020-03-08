@@ -120,16 +120,42 @@ defmodule ContexPointPlotTest do
       plot = PointPlot.set_x_col_name(plot, "cccc")
       assert plot.x_col == "cccc"
     end
+
+    test "raises when given column is not in the dataset", %{plot: plot} do
+      assert_raise(
+        RuntimeError,
+        "Column \"Wrong Series\" not in the dataset.",
+        fn ->
+          PointPlot.set_x_col_name(plot, "Wrong Series")
+        end
+      )
+    end
   end
 
   # TODO
-  # Not sure what happens if column name is invalid
-  # Seems like you should also be allowed to specify indexes
   # Need to test reset of scale
   describe "set_y_col_names/2" do
     test "sets y column(s) to specified dataset column(s)", %{plot: plot} do
       plot = PointPlot.set_y_col_names(plot, ["aa", "bb"])
       assert plot.y_cols == ["aa", "bb"]
+    end
+
+    test "raises when given columns are not in the dataset", %{plot: plot} do
+      assert_raise(
+        RuntimeError,
+        "Column(s) \"Wrong Series\" not in the dataset.",
+        fn ->
+          PointPlot.set_y_col_names(plot, ["aa", "Wrong Series"])
+        end
+      )
+
+      assert_raise(
+        RuntimeError,
+        "Column(s) \"Wrong Series\", \"Wronger Series\" not in the dataset.",
+        fn ->
+          PointPlot.set_y_col_names(plot, ["Wrong Series", "Wronger Series"])
+        end
+      )
     end
   end
 
@@ -137,6 +163,16 @@ defmodule ContexPointPlotTest do
     test "sets the fill color column to the given column", %{plot: plot} do
       plot = PointPlot.set_colour_col_name(plot, "cccc")
       assert plot.fill_col == "cccc"
+    end
+
+    test "raises when given column is not in the dataset", %{plot: plot} do
+      assert_raise(
+        RuntimeError,
+        "Column \"Wrong Series\" not in the dataset.",
+        fn ->
+          PointPlot.set_colour_col_name(plot, "Wrong Series")
+        end
+      )
     end
 
     test "sets the fill scale to the unique values of the given column", %{plot: plot} do

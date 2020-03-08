@@ -160,6 +160,21 @@ the size of each array or tuple in the data. If there are any issues finding a v
     end)
   end
 
+  @doc false
+  @spec check_column_names(Contex.Dataset.t(), list(column_name()) | column_name()) ::{:ok, []} | {:error, list(column_name())}
+  def check_column_names(%Dataset{}= dataset, column_names) when is_list(column_names) do
+     missing_columns = MapSet.difference(MapSet.new(column_names), MapSet.new(dataset.headers))
+     if MapSet.size(missing_columns) > 0 do
+       {:error, MapSet.to_list(missing_columns)}
+     else
+       {:ok, []}
+     end
+   end
+
+  def check_column_names(%Dataset{}=dataset, column_names) do
+    check_column_names(dataset, [column_names])
+  end
+
   defp evaluate_type(%DateTime{}), do: {:ok, :datetime}
   defp evaluate_type(%NaiveDateTime{}), do: {:ok, :datetime}
   defp evaluate_type(v) when is_number(v), do: {:ok, :number}

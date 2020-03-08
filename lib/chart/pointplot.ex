@@ -215,8 +215,16 @@ A column in the dataset can optionally be used to control the colours. See
   """
   @spec set_x_col_name(Contex.PointPlot.t(), Contex.Dataset.column_name()) :: Contex.PointPlot.t()
   def set_x_col_name(%PointPlot{width: width} = plot, x_col_name) do
-    x_scale = create_scale_for_column(plot.dataset, x_col_name, {0, width})
-    %{plot | x_col: x_col_name, x_scale: x_scale}
+    case Dataset.check_column_names(plot.dataset, x_col_name) do
+      {:ok, []} ->
+        x_scale = create_scale_for_column(plot.dataset, x_col_name, {0, width})
+        %{plot | x_col: x_col_name, x_scale: x_scale}
+
+      {:error, missing_column} ->
+        raise "Column \"#{hd(missing_column)}\" not in the dataset."
+
+      _ -> plot
+    end
   end
 
   @doc """
@@ -229,21 +237,32 @@ A column in the dataset can optionally be used to control the colours. See
   """
   @spec set_y_col_names(Contex.PointPlot.t(), [Contex.Dataset.column_name()]) :: Contex.PointPlot.t()
   def set_y_col_names(%PointPlot{height: height} = plot, y_col_names) when is_list(y_col_names) do
-    {min, max} =
-      get_overall_domain(plot.dataset, y_col_names)
-      |> Utils.fixup_value_range()
+    case Dataset.check_column_names(plot.dataset, y_col_names) do
+      {:ok, []} ->
+        {min, max} =
+          get_overall_domain(plot.dataset, y_col_names)
+          |> Utils.fixup_value_range()
 
-    y_scale = ContinuousLinearScale.new()
-      |> ContinuousLinearScale.domain(min, max)
-      |> Scale.set_range(height, 0)
+        y_scale = ContinuousLinearScale.new()
+          |> ContinuousLinearScale.domain(min, max)
+          |> Scale.set_range(height, 0)
 
-    fill_indices = Enum.with_index(y_col_names) |> Enum.map(fn {_, index} -> index end)
+        fill_indices = Enum.with_index(y_col_names) |> Enum.map(fn {_, index} -> index end)
 
-    series_fill_colours
-      = CategoryColourScale.new(fill_indices)
-      |> CategoryColourScale.set_palette(plot.colour_palette)
+        series_fill_colours
+          = CategoryColourScale.new(fill_indices)
+          |> CategoryColourScale.set_palette(plot.colour_palette)
 
-    %{plot | y_cols: y_col_names, y_scale: y_scale, fill_scale: series_fill_colours}
+        %{plot | y_cols: y_col_names, y_scale: y_scale, fill_scale: series_fill_colours}
+
+      {:error, missing_columns} ->
+        columns_string =
+          Stream.map(missing_columns, &("\"#{&1}\""))
+          |> Enum.join(", ")
+        raise "Column(s) #{columns_string} not in the dataset."
+
+      _ -> plot
+    end
   end
 
   defp get_overall_domain(dataset, col_names) do
@@ -277,10 +296,18 @@ A column in the dataset can optionally be used to control the colours. See
   """
   @spec set_colour_col_name(Contex.PointPlot.t(), Contex.Dataset.column_name()) :: Contex.PointPlot.t()
   def set_colour_col_name(%PointPlot{} = plot, colour_col_name) do
-    vals = Dataset.unique_values(plot.dataset, colour_col_name)
-    colour_scale = CategoryColourScale.new(vals)
+    case Dataset.check_column_names(plot.dataset, colour_col_name) do
+      {:ok, []} ->
+        vals = Dataset.unique_values(plot.dataset, colour_col_name)
+        colour_scale = CategoryColourScale.new(vals)
 
-    %{plot | fill_col: colour_col_name, fill_scale: colour_scale}
+        %{plot | fill_col: colour_col_name, fill_scale: colour_scale}
+
+      {:error, missing_column} ->
+        raise "Column \"#{hd(missing_column)}\" not in the dataset."
+
+      _ -> plot
+    end
   end
 
 end

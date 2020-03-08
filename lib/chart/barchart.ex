@@ -250,13 +250,7 @@ shown. You can force the range using `force_value_range/2`
   defp get_svg_bars(%BarChart{dataset: dataset} = plot) do
     cat_col_index = Dataset.column_index(dataset, plot.category_col)
 
-    val_col_indices =
-      Enum.map(plot.value_cols, fn col ->
-        case Dataset.column_index(dataset, col) do
-          nil -> raise "Missing header \"#{col}\""
-          index -> index
-        end
-      end)
+    val_col_indices = Enum.map(plot.value_cols, fn col -> Dataset.column_index(dataset, col) end)
 
     series_fill_colours = plot.series_fill_colours
     fills = Enum.map(plot.value_cols, fn column -> CategoryColourScale.colour_for_value(series_fill_colours, column) end)
@@ -390,11 +384,19 @@ shown. You can force the range using `force_value_range/2`
   This provides the labels for each bar or group of bars
   """
   def set_cat_col_name(%BarChart{padding: padding} = plot, cat_col_name) do
-    categories = Dataset.unique_values(plot.dataset, cat_col_name)
-    {r_min, r_max} = get_range(:category, plot)
-    cat_scale = OrdinalScale.new(categories) |> Scale.set_range(r_min, r_max) |> OrdinalScale.padding(padding)
+    case Dataset.check_column_names(plot.dataset, cat_col_name) do
+      {:ok, []} ->
+        categories = Dataset.unique_values(plot.dataset, cat_col_name)
+        {r_min, r_max} = get_range(:category, plot)
+        cat_scale = OrdinalScale.new(categories) |> Scale.set_range(r_min, r_max) |> OrdinalScale.padding(padding)
 
-    %{plot | category_col: cat_col_name, category_scale: cat_scale}
+        %{plot | category_col: cat_col_name, category_scale: cat_scale}
+
+      {:error, missing_column} ->
+        raise "Column \"#{missing_column}\" not in the dataset."
+
+      _ -> plot
+    end
   end
 
   @doc """
@@ -403,19 +405,30 @@ shown. You can force the range using `force_value_range/2`
   This provides the value for each bar.
   """
   def set_val_col_names(%BarChart{} = plot, val_col_names) when is_list(val_col_names) do
-    {min, max} =
-      get_overall_value_domain(plot, plot.dataset, val_col_names, plot.type)
-      |> Utils.fixup_value_range()
+    case Dataset.check_column_names(plot.dataset, val_col_names) do
+      {:ok, []} ->
+        {min, max} =
+          get_overall_value_domain(plot, plot.dataset, val_col_names, plot.type)
+          |> Utils.fixup_value_range()
 
-    {r_start, r_end} = get_range(:value, plot)
+        {r_start, r_end} = get_range(:value, plot)
 
-    val_scale = ContinuousLinearScale.new() |> ContinuousLinearScale.domain(min, max) |> Scale.set_range(r_start, r_end)
+        val_scale = ContinuousLinearScale.new() |> ContinuousLinearScale.domain(min, max) |> Scale.set_range(r_start, r_end)
 
-    series_fill_colours
-      = CategoryColourScale.new(val_col_names)
-      |> CategoryColourScale.set_palette(plot.colour_palette)
+        series_fill_colours
+          = CategoryColourScale.new(val_col_names)
+          |> CategoryColourScale.set_palette(plot.colour_palette)
 
-    %{plot | value_cols: val_col_names, value_scale: val_scale, series_fill_colours: series_fill_colours}
+        %{plot | value_cols: val_col_names, value_scale: val_scale, series_fill_colours: series_fill_colours}
+
+      {:error, missing_columns} ->
+        columns_string =
+          Stream.map(missing_columns, &("\"#{&1}\""))
+          |> Enum.join(", ")
+        raise "Column(s) #{columns_string} not in the dataset."
+
+      _ -> plot
+    end
   end
 
   def set_val_col_names(%BarChart{} = plot, _), do: plot
@@ -444,5 +457,4 @@ shown. You can force the range using `force_value_range/2`
 
   defp midpoint({a, b}), do: (a + b) / 2.0
   defp width({a, b}), do: abs(a - b)
-
 end
