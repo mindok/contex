@@ -41,18 +41,26 @@ A column in the dataset can optionally be used to control the colours. See
   Sets the default values for the plot.
 
   By default, the first column in the dataset is used for the x values and the second column
-  for the y values.
+  for the y values. Raises an error if the dataset has series defined but they are not complete.
 
   The colour palette is set to :default.
   """
   @spec defaults(Contex.PointPlot.t()) :: Contex.PointPlot.t()
-  def defaults(%PointPlot{} = plot) do
-    x_col_index = 0
-    y_col_index = 1
+  # TODO better error message
+  def defaults(%PointPlot{dataset: dataset} = plot) do
+    {x_col_name, y_col_names} =
+      case dataset.series do
+        %{x_col: x_col, y_cols: y_cols} ->
+          {x_col, y_cols}
+        %{} ->
+          raise(ArgumentError, "Dataset from map with series element undefined")
+        nil ->
+          {Dataset.column_name(dataset, 0), [Dataset.column_name(dataset, 1)]}
+        _ ->
+          raise(ArgumentError, "Invalid series definition; series must be a map with x_col and y_cols keys")
+      end
 
-    x_col_name = Dataset.column_name(plot.dataset, x_col_index)
-    y_col_names = [Dataset.column_name(plot.dataset, y_col_index)]
-
+    # TODO Set color column if specified in series
     %{plot | colour_palette: :default}
     |> set_x_col_name(x_col_name)
     |> set_y_col_names(y_col_names)

@@ -44,6 +44,15 @@ defmodule ContexDatasetTest do
       headers = ["x", "y"]
       assert_raise FunctionClauseError, fn -> Dataset.new(data, headers) end
     end
+
+    test "returns a dataset struct with headers when passed a list of maps" do
+      list_of_maps = [%{y: 1, x: 2, z: 5}, %{x: 3, y: 4, z: 6}]
+      dataset = Dataset.new(list_of_maps, %{x_col: :x, y_cols: [:y]})
+      assert %Dataset{} = dataset
+      assert dataset.data == [{2, 1, 5}, {3, 4, 6}]
+      assert dataset.headers == [:x, :y, :z]
+      assert dataset.series == %{x_col: :x, y_cols: [:y]}
+    end
   end
 
   describe "column_index/2"do

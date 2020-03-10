@@ -30,6 +30,22 @@ defmodule ContexPointPlotTest do
       assert plot.x_col == "aa"
       assert plot.y_cols == ["bb"]
     end
+
+    test "returns a PointPlot struct given a valid series" do
+      plot =
+        Dataset.new([%{"bb" => 2, "aa" => 2}, %{"aa" => 3, "bb" => 4}], %{x_col: "bb", y_cols: ["aa"]})
+        |> PointPlot.new()
+      assert plot.colour_palette == :default
+      assert plot.x_col == "bb"
+      assert plot.y_cols == ["aa"]
+    end
+
+    test "Raises if passed an invalid series" do
+      assert_raise ArgumentError, "Dataset from map with series element undefined", fn ->
+        Dataset.new([%{"bb" => 2, "aa" => 2}, %{"aa" => 3, "bb" => 4}], %{y_cols: ["aa"]})
+        |> PointPlot.new()
+      end
+    end
   end
 
   # TODO

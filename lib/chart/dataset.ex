@@ -46,7 +46,7 @@ the size of each array or tuple in the data. If there are any issues finding a v
   alias __MODULE__
   alias Contex.Utils
 
-  defstruct [:headers, :data, :title]
+  defstruct [:headers, :data, :series, :title]
 
   @type column_name() :: String.t() | integer()
   @type column_type() :: :datetime | :number | :string | :unknown | nil
@@ -72,6 +72,24 @@ the size of each array or tuple in the data. If there are any issues finding a v
   @spec new(list(row()), list(String.t())) :: Contex.Dataset.t()
   def new(data, headers) when is_list(data) and is_list(headers) do
     %Dataset{headers: headers, data: data}
+  end
+
+  @doc """
+  Creates a new Dataset when passed a map and a series mapping of the
+  map's keys to plot elements.
+  """
+  @spec new(list(map()), map()) :: Contex.Dataset.t()
+  def new(data, series) when is_map(hd(data)) and is_map(series) do
+    headers =
+      Map.keys(hd(data))
+      |> Enum.sort()
+
+    data =
+      Stream.map(data, &Enum.sort/1)
+      |> Stream.map(&Enum.unzip/1)
+      |> Enum.map(&(List.to_tuple(elem(&1, 1))))
+
+    %Dataset{data: data, headers: headers, series: series}
   end
 
   @doc """
