@@ -266,35 +266,6 @@ defmodule ContexPlotTest do
       assert svg.legend_transform == "translate(50, 65)"
     end
 
-    test "raises error when category missing" do
-      test_data =
-        Dataset.new([["aa", 2, 3, 4], ["bb", 5, 6, 4]], [
-          "Category",
-          "Series 1",
-          "Series 2",
-          "Other Series"
-        ])
-
-      plot_content =
-        BarChart.new(test_data)
-        |> BarChart.set_val_col_names(["Series 1", "Series 2", "Wrong Name"])
-
-      plot = Plot.new(500, 400, plot_content)
-
-      plot =
-        Plot.titles(plot, "The Title", "The Sub")
-        |> Plot.axis_labels("X Side", "Y Side")
-        |> Plot.plot_options(%{legend_setting: :legend_right})
-
-      assert_raise(
-        RuntimeError,
-        "Missing header \"Wrong Name\"",
-        fn ->
-          Plot.to_svg(plot)
-        end
-      )
-    end
-
     test "renders integer data as bar labels" do
       test_data =
         Dataset.new([["aa", 42, 8.222222222]], [
