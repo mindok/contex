@@ -6,9 +6,10 @@ defmodule ContexDatasetTest do
   doctest Contex.Dataset
 
   setup do
+    dataset_maps = Dataset.new([%{y: 1, x: 2, z: 5}, %{x: 3, y: 4, z: 6}])
     dataset_nocols = Dataset.new([{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}])
     dataset = Dataset.new(dataset_nocols.data, ["aa", "bb", "cccc", "d"])
-    %{dataset_nocols: dataset_nocols, dataset: dataset}
+    %{dataset_maps: dataset_maps, dataset_nocols: dataset_nocols, dataset: dataset}
   end
 
   describe "new/1" do
@@ -45,17 +46,29 @@ defmodule ContexDatasetTest do
       assert_raise FunctionClauseError, fn -> Dataset.new(data, headers) end
     end
 
-    test "returns a dataset struct with headers when passed a list of maps" do
+    test "returns a dataset struct with data in a map when passed a list of maps" do
       list_of_maps = [%{y: 1, x: 2, z: 5}, %{x: 3, y: 4, z: 6}]
-      dataset = Dataset.new(list_of_maps, %{x_col: :x, y_cols: [:y]})
+      dataset = Dataset.new(list_of_maps)
       assert %Dataset{} = dataset
-      assert dataset.data == [{2, 1, 5}, {3, 4, 6}]
-      assert dataset.headers == [:x, :y, :z]
-      assert dataset.series == %{x_col: :x, y_cols: [:y]}
+      assert dataset.data == list_of_maps
+      assert dataset.headers == nil
     end
   end
 
   describe "column_index/2"do
+    test "returns map key if data is a map", %{dataset_maps: dataset_maps} do
+      assert Dataset.column_index(dataset_maps, :x) == :x
+    end
+
+    test "returns nil if column name is not a map key", %{dataset_maps: dataset_maps} do
+      assert Dataset.column_index(dataset_maps, :not_a_key) == nil
+      # assert_raise(
+      #   ArgumentError,
+      #   "Column name provided is not a key in the data map.",
+      #   fn -> Dataset.column_index(dataset_maps, :not_a_key) end
+      # )
+    end
+
     test "returns nil if dataset has no headers", %{dataset_nocols: dataset_nocols} do
       assert Dataset.column_index(dataset_nocols, "bb") == nil 
     end
@@ -70,6 +83,20 @@ defmodule ContexDatasetTest do
   end
 
   describe "value/2" do
+    test "returns right value if key is in map data", %{dataset_maps: dataset_maps} do
+      [row1 | _] = dataset_maps.data
+      assert Dataset.value(row1, :x) == 2
+    end
+
+    test "raises if map key does not exist if data is a map", %{dataset_maps: dataset_maps} do
+      [row1 | _] = dataset_maps.data
+      assert_raise(
+        ArgumentError,
+        "Column name provided is not a key in the data map.",
+        fn -> Dataset.value(row1, :not_a_key) end
+      )
+    end
+
     test "returns right value from data with no headers", %{dataset_nocols: dataset_nocols} do
       [row1 | _] = dataset_nocols.data
       assert Dataset.value(row1, 0) == 1
@@ -93,6 +120,10 @@ defmodule ContexDatasetTest do
   end
 
   describe "column_name/2" do
+    test "returns the map key when given the key for a column in map data", %{dataset_maps: dataset_maps} do
+      assert Dataset.column_name(dataset_maps, :x) == :x
+    end
+
     test "looks up the column name for a given index", %{dataset: dataset} do
       assert Dataset.column_name(dataset, 0) == "aa"
     end

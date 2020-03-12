@@ -46,18 +46,18 @@ the size of each array or tuple in the data. If there are any issues finding a v
   alias __MODULE__
   alias Contex.Utils
 
-  defstruct [:headers, :data, :series, :title]
+  defstruct [:headers, :data, :title]
 
-  @type column_name() :: String.t() | integer()
+  @type column_name() :: String.t() | integer() | atom()
   @type column_type() :: :datetime | :number | :string | :unknown | nil
-  @type row() :: list() | tuple()
+  @type row() :: list() | tuple() | map()
   @type t() :: %__MODULE__{}
 
   @doc """
   Creates a new Dataset wrapper around some data.
 
-  Data is expected to be a list of tuples of the same size or list of lists of same size.
-  If no headers are specified, columns are access by index.
+  Data is expected to be a list of tuples of the same size, a list of lists of same size, or a list of maps with the same keys.
+  Columns in map data are accessed by key. For lists of lists or tuples, if no headers are specified, columns are access by index.
   """
   @spec new(list(row())) :: Contex.Dataset.t()
   def new(data) when is_list(data) do
@@ -75,24 +75,6 @@ the size of each array or tuple in the data. If there are any issues finding a v
   end
 
   @doc """
-  Creates a new Dataset when passed a map and a series mapping of the
-  map's keys to plot elements.
-  """
-  @spec new(list(map()), map()) :: Contex.Dataset.t()
-  def new(data, series) when is_map(hd(data)) and is_map(series) do
-    headers =
-      Map.keys(hd(data))
-      |> Enum.sort()
-
-    data =
-      Stream.map(data, &Enum.sort/1)
-      |> Stream.map(&Enum.unzip/1)
-      |> Enum.map(&(List.to_tuple(elem(&1, 1))))
-
-    %Dataset{data: data, headers: headers, series: series}
-  end
-
-  @doc """
   Optionally sets a title.
 
   Not really used at the moment to be honest, but seemed like a good
@@ -106,8 +88,16 @@ the size of each array or tuple in the data. If there are any issues finding a v
   @doc """
   Looks up the index for a given column name. Returns nil if not found.
   """
-  @spec column_index(Contex.Dataset.t(), column_name()) :: nil | integer
-  def column_index(%Dataset{headers: headers}=_dataset, column_name) when is_list(headers) do
+  @spec column_index(Contex.Dataset.t(), column_name()) :: nil | column_name()
+  def column_index(%Dataset{data: [first_row | _rest]}, column_name) when is_map(first_row) do
+    if Map.has_key?(first_row, column_name) do
+      column_name
+    else
+      nil
+    end
+  end
+
+  def column_index(%Dataset{headers: headers}, column_name) when is_list(headers) do
     Enum.find_index(headers, fn col -> col == column_name end)
   end
 
@@ -138,7 +128,15 @@ the size of each array or tuple in the data. If there are any issues finding a v
   This simply provides a consistent wrapper regardless of whether the data is represented in a tuple
   or a list.
   """
-  @spec value(row(), integer()) :: any
+  @spec value(row(), column_name()) :: any
+  def value(row, column_index) when is_map(row) do
+    if column_index in Map.keys(row) do
+      row[column_index]
+    else
+      raise ArgumentError, "Column name provided is not a key in the data map."
+    end
+  end
+
   def value(row, column_index) when is_list(row) and is_integer(column_index), do: Enum.at(row, column_index, nil)
   def value(row, column_index) when is_tuple(row) and is_integer(column_index) and column_index < tuple_size(row) do
     elem(row, column_index)
@@ -180,8 +178,18 @@ the size of each array or tuple in the data. If there are any issues finding a v
 
   @doc false
   @spec check_column_names(Contex.Dataset.t(), list(column_name()) | column_name()) ::{:ok, []} | {:error, list(column_name())}
-  def check_column_names(%Dataset{}= dataset, column_names) when is_list(column_names) do
-     missing_columns = MapSet.difference(MapSet.new(column_names), MapSet.new(dataset.headers))
+  def check_column_names(%Dataset{data: [first_row | _rest]}, column_names) when is_map(first_row) and is_list(column_names) do
+    available_columns = Map.keys(first_row)
+    missing_columns = MapSet.difference(MapSet.new(column_names), MapSet.new(available_columns))
+    if MapSet.size(missing_columns) > 0 do
+      {:error, MapSet.to_list(missing_columns)}
+    else
+      {:ok, []}
+    end
+  end
+
+  def check_column_names(%Dataset{headers: headers}, column_names) when is_list(column_names) do
+     missing_columns = MapSet.difference(MapSet.new(column_names), MapSet.new(headers))
      if MapSet.size(missing_columns) > 0 do
        {:error, MapSet.to_list(missing_columns)}
      else

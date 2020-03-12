@@ -13,10 +13,42 @@ defmodule ContexBarChartTest do
 
   # TODO
   # Why is width/height set here and not in defaults/1?
-  describe "new/1" do
-    test "returns a BarChart struct with defaults", %{plot: plot} do
+  describe "new/2" do
+    test "given data from tuples or lists, returns a BarChart struct with defaults", %{plot: plot} do
       assert plot.width == 100
       assert plot.height == 100
+    end
+
+    test "given data from a map and a series mapping, returns a BarChart struct accordingly" do
+      plot =
+        Dataset.new([%{"bb" => 2, "aa" => 2},%{"bb" => 3, "aa" => 4}])
+        |> BarChart.new(series_mapping: %{category_col: "bb", value_cols: ["aa"]})
+      assert plot.width == 100
+      assert plot.height == 100
+      assert plot.category_col == "bb"
+      assert plot.value_cols == ["aa"]
+    end
+
+    test "Raises if no series is passed with map data" do
+      assert_raise(
+        ArgumentError,
+        "Series mapping must be provided with map data.",
+        fn ->
+          Dataset.new([%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}])
+          |> BarChart.new()
+        end
+      )
+    end
+
+    test "Raises if invalid series mapping is passed with map data" do
+      assert_raise(
+        ArgumentError,
+        "Invalid series definition; series_mapping must be a map with category_col and value_cols keys.",
+        fn ->
+          Dataset.new([%{"bb" => 2, "aa" => 2},%{"bb" => 3, "aa" => 4}])
+          |> BarChart.new(series_mapping: %{x_col: "bb", value_cols: ["aa"]})
+        end
+      )
     end
   end
 
@@ -181,6 +213,21 @@ defmodule ContexBarChartTest do
 
       assert ["10", "20", "30", "40"] ==
         Enum.map(rects_map, &(Map.get(&1, :title)))
+    end
+
+    test "generates equivalent output when passed map data", %{plot: plot} do
+      map_plot_svg =
+        Dataset.new([
+          %{"Category" =>  "Category 1", "Series 1" => 10, "Series_2" => 20},
+          %{"Category" =>  "Category 2", "Series 1" => 30, "Series_2" => 40}
+        ])
+        |> Plot.new(BarChart, 200, 200, series_mapping: %{category_col: "Category", value_cols: ["Series 1"]})
+        |> Plot.to_svg()
+
+      assert map_plot_svg ==
+        plot.dataset
+        |> Plot.new(BarChart, 200, 200)
+        |> Plot.to_svg()
     end
   end
 

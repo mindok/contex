@@ -29,10 +29,27 @@ A column in the dataset can optionally be used to control the colours. See
   @type t() :: %__MODULE__{}
 
   @doc """
-  Create a new point plot definition and apply defaults.
+  Create a new point plot definition and apply defaults. If the data in the dataset is stored as a list of maps, the `:series_mapping` option is required. This value must be a map of the plot's `:x_col` and `:y_cols` to keys in the map, such as `%{x_col: :column_a, y_cols: [:column_b, column_c]}`. The `:y_cols` value must be a list.
   """
   @spec new(Contex.Dataset.t(), keyword()) :: Contex.PointPlot.t()
-  def new(%Dataset{} = dataset, _options \\ []) do
+  def new(dataset, options \\ [])
+
+  def new(%Dataset{data: [first_row | _rest]} = dataset, options) when is_map(first_row) do
+    case Keyword.get(options, :series_mapping) do
+      %{x_col: x_col, y_cols: y_cols} ->
+        %PointPlot{dataset: dataset, colour_palette: :default, width: 100, height: 100}
+        |> set_x_col_name(x_col)
+        |> set_y_col_names(y_cols)
+
+      nil ->
+        raise(ArgumentError, "Series mapping must be provided with map data.")
+
+      _ ->
+        raise(ArgumentError, "Invalid series definition; series_mapping must be a map with x_col and y_cols keys")
+    end
+  end
+
+  def new(%Dataset{} = dataset, _options) do
     %PointPlot{dataset: dataset, width: 100, height: 100}
     |> defaults()
   end
@@ -41,26 +58,19 @@ A column in the dataset can optionally be used to control the colours. See
   Sets the default values for the plot.
 
   By default, the first column in the dataset is used for the x values and the second column
-  for the y values. Raises an error if the dataset has series defined but they are not complete.
+  for the y values.
 
   The colour palette is set to :default.
   """
   @spec defaults(Contex.PointPlot.t()) :: Contex.PointPlot.t()
   # TODO better error message
   def defaults(%PointPlot{dataset: dataset} = plot) do
-    {x_col_name, y_col_names} =
-      case dataset.series do
-        %{x_col: x_col, y_cols: y_cols} ->
-          {x_col, y_cols}
-        %{} ->
-          raise(ArgumentError, "Dataset from map with series element undefined")
-        nil ->
-          {Dataset.column_name(dataset, 0), [Dataset.column_name(dataset, 1)]}
-        _ ->
-          raise(ArgumentError, "Invalid series definition; series must be a map with x_col and y_cols keys")
-      end
+    x_col_index = 0
+    y_col_index = 1
 
-    # TODO Set color column if specified in series
+    x_col_name = Dataset.column_name(dataset, x_col_index)
+    y_col_names = [Dataset.column_name(dataset, y_col_index)]
+
     %{plot | colour_palette: :default}
     |> set_x_col_name(x_col_name)
     |> set_y_col_names(y_col_names)
@@ -317,5 +327,4 @@ A column in the dataset can optionally be used to control the colours. See
       _ -> plot
     end
   end
-
 end

@@ -13,17 +13,45 @@ defmodule ContexPointPlotTest do
 
   # TODO
   # Why is width/height set here and not in defaults/1?
-  describe "new/1" do
-    test "returns a PointPlot struct with defaults", %{plot: plot} do
+  describe "new/2" do
+    test "given data from tuples or lists, returns a PointPlot struct with defaults", %{plot: plot} do
       assert plot.width == 100
       assert plot.height == 100
     end
+
+    test "given data from a map and a series mapping, returns a PointPlot struct accordingly" do
+      plot =
+        Dataset.new([%{"bb" => 2, "aa" => 2}, %{"aa" => 3, "bb" => 4}])
+        |> PointPlot.new(series_mapping: %{x_col: "bb", y_cols: ["aa"]})
+      assert plot.width == 100
+      assert plot.height == 100
+      assert plot.x_col == "bb"
+      assert plot.y_cols == ["aa"]
+    end
+
+    test "Raises if no series mapping is passed with map data" do
+      assert_raise(
+        ArgumentError,
+        "Series mapping must be provided with map data.",
+        fn ->
+          Dataset.new([%{"bb" => 2, "aa" => 2}, %{"aa" => 3, "bb" => 4}])
+          |> PointPlot.new()
+        end
+      )
+    end
+
+    test "Raises if invalid series mapping is passed with map data" do
+      assert_raise(
+        ArgumentError,
+        "Invalid series definition; series_mapping must be a map with x_col and y_cols keys",
+        fn ->
+          Dataset.new([%{"bb" => 2, "aa" => 2}, %{"aa" => 3, "bb" => 4}])
+          |> PointPlot.new(series_mapping: ["aa", "bb"])
+        end
+      )
+    end
   end
 
-  # TODO
-  # Separate test from new/1 is not really necessary but doing so
-  # to highlight whether this should be public; why would you call
-  # it except internally?
   describe "defaults/1" do
     test "returns a PointPlot struct with default properties", %{plot: plot} do
       assert plot.colour_palette == :default
@@ -31,20 +59,13 @@ defmodule ContexPointPlotTest do
       assert plot.y_cols == ["bb"]
     end
 
-    test "returns a PointPlot struct given a valid series" do
+    test "returns a PointPlot struct given a valid series_mapping" do
       plot =
-        Dataset.new([%{"bb" => 2, "aa" => 2}, %{"aa" => 3, "bb" => 4}], %{x_col: "bb", y_cols: ["aa"]})
-        |> PointPlot.new()
+        Dataset.new([%{"bb" => 2, "aa" => 2}, %{"aa" => 3, "bb" => 4}])
+        |> PointPlot.new(series_mapping: %{x_col: "bb", y_cols: ["aa"]})
       assert plot.colour_palette == :default
       assert plot.x_col == "bb"
       assert plot.y_cols == ["aa"]
-    end
-
-    test "Raises if passed an invalid series" do
-      assert_raise ArgumentError, "Dataset from map with series element undefined", fn ->
-        Dataset.new([%{"bb" => 2, "aa" => 2}, %{"aa" => 3, "bb" => 4}], %{y_cols: ["aa"]})
-        |> PointPlot.new()
-      end
     end
   end
 
@@ -111,6 +132,18 @@ defmodule ContexPointPlotTest do
            |> Float.round(3)
           }
         end)
+    end
+
+    test "generates equivalent output when passed map data", %{plot: plot} do
+      other_plot =
+        Dataset.new([
+          %{"aa" => 1, "bb" => 2, "cccc" => 3, "dd" => 4},
+          %{"aa" => 4, "bb" => 5, "cccc" => 6, "dd" => 4},
+          %{"aa" => -3, "bb" => -2, "cccc" => -1, "dd" => 0}
+        ])
+        |> PointPlot.new(series_mapping: %{x_col: "aa", y_cols: ["bb"]})
+
+      assert PointPlot.to_svg(plot) == PointPlot.to_svg(other_plot)
     end
 
     test "renders custom fill colors properly", %{plot: plot} do

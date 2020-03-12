@@ -42,23 +42,57 @@ shown. You can force the range using `force_value_range/2`
   @type selected_item() :: %{category: any(), series: any()}
 
   @doc """
-  Creates a new barchart from a dataset and sets defaults
+  Creates a new barchart from a dataset and sets defaults. If the data in the dataset is stored as a map, the `:series_mapping` option is required. This value must be a map of the plot's `:category_col`` and `:value_cols` to keys in the map, such as `%{category_col: :column_a, value_cols: [:column_b, column_c]`. The value for the `:value_cols` key must be a list.
   """
   @spec new(Contex.Dataset.t(), keyword() | orientation()) :: Contex.BarChart.t()
-  def new(dataset, options_or_orientation \\ :vertical)
+  def new(dataset, options \\ :vertical)
 
-  def new(%Dataset{} = dataset, options) when is_list(options) do
+  def new(%Dataset{data: [first_row | _rest]}=dataset, options) when is_list(options) and is_map(first_row) do
     orientation =
       case Keyword.get(options, :orientation) do
         :horizontal -> :horizontal
-        _ -> nil
+        _ -> :vertical
       end
-    %BarChart{dataset: dataset, width: 100, height: 100, orientation: orientation, value_range: nil}
+
+    case Keyword.get(options, :series_mapping) do
+      %{category_col: category_col, value_cols: value_cols} ->
+        %BarChart{
+          dataset: dataset,
+          width: 100,
+          height: 100,
+          padding: 2,
+          type: :stacked,
+          colour_palette: :default,
+          orientation: orientation
+        }
+        |> set_cat_col_name(category_col)
+        |> set_val_col_names(value_cols)
+        |> data_labels(true)
+
+      nil ->
+        raise(ArgumentError, "Series mapping must be provided with map data.")
+
+      _ ->
+        raise(ArgumentError, "Invalid series definition; series_mapping must be a map with category_col and value_cols keys.")
+    end
+  end
+
+  def new(%Dataset{data: [first_row | _rest]}, options) when is_atom(options) and is_map(first_row) do
+    raise(ArgumentError, "Series mapping must be provided with map data.")
+  end
+
+  def new(%Dataset{}=dataset, options) when is_list(options) do
+    orientation =
+      case Keyword.get(options, :orientation) do
+        :horizontal -> :horizontal
+        _ -> :vertical
+      end
+    %BarChart{dataset: dataset, width: 100, height: 100, orientation: orientation}
     |> defaults()
   end
 
-  def new(%Dataset{} = dataset, orientation) do
-    %BarChart{dataset: dataset, width: 100, height: 100, orientation: orientation, value_range: nil}
+  def new(%Dataset{} = dataset, orientation) when is_atom(orientation) do
+    %BarChart{dataset: dataset, width: 100, height: 100, orientation: orientation}
     |> defaults()
   end
 

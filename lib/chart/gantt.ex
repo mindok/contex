@@ -29,10 +29,33 @@ defstruct [:dataset, :width, :height, :category_col, :task_col, :show_task_label
   @type t() :: %__MODULE__{}
 
   @doc """
-  Create a new Gantt Chart definition and apply defaults.
+  Create a new Gantt Chart definition and apply defaults. If the data in the dataset is stored as a list of maps, the `:series_mapping` option is required. This value must be a map of the plot's `:category_col`, `:task_col`, `:start_col` and `:finish_col` keys.
   """
   @spec new(Contex.Dataset.t(), keyword()) :: Contex.GanttChart.t()
-  def new(%Dataset{} = dataset, _options \\ []) do
+  def new(dataset, options \\ [])
+
+  def new(%Dataset{data: [first_row | _rest]}=dataset, options) when is_map(first_row)do
+    case Keyword.get(options, :series_mapping) do
+      %{category_col: category_col, task_col: task_col, start_col: start_col, finish_col: finish_col} ->
+        %GanttChart{
+          dataset: dataset,
+          width: 100,
+          height: 100,
+          padding: 2,
+          show_task_labels: true
+        }
+        |> set_category_task_cols(category_col, task_col)
+        |> set_task_interval_cols({start_col, finish_col})
+
+      nil ->
+        raise(ArgumentError, "Series mapping must be provided with map data.")
+
+      _ ->
+        raise(ArgumentError, "Invalid series definition; series_mapping must be a map with category_col, task_col, start_col and finish_col keys.")
+    end
+  end
+
+  def new(%Dataset{} = dataset, _options) do
     %GanttChart{dataset: dataset, width: 100, height: 100}
     |> defaults()
   end
