@@ -36,6 +36,7 @@ defmodule ContexLegendTest do
              ]
            )
 
+
       # The other attributes are not tested because they are hard-coded.
       assert %{y: "0", style: "fill:#1f77b4;"} = legend.box
       assert %{y: "9", text: "bb"} = legend.text

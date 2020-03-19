@@ -22,17 +22,17 @@ defmodule ContexBarChartTest do
     test "given data from a map and a series mapping, returns a BarChart struct accordingly" do
       plot =
         Dataset.new([%{"bb" => 2, "aa" => 2},%{"bb" => 3, "aa" => 4}])
-        |> BarChart.new(series_mapping: %{category_col: "bb", value_cols: ["aa"]})
+        |> BarChart.new(mapping: %{category_col: "bb", value_cols: ["aa"]})
       assert plot.width == 100
       assert plot.height == 100
-      assert plot.category_col == "bb"
-      assert plot.value_cols == ["aa"]
+      assert plot.mapping.column_map.category_col == "bb"
+      assert plot.mapping.column_map.value_cols == ["aa"]
     end
 
-    test "Raises if no series is passed with map data" do
+    test "Raises if no mapping is passed with map data" do
       assert_raise(
         ArgumentError,
-        "Series mapping must be provided with map data.",
+        "Mapping must be provided with map data.",
         fn ->
           Dataset.new([%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}])
           |> BarChart.new()
@@ -42,11 +42,11 @@ defmodule ContexBarChartTest do
 
     test "Raises if invalid series mapping is passed with map data" do
       assert_raise(
-        ArgumentError,
-        "Invalid series definition; series_mapping must be a map with category_col and value_cols keys.",
+        RuntimeError,
+        "Required mapping(s) \"category_col\" not included in column map.",
         fn ->
           Dataset.new([%{"bb" => 2, "aa" => 2},%{"bb" => 3, "aa" => 4}])
-          |> BarChart.new(series_mapping: %{x_col: "bb", value_cols: ["aa"]})
+          |> BarChart.new(mapping: %{x_col: "bb", value_cols: ["aa"]})
         end
       )
     end
@@ -58,8 +58,8 @@ defmodule ContexBarChartTest do
       assert plot.padding == 2
       assert plot.type == :stacked
       assert plot.colour_palette == :default
-      assert plot.category_col == "Category"
-      assert plot.value_cols == ["Series 1"]
+      assert plot.mapping.column_map.category_col == "Category"
+      assert plot.mapping.column_map.value_cols == ["Series 1"]
       assert plot.data_labels == true
     end
   end
@@ -221,7 +221,7 @@ defmodule ContexBarChartTest do
           %{"Category" =>  "Category 1", "Series 1" => 10, "Series_2" => 20},
           %{"Category" =>  "Category 2", "Series 1" => 30, "Series_2" => 40}
         ])
-        |> Plot.new(BarChart, 200, 200, series_mapping: %{category_col: "Category", value_cols: ["Series 1"]})
+        |> Plot.new(BarChart, 200, 200, mapping: %{category_col: "Category", value_cols: ["Series 1"]})
         |> Plot.to_svg()
 
       assert map_plot_svg ==
@@ -236,17 +236,7 @@ defmodule ContexBarChartTest do
   describe "set_cat_col_name/2" do
     test "sets category column to specified dataset column", %{plot: plot} do
       plot = BarChart.set_cat_col_name(plot, "Series 2")
-      assert plot.category_col == "Series 2"
-    end
-
-    test "raises when given column is not in the dataset", %{plot: plot} do
-      assert_raise(
-        RuntimeError,
-        "Column \"Wrong Series\" not in the dataset.",
-        fn ->
-          BarChart.set_cat_col_name(plot, "Wrong Series")
-        end
-      )
+      assert plot.mapping.column_map.category_col == "Series 2"
     end
   end
 
@@ -255,25 +245,7 @@ defmodule ContexBarChartTest do
   describe "set_val_col_names/2" do
     test "sets value column(s) to specified dataset column(s)", %{plot: plot} do
       plot = BarChart.set_val_col_names(plot, ["Series 1", "Series 2"])
-      assert plot.value_cols == ["Series 1", "Series 2"]
-    end
-
-    test "raises when given columns are not in the dataset", %{plot: plot} do
-      assert_raise(
-        RuntimeError,
-        "Column(s) \"Wrong Series\" not in the dataset.",
-        fn ->
-          BarChart.set_val_col_names(plot, ["Series 1", "Wrong Series"])
-        end
-      )
-
-      assert_raise(
-        RuntimeError,
-        "Column(s) \"Wrong Series\", \"Wronger Series\" not in the dataset.",
-        fn ->
-          BarChart.set_val_col_names(plot, ["Wrong Series", "Wronger Series"])
-        end
-      )
+      assert plot.mapping.column_map.value_cols == ["Series 1", "Series 2"]
     end
   end
 end

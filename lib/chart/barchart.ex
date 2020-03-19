@@ -28,13 +28,16 @@ shown. You can force the range using `force_value_range/2`
   alias __MODULE__
   alias Contex.{Scale, ContinuousLinearScale, OrdinalScale}
   alias Contex.CategoryColourScale
-  alias Contex.Dataset
+  alias Contex.{Dataset, Mapping}
   alias Contex.Axis
   alias Contex.Utils
 
-  defstruct [:dataset, :width, :height, :category_col, :value_cols, :category_scale, :value_scale,
-        :type, :orientation, :padding, :data_labels, :colour_palette, :series_fill_colours, :custom_value_formatter,
-        :phx_event_handler, :select_item, :value_range]
+  defstruct [:dataset, :mapping, :category_scale, :value_scale, :orientation, :series_fill_colours,
+    :custom_value_formatter, :phx_event_handler, :select_item, :value_range, width: 100, height: 100,
+    type: :stacked, data_labels: true, colour_palette: :default, padding: 2]
+
+  @required_mappings [:category_col, :value_cols]
+  @optional_mappings []
 
   @type t() :: %__MODULE__{}
   @type orientation() :: :vertical | :horizontal
@@ -42,76 +45,66 @@ shown. You can force the range using `force_value_range/2`
   @type selected_item() :: %{category: any(), series: any()}
 
   @doc """
-  Creates a new barchart from a dataset and sets defaults. If the data in the dataset is stored as a map, the `:series_mapping` option is required. This value must be a map of the plot's `:category_col`` and `:value_cols` to keys in the map, such as `%{category_col: :column_a, value_cols: [:column_b, column_c]`. The value for the `:value_cols` key must be a list.
+  Creates a new barchart from a dataset and sets defaults. If the data in the dataset is stored as a map, the `:mapping` option is required. This value must be a map of the plot's `:category_col`` and `:value_cols` to keys in the map, such as `%{category_col: :column_a, value_cols: [:column_b, column_c]`. The value for the `:value_cols` key must be a list.
   """
   @spec new(Contex.Dataset.t(), keyword() | orientation()) :: Contex.BarChart.t()
   def new(dataset, options \\ :vertical)
 
-  def new(%Dataset{data: [first_row | _rest]}=dataset, options) when is_list(options) and is_map(first_row) do
+  def new(%Dataset{data: [first_row | _rest]} = dataset, options) when is_list(options) and is_map(first_row) do
     orientation =
       case Keyword.get(options, :orientation) do
         :horizontal -> :horizontal
         _ -> :vertical
       end
 
-    case Keyword.get(options, :series_mapping) do
-      %{category_col: category_col, value_cols: value_cols} ->
-        %BarChart{
-          dataset: dataset,
-          width: 100,
-          height: 100,
-          padding: 2,
-          type: :stacked,
-          colour_palette: :default,
-          orientation: orientation
-        }
-        |> set_cat_col_name(category_col)
-        |> set_val_col_names(value_cols)
-        |> data_labels(true)
-
+    case Keyword.get(options, :mapping) do
       nil ->
-        raise(ArgumentError, "Series mapping must be provided with map data.")
+        raise(ArgumentError, "Mapping must be provided with map data.")
 
-      _ ->
-        raise(ArgumentError, "Invalid series definition; series_mapping must be a map with category_col and value_cols keys.")
+      column_map ->
+        %BarChart{dataset: dataset, orientation: orientation}
+        |> Mapping.map!(column_map)
+        |> set_cat_col_name(column_map.category_col)
+        |> set_val_col_names(column_map.value_cols)
     end
   end
 
   def new(%Dataset{data: [first_row | _rest]}, options) when is_atom(options) and is_map(first_row) do
-    raise(ArgumentError, "Series mapping must be provided with map data.")
+    raise(ArgumentError, "Mapping must be provided with map data.")
   end
 
-  def new(%Dataset{}=dataset, options) when is_list(options) do
+  def new(%Dataset{} = dataset, options) when is_list(options) do
     orientation =
       case Keyword.get(options, :orientation) do
         :horizontal -> :horizontal
         _ -> :vertical
       end
-    %BarChart{dataset: dataset, width: 100, height: 100, orientation: orientation}
+    %BarChart{dataset: dataset, orientation: orientation}
     |> defaults()
   end
 
   def new(%Dataset{} = dataset, orientation) when is_atom(orientation) do
-    %BarChart{dataset: dataset, width: 100, height: 100, orientation: orientation}
+    %BarChart{dataset: dataset, orientation: orientation}
     |> defaults()
   end
+
+  @doc false
+  def required_mappings(), do: @required_mappings
+
+  @doc false
+  def optional_mappings(), do: @optional_mappings
 
   @doc """
   Re-applies default settings.
   """
-  def defaults(%BarChart{} = plot) do
-    cat_col_index = 0
-    val_col_index = 1
-
-    plot = %{plot | padding: 2, type: :stacked, colour_palette: :default}
-
-    cat_col_name = Dataset.column_name(plot.dataset, cat_col_index)
-    val_col_names = [Dataset.column_name(plot.dataset, val_col_index)]
+  def defaults(%BarChart{dataset: dataset}=plot) do
+    category_col = Dataset.column_name(dataset, 0)
+    value_cols = [Dataset.column_name(dataset, 1)]
 
     plot
-    |> set_cat_col_name(cat_col_name)
-    |> set_val_col_names(val_col_names)
-    |> data_labels(true)
+    |> Mapping.map!(%{category_col: category_col, value_cols: value_cols})
+    |> set_cat_col_name(category_col)
+    |> set_val_col_names(value_cols)
   end
 
   @doc """
@@ -126,9 +119,9 @@ shown. You can force the range using `force_value_range/2`
   Specifies whether the bars are drawn stacked or grouped.
   """
   @spec type(Contex.BarChart.t(), plot_type()) :: Contex.BarChart.t()
-  def type(%BarChart{} = plot, type) do
+  def type(%BarChart{mapping: mapping} = plot, type) do
     %{plot | type: type}
-    |> set_val_col_names(plot.value_cols)
+    |> set_val_col_names(mapping.column_map.value_cols)
   end
 
   @doc """
@@ -143,25 +136,25 @@ shown. You can force the range using `force_value_range/2`
   Forces the value scale to the given data range
   """
   @spec force_value_range(Contex.BarChart.t(), {number, number}) :: Contex.BarChart.t()
-  def force_value_range(%BarChart{} = plot, {min, max}=value_range) when is_number(min) and is_number(max) do
+  def force_value_range(%BarChart{mapping: mapping} = plot, {min, max}=value_range) when is_number(min) and is_number(max) do
     %{plot | value_range: value_range}
-    |> set_val_col_names(plot.value_cols)
+    |> set_val_col_names(mapping.column_map.value_cols)
   end
 
   @doc false
-  def set_size(%BarChart{} = plot, width, height) do
+  def set_size(%BarChart{mapping: mapping} = plot, width, height) do
     # We pretend to set the value and category columns to force a recalculation of scales - may be expensive.
     # We only really need to set the range, not recalculate the domain
     %{plot | width: width, height: height}
-    |> set_val_col_names(plot.value_cols)
-    |> set_cat_col_name(plot.category_col)
+    |> set_val_col_names(mapping.column_map.value_cols)
+    |> set_cat_col_name(mapping.column_map.category_col)
   end
 
   @doc """
   Specifies the padding between the category groups. Defaults to 2. Specified relative to the plot size.
   """
   @spec padding(Contex.BarChart.t(), number) :: Contex.BarChart.t()
-  def padding(%BarChart{category_scale: %OrdinalScale{}=cat_scale} = plot, padding) when is_number(padding) do
+  def padding(%BarChart{category_scale: %OrdinalScale{} = cat_scale} = plot, padding) when is_number(padding) do
     cat_scale = OrdinalScale.padding(cat_scale, padding)
     %{plot | padding: padding, category_scale: cat_scale}
   end
@@ -182,24 +175,24 @@ shown. You can force the range using `force_value_range/2`
     The colours will be applied to the data series in the same order as the columns are specified in `set_val_col_names/2`
   """
   @spec colours(Contex.BarChart.t(), Contex.CategoryColourScale.colour_palette()) :: Contex.BarChart.t()
-  def colours(plot, colour_palette) when is_list(colour_palette) do
+  def colours(%BarChart{mapping: mapping} = plot, colour_palette) when is_list(colour_palette) do
     %{plot | colour_palette: colour_palette}
-    |> set_val_col_names(plot.value_cols)
+    |> set_val_col_names(mapping.column_map.value_cols)
   end
-  def colours(plot, colour_palette) when is_atom(colour_palette) do
+  def colours(%BarChart{mapping: mapping} = plot, colour_palette) when is_atom(colour_palette) do
     %{plot | colour_palette: colour_palette}
-    |> set_val_col_names(plot.value_cols)
+    |> set_val_col_names(mapping.column_map.value_cols)
   end
-  def colours(plot, _) do
+  def colours(%BarChart{mapping: mapping} = plot, _) do
     %{plot | colour_palette: :default}
-    |> set_val_col_names(plot.value_cols)
+    |> set_val_col_names(mapping.column_map.value_cols)
   end
 
   @doc """
   Optionally specify a LiveView event handler. This attaches a `phx-click` attribute to each bar element. Note that it may
   not work with some browsers (e.g. Safari on iOS).
   """
-  def event_handler(%BarChart{}=plot, event_handler) do
+  def event_handler(%BarChart{} = plot, event_handler) do
     %{plot | phx_event_handler: event_handler}
   end
 
@@ -207,7 +200,7 @@ shown. You can force the range using `force_value_range/2`
   Highlights a selected value based on matching category and series.
   """
   @spec select_item(Contex.BarChart.t(), selected_item()) :: Contex.BarChart.t()
-  def select_item(%BarChart{}=plot, select_item) do
+  def select_item(%BarChart{} = plot, select_item) do
     %{plot | select_item: select_item}
   end
 
@@ -227,7 +220,7 @@ shown. You can force the range using `force_value_range/2`
 
   """
   @spec custom_value_formatter(Contex.BarChart.t(), nil | fun) :: Contex.BarChart.t()
-  def custom_value_formatter(%BarChart{}=plot, custom_value_formatter) when is_function(custom_value_formatter) or custom_value_formatter==nil do
+  def custom_value_formatter(%BarChart{} = plot, custom_value_formatter) when is_function(custom_value_formatter) or custom_value_formatter==nil do
     %{plot | custom_value_formatter: custom_value_formatter}
   end
 
@@ -281,21 +274,17 @@ shown. You can force the range using `force_value_range/2`
     Contex.Legend.to_svg(scale)
   end
 
-  defp get_svg_bars(%BarChart{dataset: dataset} = plot) do
-    cat_col_index = Dataset.column_index(dataset, plot.category_col)
-
-    val_col_indices = Enum.map(plot.value_cols, fn col -> Dataset.column_index(dataset, col) end)
-
+  defp get_svg_bars(%BarChart{mapping: %{column_map: column_map}, dataset: dataset} = plot) do
     series_fill_colours = plot.series_fill_colours
-    fills = Enum.map(plot.value_cols, fn column -> CategoryColourScale.colour_for_value(series_fill_colours, column) end)
+    fills = Enum.map(column_map.value_cols, fn column -> CategoryColourScale.colour_for_value(series_fill_colours, column) end)
 
     dataset.data
-    |> Enum.map(fn row -> get_svg_bar(row, plot, cat_col_index, val_col_indices, fills) end)
+    |> Enum.map(fn row -> get_svg_bar(row, plot, fills) end)
   end
 
-  defp get_svg_bar(row, %BarChart{category_scale: category_scale, value_scale: value_scale}=plot, cat_col_index, val_col_indices, fills) do
-    cat_data = Dataset.value(row, cat_col_index)
-    series_values = Enum.map(val_col_indices, fn index -> Dataset.value(row, index) end)
+  defp get_svg_bar(row, %BarChart{mapping: mapping, category_scale: category_scale, value_scale: value_scale} = plot, fills) do
+    cat_data = mapping.accessors.category_col.(row)
+    series_values = Enum.map(mapping.accessors.value_cols, fn value_col -> value_col.(row) end)
 
     cat_band = OrdinalScale.get_band(category_scale, cat_data)
     bar_values = prepare_bar_values(series_values, value_scale, plot.type)
@@ -306,27 +295,31 @@ shown. You can force the range using `force_value_range/2`
     get_svg_bar_rects(cat_band, bar_values, labels, plot, fills, event_handlers, opacities)
   end
 
-  defp get_bar_event_handlers(%BarChart{phx_event_handler: phx_event_handler, value_cols: value_cols}, category, series_values) when is_binary(phx_event_handler) and phx_event_handler != "" do
-    Enum.zip(value_cols, series_values)
+  defp get_bar_event_handlers(%BarChart{phx_event_handler: phx_event_handler, mapping: mapping}, category, series_values) when is_binary(phx_event_handler) and phx_event_handler != "" do
+    Enum.zip(mapping.column_map.value_cols, series_values)
     |> Enum.map(fn {col, value} ->
       [category: category, series: col, value: value, phx_click: phx_event_handler]
     end)
   end
-  defp get_bar_event_handlers(%BarChart{value_cols: value_cols}, _, _), do: Enum.map(value_cols, fn _ -> [] end)
+  defp get_bar_event_handlers(%BarChart{mapping: mapping}, _, _) do
+    Enum.map(mapping.column_map.value_cols, fn _ -> [] end)
+  end
 
   @bar_faded_opacity "0.3"
-  defp get_bar_opacities(%BarChart{select_item: %{category: selected_category, series: _selected_series}, value_cols: value_cols}, category) when selected_category != category do
-    Enum.map(value_cols, fn _ -> @bar_faded_opacity end)
+  defp get_bar_opacities(%BarChart{select_item: %{category: selected_category, series: _selected_series}, mapping: mapping}, category) when selected_category != category do
+    Enum.map(mapping.column_map.value_cols, fn _ -> @bar_faded_opacity end)
   end
-  defp get_bar_opacities(%BarChart{select_item: %{category: _selected_category, series: selected_series}, value_cols: value_cols}, _category) do
-    Enum.map(value_cols, fn col ->
+  defp get_bar_opacities(%BarChart{select_item: %{category: _selected_category, series: selected_series}, mapping: mapping}, _category) do
+    Enum.map(mapping.column_map.value_cols, fn col ->
       case col == selected_series do
         true -> ""
         _ -> @bar_faded_opacity
       end
     end)
   end
-  defp get_bar_opacities(%BarChart{value_cols: value_cols}, _), do: Enum.map(value_cols, fn _ -> "" end)
+  defp get_bar_opacities(%BarChart{mapping: mapping}, _) do
+    Enum.map(mapping.column_map.value_cols, fn _ -> "" end)
+  end
 
   # Transforms the raw value for each series into a list of range tuples the bar has to cover, scaled to the display area
   defp prepare_bar_values(series_values, scale, :stacked) do
@@ -401,7 +394,7 @@ shown. You can force the range using `force_value_range/2`
     text(text_x, text_y, label, text_anchor: anchor, class: class, dominant_baseline: "central")
   end
 
-  defp get_svg_bar_label(_, {bar_start, _}=bar, label, cat_band, _plot) do
+  defp get_svg_bar_label(_, {bar_start, _} = bar, label, cat_band, _plot) do
     text_x = midpoint(cat_band)
 
     {text_y, class} = case width(bar) > 20 do
@@ -417,20 +410,17 @@ shown. You can force the range using `force_value_range/2`
 
   This provides the labels for each bar or group of bars
   """
-  def set_cat_col_name(%BarChart{padding: padding} = plot, cat_col_name) do
-    case Dataset.check_column_names(plot.dataset, cat_col_name) do
-      {:ok, []} ->
-        categories = Dataset.unique_values(plot.dataset, cat_col_name)
-        {r_min, r_max} = get_range(:category, plot)
-        cat_scale = OrdinalScale.new(categories) |> Scale.set_range(r_min, r_max) |> OrdinalScale.padding(padding)
+  def set_cat_col_name(%BarChart{dataset: dataset, padding: padding} = plot, cat_col_name) do
+    plot = Mapping.map!(plot, %{category_col: cat_col_name})
+    categories = Dataset.unique_values(dataset, cat_col_name)
+    {r_min, r_max} = get_range(:category, plot)
 
-        %{plot | category_col: cat_col_name, category_scale: cat_scale}
+    cat_scale =
+      OrdinalScale.new(categories)
+      |> Scale.set_range(r_min, r_max)
+      |> OrdinalScale.padding(padding)
 
-      {:error, missing_column} ->
-        raise "Column \"#{missing_column}\" not in the dataset."
-
-      _ -> plot
-    end
+    %{plot | category_scale: cat_scale}
   end
 
   @doc """
@@ -438,39 +428,32 @@ shown. You can force the range using `force_value_range/2`
 
   This provides the value for each bar.
   """
-  def set_val_col_names(%BarChart{} = plot, val_col_names) when is_list(val_col_names) do
-    case Dataset.check_column_names(plot.dataset, val_col_names) do
-      {:ok, []} ->
-        {min, max} =
-          get_overall_value_domain(plot, plot.dataset, val_col_names, plot.type)
-          |> Utils.fixup_value_range()
+  def set_val_col_names(%BarChart{dataset: dataset} = plot, val_col_names) when is_list(val_col_names) do
+    plot = Mapping.map!(plot, %{value_cols: val_col_names})
+    {min, max} =
+      get_overall_value_domain(plot, dataset, val_col_names, plot.type)
+      |> Utils.fixup_value_range()
 
-        {r_start, r_end} = get_range(:value, plot)
+    {r_start, r_end} = get_range(:value, plot)
 
-        val_scale = ContinuousLinearScale.new() |> ContinuousLinearScale.domain(min, max) |> Scale.set_range(r_start, r_end)
+    val_scale =
+      ContinuousLinearScale.new()
+      |> ContinuousLinearScale.domain(min, max)
+      |> Scale.set_range(r_start, r_end)
 
-        series_fill_colours
-          = CategoryColourScale.new(val_col_names)
-          |> CategoryColourScale.set_palette(plot.colour_palette)
+    series_fill_colours =
+      CategoryColourScale.new(val_col_names)
+      |> CategoryColourScale.set_palette(plot.colour_palette)
 
-        %{plot | value_cols: val_col_names, value_scale: val_scale, series_fill_colours: series_fill_colours}
-
-      {:error, missing_columns} ->
-        columns_string =
-          Stream.map(missing_columns, &("\"#{&1}\""))
-          |> Enum.join(", ")
-        raise "Column(s) #{columns_string} not in the dataset."
-
-      _ -> plot
-    end
+    %{plot | value_scale: val_scale, series_fill_colours: series_fill_colours}
   end
 
   def set_val_col_names(%BarChart{} = plot, _), do: plot
 
-  defp get_range(:category, %BarChart{orientation: :horizontal}=plot), do: {plot.height, 0}
+  defp get_range(:category, %BarChart{orientation: :horizontal} = plot), do: {plot.height, 0}
   defp get_range(:category, plot), do: {0, plot.width}
 
-  defp get_range(:value,  %BarChart{orientation: :horizontal}=plot), do: {0, plot.width}
+  defp get_range(:value,  %BarChart{orientation: :horizontal} = plot), do: {0, plot.width}
   defp get_range(:value, plot), do: {plot.height, 0}
 
   defp get_overall_value_domain(%BarChart{value_range: {min, max}}, _, _, _), do: {min, max}
