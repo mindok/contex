@@ -19,7 +19,7 @@ defmodule ContexBarChartTest do
       assert plot.height == 100
     end
 
-    test "given data from a map and a series mapping, returns a BarChart struct accordingly" do
+    test "given data from a map and a valid column map, returns a BarChart struct accordingly" do
       plot =
         Dataset.new([%{"bb" => 2, "aa" => 2},%{"bb" => 3, "aa" => 4}])
         |> BarChart.new(mapping: %{category_col: "bb", value_cols: ["aa"]})
@@ -40,7 +40,7 @@ defmodule ContexBarChartTest do
       )
     end
 
-    test "Raises if invalid series mapping is passed with map data" do
+    test "Raises if invalid column map is passed with map data" do
       assert_raise(
         RuntimeError,
         "Required mapping(s) \"category_col\" not included in column map.",
@@ -49,18 +49,6 @@ defmodule ContexBarChartTest do
           |> BarChart.new(mapping: %{x_col: "bb", value_cols: ["aa"]})
         end
       )
-    end
-  end
-
-  describe "defaults/1" do
-    test "returns a BarChart struct with default properties", %{plot: plot} do
-      assert plot.orientation == :vertical
-      assert plot.padding == 2
-      assert plot.type == :stacked
-      assert plot.colour_palette == :default
-      assert plot.mapping.column_map.category_col == "Category"
-      assert plot.mapping.column_map.value_cols == ["Series 1"]
-      assert plot.data_labels == true
     end
   end
 

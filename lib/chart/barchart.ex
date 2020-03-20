@@ -50,42 +50,28 @@ shown. You can force the range using `force_value_range/2`
   @spec new(Contex.Dataset.t(), keyword() | orientation()) :: Contex.BarChart.t()
   def new(dataset, options \\ :vertical)
 
-  def new(%Dataset{data: [first_row | _rest]} = dataset, options) when is_list(options) and is_map(first_row) do
-    orientation =
-      case Keyword.get(options, :orientation) do
-        :horizontal -> :horizontal
-        _ -> :vertical
-      end
+  def new(%Dataset{data: [first_row | _rest]}, options) when is_atom(options) and is_map(first_row) do
+    raise(ArgumentError, "Mapping must be provided with map data.")
+  end
 
+  def new(%Dataset{data: [first_row | _rest]} = dataset, options) when is_list(options) and is_map(first_row) do
     case Keyword.get(options, :mapping) do
       nil ->
         raise(ArgumentError, "Mapping must be provided with map data.")
 
       column_map ->
-        %BarChart{dataset: dataset, orientation: orientation}
+        %BarChart{dataset: dataset, orientation: get_orientation_from_options(options)}
         |> Mapping.map!(column_map)
-        |> set_cat_col_name(column_map.category_col)
-        |> set_val_col_names(column_map.value_cols)
+        |> set_default_scales()
     end
   end
 
-  def new(%Dataset{data: [first_row | _rest]}, options) when is_atom(options) and is_map(first_row) do
-    raise(ArgumentError, "Mapping must be provided with map data.")
-  end
+  def new(%Dataset{} = dataset, options) do
+    column_map = %{category_col: Dataset.column_name(dataset, 0), value_cols: [Dataset.column_name(dataset, 1)]}
 
-  def new(%Dataset{} = dataset, options) when is_list(options) do
-    orientation =
-      case Keyword.get(options, :orientation) do
-        :horizontal -> :horizontal
-        _ -> :vertical
-      end
-    %BarChart{dataset: dataset, orientation: orientation}
-    |> defaults()
-  end
-
-  def new(%Dataset{} = dataset, orientation) when is_atom(orientation) do
-    %BarChart{dataset: dataset, orientation: orientation}
-    |> defaults()
+    %BarChart{dataset: dataset, orientation: get_orientation_from_options(options)}
+    |> Mapping.map!(column_map)
+    |> set_default_scales()
   end
 
   @doc false
@@ -95,16 +81,12 @@ shown. You can force the range using `force_value_range/2`
   def optional_mappings(), do: @optional_mappings
 
   @doc """
-  Re-applies default settings.
+  Sets the default scales for the plot based on its column mapping.
   """
-  def defaults(%BarChart{dataset: dataset}=plot) do
-    category_col = Dataset.column_name(dataset, 0)
-    value_cols = [Dataset.column_name(dataset, 1)]
-
-    plot
-    |> Mapping.map!(%{category_col: category_col, value_cols: value_cols})
-    |> set_cat_col_name(category_col)
-    |> set_val_col_names(value_cols)
+  @spec set_default_scales(Contex.BarChart.t()) :: Contex.BarChart.t()
+  def set_default_scales(%BarChart{mapping: %{column_map: column_map}} = plot) do
+    set_cat_col_name(plot, column_map.category_col)
+    |> set_val_col_names(column_map.value_cols)
   end
 
   @doc """
@@ -243,6 +225,14 @@ shown. You can force the range using `force_value_range/2`
       get_svg_bars(plot),
       "</g>"
     ]
+  end
+
+  defp get_orientation_from_options(options) when is_atom(options), do: options
+  defp get_orientation_from_options(options) when is_list(options) do
+    case Keyword.get(options, :orientation) do
+      :horizontal -> :horizontal
+      _ -> :vertical
+    end
   end
 
   defp refine_options(options, :horizontal), do: options |> Map.put(:show_cat_axis, options.show_y_axis) |> Map.put(:show_val_axis, options.show_x_axis)

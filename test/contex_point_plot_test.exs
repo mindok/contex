@@ -11,15 +11,13 @@ defmodule ContexPointPlotTest do
     %{plot: plot}
   end
 
-  # TODO
-  # Why is width/height set here and not in defaults/1?
   describe "new/2" do
     test "given data from tuples or lists, returns a PointPlot struct with defaults", %{plot: plot} do
       assert plot.width == 100
       assert plot.height == 100
     end
 
-    test "given data from a map and a series mapping, returns a PointPlot struct accordingly" do
+    test "given data from a map and a valid column map, returns a PointPlot struct accordingly" do
       plot =
         Dataset.new([%{"bb" => 2, "aa" => 2}, %{"aa" => 3, "bb" => 4}])
         |> PointPlot.new(mapping: %{x_col: "bb", y_cols: ["aa"]})
@@ -29,7 +27,7 @@ defmodule ContexPointPlotTest do
       assert plot.mapping.column_map.y_cols == ["aa"]
     end
 
-    test "Raises if no series mapping is passed with map data" do
+    test "Raises if no mapping is passed with map data" do
       assert_raise(
         ArgumentError,
         "Mapping must be provided with map data.",
@@ -38,23 +36,6 @@ defmodule ContexPointPlotTest do
           |> PointPlot.new()
         end
       )
-    end
-  end
-
-  describe "defaults/1" do
-    test "returns a PointPlot struct with default properties", %{plot: plot} do
-      assert plot.colour_palette == :default
-      assert plot.mapping.column_map.x_col == "aa"
-      assert plot.mapping.column_map.y_cols == ["bb"]
-    end
-
-    test "returns a PointPlot struct given a valid series_mapping" do
-      plot =
-        Dataset.new([%{"bb" => 2, "aa" => 2}, %{"aa" => 3, "bb" => 4}])
-        |> PointPlot.new(mapping: %{x_col: "bb", y_cols: ["aa"]})
-      assert plot.colour_palette == :default
-      assert plot.mapping.column_map.x_col == "bb"
-      assert plot.mapping.column_map.y_cols == ["aa"]
     end
   end
 

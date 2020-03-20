@@ -44,22 +44,21 @@ By default, the first four columns of the supplied dataset are used for the cate
       %{id_col: _id_col} = column_map ->
         %GanttChart{dataset: dataset}
         |> Mapping.map!(column_map)
-        |> set_category_task_cols(column_map.category_col, column_map.task_col)
-        |> set_task_interval_cols({column_map.start_col, column_map.finish_col})
+        |> set_default_scales()
 
       column_map ->
         column_map = Map.merge(%{id_col: nil}, column_map)
 
         %GanttChart{dataset: dataset}
         |> Mapping.map!(column_map)
-        |> set_category_task_cols(column_map.category_col, column_map.task_col)
-        |> set_task_interval_cols({column_map.start_col, column_map.finish_col})
+        |> set_default_scales()
     end
   end
 
   def new(%Dataset{} = dataset, _options) do
     %GanttChart{dataset: dataset}
-    |> defaults()
+    |> Mapping.map!(default_mapping(dataset))
+    |> set_default_scales()
   end
 
   @doc false
@@ -69,31 +68,12 @@ By default, the first four columns of the supplied dataset are used for the cate
   def optional_mappings(), do: @optional_mappings
 
   @doc """
-  Sets defaults for the Gantt Chart.
-
-  The first four columns in the dataset are used for category, task, start date/time and end date/time.
-
-  Task labels are enabled by default.
+  Sets the default scales for the plot based on its column mapping.
   """
-  @spec defaults(Contex.GanttChart.t()) :: Contex.GanttChart.t()
-  def defaults(%GanttChart{dataset: dataset} = plot) do
-    category_col = Dataset.column_name(dataset, 0)
-    task_col = Dataset.column_name(dataset, 1)
-    start_col = Dataset.column_name(dataset, 2)
-    finish_col = Dataset.column_name(dataset, 3)
-
-    column_map = %{
-      category_col: category_col,
-      task_col: task_col,
-      start_col: start_col,
-      finish_col: finish_col,
-      id_col: nil
-    }
-
-    plot
-    |> Mapping.map!(column_map)
-    |> set_category_task_cols(category_col, task_col)
-    |> set_task_interval_cols({start_col, finish_col})
+  @spec set_default_scales(Contex.GanttChart.t()) :: Contex.GanttChart.t()
+  def set_default_scales(%GanttChart{mapping: %{column_map: column_map}} = plot) do
+    set_category_task_cols(plot, column_map.category_col, column_map.task_col)
+    |> set_task_interval_cols({column_map.start_col, column_map.finish_col})
   end
 
   @doc """
@@ -185,6 +165,16 @@ By default, the first four columns of the supplied dataset are used for the cate
       get_svg_bars(plot),
       "</g>"
     ]
+  end
+
+  defp default_mapping(%Dataset{} = dataset) do
+    %{
+      category_col: Dataset.column_name(dataset, 0),
+      task_col: Dataset.column_name(dataset, 1),
+      start_col: Dataset.column_name(dataset, 2),
+      finish_col: Dataset.column_name(dataset, 3),
+      id_col: nil
+    }
   end
 
   defp get_category_rects_svg(%GanttChart{mapping: mapping, dataset: dataset, category_scale: cat_scale} = plot) do

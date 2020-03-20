@@ -45,23 +45,21 @@ A column in the dataset can optionally be used to control the colours. See
       %{fill_col: _fill_col} = column_map ->
         %PointPlot{dataset: dataset}
         |> Mapping.map!(column_map)
-        |> set_x_col_name(column_map.x_col)
-        |> set_y_col_names(column_map.y_cols)
+        |> set_default_scales()
         |> set_colour_col_name(column_map.fill_col)
 
       column_map ->
         column_map = Map.merge(%{fill_col: nil}, column_map)
-
         %PointPlot{dataset: dataset}
         |> Mapping.map!(column_map)
-        |> set_x_col_name(column_map.x_col)
-        |> set_y_col_names(column_map.y_cols)
+        |> set_default_scales()
     end
   end
 
   def new(%Dataset{} = dataset, _options) do
     %PointPlot{dataset: dataset}
-    |> defaults()
+    |> Mapping.map!(default_mapping(dataset))
+    |> set_default_scales()
   end
 
   @doc false
@@ -71,21 +69,12 @@ A column in the dataset can optionally be used to control the colours. See
   def optional_mappings(), do: @optional_mappings
 
   @doc """
-  Sets the default values for the plot.
-
-  By default, the first column in the dataset is used for the x values and the second column
-  for the y values.
-
-  The colour palette is set to :default.
+  Sets the default scales for the plot based on its column mapping.
   """
-  @spec defaults(Contex.PointPlot.t()) :: Contex.PointPlot.t()
-  def defaults(%PointPlot{dataset: dataset}=plot) do
-    x_col = Dataset.column_name(dataset, 0)
-    y_cols = [Dataset.column_name(dataset, 1)]
-
-    Mapping.map!(plot, %{x_col: x_col, y_cols: y_cols, fill_col: nil})
-    |> set_x_col_name(x_col)
-    |> set_y_col_names(y_cols)
+  @spec set_default_scales(Contex.PointPlot.t()) :: Contex.PointPlot.t()
+  def set_default_scales(%PointPlot{mapping: %{column_map: column_map}} = plot) do
+    set_x_col_name(plot, column_map.x_col)
+    |> set_y_col_names(column_map.y_cols)
   end
 
   @doc """
@@ -145,6 +134,14 @@ A column in the dataset can optionally be used to control the colours. See
       get_svg_points(plot),
       "</g>"
     ]
+  end
+
+  defp default_mapping(%Dataset{} = dataset) do
+    %{
+      x_col: Dataset.column_name(dataset, 0),
+      y_cols: [Dataset.column_name(dataset, 1)],
+      fill_col: nil
+    }
   end
 
   defp get_x_axis(x_scale, offset) do

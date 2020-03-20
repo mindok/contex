@@ -33,7 +33,7 @@ defmodule ContexGanttChartTest do
       assert plot.height == 100
     end
 
-    test "given data from a map and a series mapping, returns GanttChart struct accordingly", %{dataset_maps: dataset_maps} do
+    test "given data from a map and a valid column map, returns GanttChart struct accordingly", %{dataset_maps: dataset_maps} do
       plot =
         dataset_maps
         |> GanttChart.new(mapping: %{
@@ -53,7 +53,7 @@ defmodule ContexGanttChartTest do
       assert plot.mapping.column_map.id_col == nil
     end
 
-    test "Raises if invalid series is passed with map data", %{dataset_maps: dataset_maps} do
+    test "Raises if invalid column map is passed with map data", %{dataset_maps: dataset_maps} do
       assert_raise(
         RuntimeError,
         "Required mapping(s) \"category_col\", \"finish_col\", \"start_col\", \"task_col\" not included in column map.",
@@ -67,18 +67,6 @@ defmodule ContexGanttChartTest do
         "Mapping must be provided with map data.",
         fn -> GanttChart.new(dataset_maps) end
         )
-    end
-  end
-
-  describe "defaults/1" do
-    test "returns a GanttChart struct with default properties", %{plot: plot} do
-      assert plot.padding == 2
-      assert plot.show_task_labels == true
-      assert plot.mapping.column_map.category_col == "Category"
-      assert plot.mapping.column_map.task_col == "Task"
-      assert plot.mapping.column_map.start_col == "Start"
-      assert plot.mapping.column_map.finish_col == "End"
-      assert plot.mapping.column_map.id_col == nil
     end
   end
 
