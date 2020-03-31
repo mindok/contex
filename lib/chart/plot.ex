@@ -141,7 +141,6 @@ defmodule Contex.Plot do
   @doc """
   Updates plot options for the plot.
   """
-  #TODO: Allow overriding of margins
   def plot_options(%Plot{}=plot, new_plot_options) do
     existing_plot_options = plot.plot_options
     %{plot | plot_options: Map.merge(existing_plot_options, new_plot_options)}
@@ -271,10 +270,10 @@ defmodule Contex.Plot do
   end
 
   defp calculate_margins(%Plot{}=plot) do
-    left = calculate_left_margin(plot)
-    top = calculate_top_margin(plot)
-    right = calculate_right_margin(plot)
-    bottom = calculate_bottom_margin(plot)
+    left = Map.get(plot.plot_options, :left_margin, calculate_left_margin(plot))
+    top = Map.get(plot.plot_options, :top_margin, calculate_top_margin(plot))
+    right = Map.get(plot.plot_options, :right_margin, calculate_right_margin(plot))
+    bottom = Map.get(plot.plot_options, :bottom_margin, calculate_bottom_margin(plot))
 
     margins = %{left: left, top: top, right: right, bottom: bottom}
 
