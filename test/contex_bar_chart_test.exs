@@ -60,6 +60,24 @@ defmodule ContexBarChartTest do
     end
   end
 
+  describe "axis_label_rotation/2" do
+    test "sets the axis label rotation", %{plot: plot} do
+      plot = BarChart.axis_label_rotation(plot, 45)
+      assert plot.axis_label_rotation == 45
+    end
+
+   test "rotates the labels when set", %{plot: plot} do
+     plot = BarChart.axis_label_rotation(plot, 45)
+     assert ["rotate(-45)"] ==
+       Plot.new(200, 200, plot)
+       |> Plot.to_svg()
+       |> elem(1)
+       |> IO.chardata_to_string()
+       |> xpath(~x"/svg/g/g/g/text/@transform"sl)
+       |> Enum.uniq()
+    end
+  end
+
   describe "padding/2" do
     test "sets padding and updates scale padding", %{plot: plot} do
       plot = BarChart.padding(plot, 4)
