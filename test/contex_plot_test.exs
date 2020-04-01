@@ -42,6 +42,21 @@ defmodule ContexPlotTest do
       assert plot.plot_content.orientation == :horizontal
     end
 
+    test "can override margins" do
+      plot_options = %{top_margin: 5, right_margin: 6, bottom_margin: 7, left_margin: 8}
+      plot =
+        Dataset.new([{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}], ["aa", "bb", "cccc", "d"])
+        |> Plot.new(BarChart, 150, 200, plot_options: plot_options)
+        |> Contex.Plot.plot_options(plot_options)
+
+      assert plot.margins == %{
+        top: 5,
+        right: 6,
+        bottom: 7,
+        left: 8
+      }
+    end
+
     test "returns a Plot struct using assigned attributes" do
       plot =
         Dataset.new([{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}], ["aa", "bb", "cccc", "d"])
