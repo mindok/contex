@@ -26,47 +26,28 @@ A column in the dataset can optionally be used to control the colours. See
 
   defstruct [:dataset, :mapping, :x_scale, :y_scale, :fill_scale, transforms: %{}, width: 100, height: 100, colour_palette: :default]
 
-  @required_mappings [:x_col, :y_cols]
-  @optional_mappings [:fill_col]
+  @required_mappings [
+    x_col: :exactly_one,
+    y_cols: :one_or_more,
+    fill_col: :zero_or_one
+  ]
 
   @type t() :: %__MODULE__{}
 
   @doc """
-  Create a new point plot definition and apply defaults. If the data in the dataset is stored as a list of maps, the `:series_mapping` option is required. This value must be a map of the plot's `:x_col` and `:y_cols` to keys in the map, such as `%{x_col: :column_a, y_cols: [:column_b, column_c]}`. The `:y_cols` value must be a list.
+  Create a new point plot definition and apply defaults.
+
+  If the data in the dataset is stored as a list of maps, the `:series_mapping` option is required. This value must be a map of the plot's `:x_col` and `:y_cols` to keys in the map, such as `%{x_col: :column_a, y_cols: [:column_b, column_c]}`. The `:y_cols` value must be a list. Optionally a `:fill_col` mapping can be provided, which is
+  equivalent to `set_colour_col_name/2`
   """
   @spec new(Contex.Dataset.t(), keyword()) :: Contex.PointPlot.t()
-  def new(dataset, options \\ [])
+  def new(%Dataset{} = dataset, options \\ []) do
+    mapping = Mapping.new(@required_mappings, Keyword.get(options, :mapping), dataset)
 
-  def new(%Dataset{data: [first_row | _rest]} = dataset, options) when is_map(first_row) do
-    case Keyword.get(options, :mapping) do
-      nil ->
-        raise(ArgumentError, "Mapping must be provided with map data.")
-
-      %{fill_col: _fill_col} = column_map ->
-        %PointPlot{dataset: dataset}
-        |> Mapping.map!(column_map)
-        |> set_default_scales()
-        |> set_colour_col_name(column_map.fill_col)
-
-      column_map ->
-        column_map = Map.merge(%{fill_col: nil}, column_map)
-        %PointPlot{dataset: dataset}
-        |> Mapping.map!(column_map)
-        |> set_default_scales()
-    end
-  end
-
-  def new(%Dataset{} = dataset, _options) do
-    %PointPlot{dataset: dataset}
-    |> Mapping.map!(default_mapping(dataset))
+    %PointPlot{dataset: dataset, mapping: mapping}
     |> set_default_scales()
+    |> set_colour_col_name(mapping.column_map[:fill_col])
   end
-
-  @doc false
-  def required_mappings(), do: @required_mappings
-
-  @doc false
-  def optional_mappings(), do: @optional_mappings
 
   @doc """
   Sets the default scales for the plot based on its column mapping.
@@ -134,14 +115,6 @@ A column in the dataset can optionally be used to control the colours. See
       get_svg_points(plot),
       "</g>"
     ]
-  end
-
-  defp default_mapping(%Dataset{} = dataset) do
-    %{
-      x_col: Dataset.column_name(dataset, 0),
-      y_cols: [Dataset.column_name(dataset, 1)],
-      fill_col: nil
-    }
   end
 
   defp get_x_axis(x_scale, offset) do
@@ -232,14 +205,14 @@ A column in the dataset can optionally be used to control the colours. See
   This column must contain numeric or date time data.
   """
   @spec set_x_col_name(Contex.PointPlot.t(), Contex.Dataset.column_name()) :: Contex.PointPlot.t()
-  def set_x_col_name(%PointPlot{dataset: dataset, width: width} = plot, x_col_name) do
-    plot = Mapping.map!(plot, %{x_col: x_col_name})
+  def set_x_col_name(%PointPlot{dataset: dataset, width: width, mapping: mapping} = plot, x_col_name) do
+    mapping = Mapping.update(mapping, %{x_col: x_col_name})
 
     x_scale = create_scale_for_column(dataset, x_col_name, {0, width})
     x_transform = Scale.domain_to_range_fn(x_scale)
     transforms = Map.merge(plot.transforms, %{x: x_transform})
 
-    %{plot | x_scale: x_scale, transforms: transforms}
+    %{plot | x_scale: x_scale, transforms: transforms, mapping: mapping}
   end
 
   @doc """
@@ -251,8 +224,8 @@ A column in the dataset can optionally be used to control the colours. See
   each column.
   """
   @spec set_y_col_names(Contex.PointPlot.t(), [Contex.Dataset.column_name()]) :: Contex.PointPlot.t()
-  def set_y_col_names(%PointPlot{dataset: dataset, height: height} = plot, y_col_names) when is_list(y_col_names) do
-    plot = Mapping.map!(plot, %{y_cols: y_col_names})
+  def set_y_col_names(%PointPlot{dataset: dataset, height: height, mapping: mapping} = plot, y_col_names) when is_list(y_col_names) do
+    mapping = Mapping.update(mapping, %{y_cols: y_col_names})
     {min, max} =
       get_overall_domain(dataset, y_col_names)
       |> Utils.fixup_value_range()
@@ -273,7 +246,7 @@ A column in the dataset can optionally be used to control the colours. See
       CategoryColourScale.new(fill_indices)
       |> CategoryColourScale.set_palette(plot.colour_palette)
 
-    %{plot | y_scale: y_scale, transforms: transforms, fill_scale: series_fill_colours}
+    %{plot | y_scale: y_scale, transforms: transforms, fill_scale: series_fill_colours, mapping: mapping}
   end
 
   defp get_overall_domain(dataset, col_names) do
@@ -306,10 +279,11 @@ A column in the dataset can optionally be used to control the colours. See
   Note: This is ignored if there are multiple y columns.
   """
   @spec set_colour_col_name(Contex.PointPlot.t(), Contex.Dataset.column_name()) :: Contex.PointPlot.t()
-  def set_colour_col_name(%PointPlot{dataset: dataset}=plot, fill_col_name) do
-    plot = Mapping.map!(plot, %{fill_col: fill_col_name})
+  def set_colour_col_name(%PointPlot{}=plot, nil), do: plot
+  def set_colour_col_name(%PointPlot{dataset: dataset, mapping: mapping}=plot, fill_col_name) do
+    mapping = Mapping.update(mapping, %{fill_col: fill_col_name})
     vals = Dataset.unique_values(dataset, fill_col_name)
     colour_scale = CategoryColourScale.new(vals)
-    %{plot | fill_scale: colour_scale}
+    %{plot | fill_scale: colour_scale, mapping: mapping}
   end
 end

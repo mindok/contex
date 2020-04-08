@@ -126,6 +126,7 @@ supplied matches) the size of each array or tuple in the data. If there are any 
   def column_index(_, column_name) when is_integer(column_name) do column_name end
   def column_index(_, _), do: nil
 
+  #TODO: Should this be column_ids - they are essentially the internal column names
   @doc """
   Returns a list of the names of all of the columns in the dataset data (irrespective of
   whether the column names are mapped to plot elements).
@@ -202,14 +203,17 @@ supplied matches) the size of each array or tuple in the data. If there are any 
     end
   end
 
+  def value_fn(_dataset, _column_name), do: fn _ -> nil end
+
   @doc """
   Calculates the min and max value in the specified column
   """
   @spec column_extents(Contex.Dataset.t(), column_name()) :: {any, any}
   def column_extents(%Dataset{data: data} = dataset, column_name) do
+    accessor = Dataset.value_fn(dataset, column_name)
     Enum.reduce(data, {nil, nil},
         fn row, {min, max} ->
-          val = Dataset.value_fn(dataset, column_name).(row)
+          val = accessor.(row)
           {Utils.safe_min(val, min), Utils.safe_max(val, max)}
         end
     )
@@ -222,8 +226,9 @@ supplied matches) the size of each array or tuple in the data. If there are any 
   """
   @spec guess_column_type(Contex.Dataset.t(), column_name()) :: column_type()
   def guess_column_type(%Dataset{data: data} = dataset, column_name) do
+    accessor = Dataset.value_fn(dataset, column_name)
     Enum.reduce_while(data, nil, fn row, _result ->
-      val = Dataset.value_fn(dataset, column_name).(row)
+      val = accessor.(row)
       case evaluate_type(val) do
         {:ok, type} -> {:halt, type}
         _ -> {:cont, nil}
@@ -245,17 +250,18 @@ supplied matches) the size of each array or tuple in the data. If there are any 
   """
   @spec combined_column_extents(Contex.Dataset.t(), list(column_name())) :: {any(), any()}
   def combined_column_extents(%Dataset{data: data} = dataset, column_names) do
+    accessors = Enum.map(column_names, fn column_name -> Dataset.value_fn(dataset, column_name) end)
     Enum.reduce(data, {nil, nil},
         fn row, {min, max} ->
-          val = sum_row_values(dataset, row, column_names)
+          val = sum_row_values(row, accessors)
           {Utils.safe_min(val, min), Utils.safe_max(val, max)}
         end
     )
   end
 
-  defp sum_row_values(dataset, row, column_names) do
-    Enum.reduce(column_names, 0, fn column_name, acc ->
-      val = Dataset.value_fn(dataset, column_name).(row)
+  defp sum_row_values(row, accessors) do
+    Enum.reduce(accessors, 0, fn accessor, acc ->
+      val = accessor.(row)
       Utils.safe_add(acc, val)
     end)
   end
@@ -268,9 +274,10 @@ supplied matches) the size of each array or tuple in the data. If there are any 
   """
   @spec unique_values(Contex.Dataset.t(), String.t() | integer()) :: [any]
   def unique_values(%Dataset{data: data} = dataset, column_name) do
+    accessor = Dataset.value_fn(dataset, column_name)
     {result, _found} = Enum.reduce(data, {[], MapSet.new},
       fn row, {result, found} ->
-        val = Dataset.value_fn(dataset, column_name).(row)
+        val = accessor.(row)
         case MapSet.member?(found, val) do
           true -> {result, found}
           _ -> {[val | result], MapSet.put(found, val)}

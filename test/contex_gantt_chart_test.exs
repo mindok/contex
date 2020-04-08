@@ -64,7 +64,7 @@ defmodule ContexGanttChartTest do
     test "Raises if no series is passed with map data", %{dataset_maps: dataset_maps} do
       assert_raise(
         ArgumentError,
-        "Mapping must be provided with map data.",
+        "Can not create default data mappings with Map data.",
         fn -> GanttChart.new(dataset_maps) end
         )
     end

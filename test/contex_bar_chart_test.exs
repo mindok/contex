@@ -32,7 +32,7 @@ defmodule ContexBarChartTest do
     test "Raises if no mapping is passed with map data" do
       assert_raise(
         ArgumentError,
-        "Mapping must be provided with map data.",
+        "Can not create default data mappings with Map data.",
         fn ->
           Dataset.new([%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}])
           |> BarChart.new()
