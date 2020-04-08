@@ -13,22 +13,42 @@ defmodule ContexBarChartTest do
 
   # TODO
   # Why is width/height set here and not in defaults/1?
-  describe "new/1" do
-    test "returns a BarChart struct with defaults", %{plot: plot} do
+  describe "new/2" do
+    test "given data from tuples or lists, returns a BarChart struct with defaults", %{plot: plot} do
       assert plot.width == 100
       assert plot.height == 100
     end
-  end
 
-  describe "defaults/1" do
-    test "returns a BarChart struct with default properties", %{plot: plot} do
-      assert plot.orientation == :vertical
-      assert plot.padding == 2
-      assert plot.type == :stacked
-      assert plot.colour_palette == :default
-      assert plot.category_col == "Category"
-      assert plot.value_cols == ["Series 1"]
-      assert plot.data_labels == true
+    test "given data from a map and a valid column map, returns a BarChart struct accordingly" do
+      plot =
+        Dataset.new([%{"bb" => 2, "aa" => 2},%{"bb" => 3, "aa" => 4}])
+        |> BarChart.new(mapping: %{category_col: "bb", value_cols: ["aa"]})
+      assert plot.width == 100
+      assert plot.height == 100
+      assert plot.mapping.column_map.category_col == "bb"
+      assert plot.mapping.column_map.value_cols == ["aa"]
+    end
+
+    test "Raises if no mapping is passed with map data" do
+      assert_raise(
+        ArgumentError,
+        "Can not create default data mappings with Map data.",
+        fn ->
+          Dataset.new([%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}])
+          |> BarChart.new()
+        end
+      )
+    end
+
+    test "Raises if invalid column map is passed with map data" do
+      assert_raise(
+        RuntimeError,
+        "Required mapping(s) \"category_col\" not included in column map.",
+        fn ->
+          Dataset.new([%{"bb" => 2, "aa" => 2},%{"bb" => 3, "aa" => 4}])
+          |> BarChart.new(mapping: %{x_col: "bb", value_cols: ["aa"]})
+        end
+      )
     end
   end
 
@@ -200,6 +220,21 @@ defmodule ContexBarChartTest do
       assert ["10", "20", "30", "40"] ==
         Enum.map(rects_map, &(Map.get(&1, :title)))
     end
+
+    test "generates equivalent output when passed map data", %{plot: plot} do
+      map_plot_svg =
+        Dataset.new([
+          %{"Category" =>  "Category 1", "Series 1" => 10, "Series_2" => 20},
+          %{"Category" =>  "Category 2", "Series 1" => 30, "Series_2" => 40}
+        ])
+        |> Plot.new(BarChart, 200, 200, mapping: %{category_col: "Category", value_cols: ["Series 1"]})
+        |> Plot.to_svg()
+
+      assert map_plot_svg ==
+        plot.dataset
+        |> Plot.new(BarChart, 200, 200)
+        |> Plot.to_svg()
+    end
   end
 
   # TODO
@@ -207,17 +242,7 @@ defmodule ContexBarChartTest do
   describe "set_cat_col_name/2" do
     test "sets category column to specified dataset column", %{plot: plot} do
       plot = BarChart.set_cat_col_name(plot, "Series 2")
-      assert plot.category_col == "Series 2"
-    end
-
-    test "raises when given column is not in the dataset", %{plot: plot} do
-      assert_raise(
-        RuntimeError,
-        "Column \"Wrong Series\" not in the dataset.",
-        fn ->
-          BarChart.set_cat_col_name(plot, "Wrong Series")
-        end
-      )
+      assert plot.mapping.column_map.category_col == "Series 2"
     end
   end
 
@@ -226,25 +251,7 @@ defmodule ContexBarChartTest do
   describe "set_val_col_names/2" do
     test "sets value column(s) to specified dataset column(s)", %{plot: plot} do
       plot = BarChart.set_val_col_names(plot, ["Series 1", "Series 2"])
-      assert plot.value_cols == ["Series 1", "Series 2"]
-    end
-
-    test "raises when given columns are not in the dataset", %{plot: plot} do
-      assert_raise(
-        RuntimeError,
-        "Column(s) \"Wrong Series\" not in the dataset.",
-        fn ->
-          BarChart.set_val_col_names(plot, ["Series 1", "Wrong Series"])
-        end
-      )
-
-      assert_raise(
-        RuntimeError,
-        "Column(s) \"Wrong Series\", \"Wronger Series\" not in the dataset.",
-        fn ->
-          BarChart.set_val_col_names(plot, ["Wrong Series", "Wronger Series"])
-        end
-      )
+      assert plot.mapping.column_map.value_cols == ["Series 1", "Series 2"]
     end
   end
 end

@@ -6,9 +6,10 @@ defmodule ContexDatasetTest do
   doctest Contex.Dataset
 
   setup do
+    dataset_maps = Dataset.new([%{y: 1, x: 2, z: 5}, %{x: 3, y: 4, z: 6}])
     dataset_nocols = Dataset.new([{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}])
     dataset = Dataset.new(dataset_nocols.data, ["aa", "bb", "cccc", "d"])
-    %{dataset_nocols: dataset_nocols, dataset: dataset}
+    %{dataset_maps: dataset_maps, dataset_nocols: dataset_nocols, dataset: dataset}
   end
 
   describe "new/1" do
@@ -44,9 +45,52 @@ defmodule ContexDatasetTest do
       headers = ["x", "y"]
       assert_raise FunctionClauseError, fn -> Dataset.new(data, headers) end
     end
+
+    test "returns a dataset struct with data in a map when passed a list of maps" do
+      list_of_maps = [%{y: 1, x: 2, z: 5}, %{x: 3, y: 4, z: 6}]
+      dataset = Dataset.new(list_of_maps)
+      assert %Dataset{} = dataset
+      assert dataset.data == list_of_maps
+      assert dataset.headers == nil
+    end
   end
 
-  describe "column_index/2"do
+  describe "column_names/1" do
+    test "returns names if data is a map", %{dataset_maps: dataset_maps} do
+      assert [:x, :y, :z] ==
+        Dataset.column_names(dataset_maps)
+        |> Enum.sort()
+    end
+
+    test "returns names if data has headers", %{dataset: dataset} do
+      assert ["aa", "bb", "cccc", "d"] == Dataset.column_names(dataset)
+    end
+
+    test "returns names if tuple data does not have headers", %{dataset_nocols: dataset_nocols} do
+      assert [0, 1, 2, 3] == Dataset.column_names(dataset_nocols)
+    end
+
+    test "returns names if list data does not have headers" do
+      assert [0, 1, 2, 3] ==
+        Dataset.new([[1, 2, 3, 4], [4, 5, 6, 4], [-3, -2, -1, 0]])
+        |> Dataset.column_names()
+    end
+  end
+
+  describe "column_index/2" do
+    test "returns map key if data is a map", %{dataset_maps: dataset_maps} do
+      assert Dataset.column_index(dataset_maps, :x) == :x
+    end
+
+    test "returns nil if column name is not a map key", %{dataset_maps: dataset_maps} do
+      assert Dataset.column_index(dataset_maps, :not_a_key) == nil
+      # assert_raise(
+      #   ArgumentError,
+      #   "Column name provided is not a key in the data map.",
+      #   fn -> Dataset.column_index(dataset_maps, :not_a_key) end
+      # )
+    end
+
     test "returns nil if dataset has no headers", %{dataset_nocols: dataset_nocols} do
       assert Dataset.column_index(dataset_nocols, "bb") == nil 
     end
@@ -60,23 +104,29 @@ defmodule ContexDatasetTest do
     end
   end
 
-  describe "value/2" do
-    test "returns right value from data with no headers", %{dataset_nocols: dataset_nocols} do
-      [row1 | _] = dataset_nocols.data
-      assert Dataset.value(row1, 0) == 1
+  describe "value_fn/2" do
+    test "returns accessor function for map data", %{dataset_maps: dataset_maps} do
+      accessor = Dataset.value_fn(dataset_maps, :x)
+      assert accessor.(hd(dataset_maps.data)) == 2
     end
 
-    test "returns nil from data with no headers if row doesn't exist", %{dataset_nocols: dataset_nocols} do
-      [row1 | _] = dataset_nocols.data
-      assert Dataset.value(row1, 10) == nil
+    test "returns accessor function for tuple data with headers", %{dataset: dataset} do
+      accessor = Dataset.value_fn(dataset, "aa")
+      assert accessor.(hd(dataset.data)) == 1
     end
 
-    test "return correct value from data with headers", %{dataset_nocols: dataset_nocols, dataset: dataset} do
-      [row1 | _] = dataset_nocols.data
-      assert Dataset.value(row1, Dataset.column_index(dataset, "cccc")) == 3
+    test "returns accessor function for tuple data with no headers", %{dataset_nocols: dataset_nocols} do
+      accessor = Dataset.value_fn(dataset_nocols, 0)
+      assert accessor.(hd(dataset_nocols.data)) == 1
+    end
+
+    test "returns accessor function for list data with no headers" do
+      dataset =  Dataset.new([[1, 2, 3, 4], [4, 5, 6, 4], [-3, -2, -1, 0]])
+      accessor = Dataset.value_fn(dataset, 0)
+      assert accessor.(hd(dataset.data)) == 1
     end
   end
-      
+
   describe "column_extents/2" do
     test "returns appropriate boundary values for given column header", %{dataset: dataset} do
       assert Dataset.column_extents(dataset, "bb") == {-2, 5}
@@ -84,6 +134,10 @@ defmodule ContexDatasetTest do
   end
 
   describe "column_name/2" do
+    test "returns the map key when given the key for a column in map data", %{dataset_maps: dataset_maps} do
+      assert Dataset.column_name(dataset_maps, :x) == :x
+    end
+
     test "looks up the column name for a given index", %{dataset: dataset} do
       assert Dataset.column_name(dataset, 0) == "aa"
     end

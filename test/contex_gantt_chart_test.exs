@@ -15,25 +15,58 @@ defmodule ContexGanttChartTest do
         ["Category", "Task", "Start", "End", "Task ID"]
       )
       |> GanttChart.new()
-    %{plot: plot}
+
+     dataset_maps =
+      Dataset.new([
+        %{category: "Category 1", task: "Task 1", start: ~N{2019-10-01 10:00:00}, finish: ~N{2019-10-02 10:00:00}},
+        %{category: "Category 1", task: "Task 2", start: ~N{2019-10-02 10:00:00}, finish: ~N{2019-10-04 10:00:00}},
+        %{category: "Category 2", task: "Task 3", start: ~N{2019-10-04 10:00:00}, finish: ~N{2019-10-05 10:00:00}},
+        %{category: "Category 2", task: "Task 4", start: ~N{2019-10-06 10:00:00}, finish: ~N{2019-10-08 10:00:00}}
+        ]
+      )
+  %{plot: plot, dataset_maps: dataset_maps}
   end
 
-  # TODO
-  # Why is width/height set here and not in defaults/1?
-  describe "new/1" do
+  describe "new/2" do
     test "returns a GanttChart struct with defaults", %{plot: plot} do
       assert plot.width == 100
       assert plot.height == 100
     end
-  end
 
-  describe "defaults/1" do
-    test "returns a GanttChart struct with default properties", %{plot: plot} do
+    test "given data from a map and a valid column map, returns GanttChart struct accordingly", %{dataset_maps: dataset_maps} do
+      plot =
+        dataset_maps
+        |> GanttChart.new(mapping: %{
+          category_col: :category,
+          task_col: :task,
+          start_col: :start,
+          finish_col: :finish
+        }
+        )
+
       assert plot.padding == 2
       assert plot.show_task_labels == true
-      assert plot.category_col == "Category"
-      assert plot.task_col == "Task"
-      assert plot.interval_cols == {"Start", "End"}
+      assert plot.mapping.column_map.category_col == :category
+      assert plot.mapping.column_map.task_col == :task
+      assert plot.mapping.column_map.start_col == :start
+      assert plot.mapping.column_map.finish_col == :finish
+      assert plot.mapping.column_map.id_col == nil
+    end
+
+    test "Raises if invalid column map is passed with map data", %{dataset_maps: dataset_maps} do
+      assert_raise(
+        RuntimeError,
+        "Required mapping(s) \"category_col\", \"finish_col\", \"start_col\", \"task_col\" not included in column map.",
+        fn -> GanttChart.new(dataset_maps, mapping: %{x_col: :category}) end
+        )
+    end
+
+    test "Raises if no series is passed with map data", %{dataset_maps: dataset_maps} do
+      assert_raise(
+        ArgumentError,
+        "Can not create default data mappings with Map data.",
+        fn -> GanttChart.new(dataset_maps) end
+        )
     end
   end
 
@@ -47,14 +80,14 @@ defmodule ContexGanttChartTest do
   describe "set_category_task_cols/3" do
     test "sets the category and task columns", %{plot: plot} do
       plot = GanttChart.set_category_task_cols(plot, "Task", "Category")
-      assert plot.category_col == "Task"
-      assert plot.task_col == "Category"
+      assert plot.mapping.column_map.category_col == "Task"
+      assert plot.mapping.column_map.task_col == "Category"
     end
 
     test "raises when given column is not in the dataset", %{plot: plot} do
       assert_raise(
         RuntimeError,
-        "Column \"Wrong Series\" not in the dataset.",
+        "Column(s) \"Wrong Series\" in the column mapping not in the dataset.",
         fn ->
           GanttChart.set_category_task_cols(plot, "Wrong Series", "Task")
         end
@@ -65,13 +98,14 @@ defmodule ContexGanttChartTest do
   describe "set_task_interval_cols/2" do
     test "sets the interval columns' values", %{plot: plot} do
       plot = GanttChart.set_task_interval_cols(plot, {"End", "Start"})
-      assert plot.interval_cols == {"End", "Start"}
+      assert plot.mapping.column_map.start_col == "End"
+      assert plot.mapping.column_map.finish_col == "Start"
     end
 
     test "raises when given column is not in the dataset", %{plot: plot} do
       assert_raise(
         RuntimeError,
-        "Column \"Wrong Series\" not in the dataset.",
+        "Column(s) \"Wrong Series\" in the column mapping not in the dataset.",
         fn ->
           GanttChart.set_task_interval_cols(plot, {"End", "Wrong Series"})
         end
@@ -89,13 +123,13 @@ defmodule ContexGanttChartTest do
   describe "set_id_col/2" do
     test "sets the id column", %{plot: plot} do
       plot = GanttChart.set_id_col(plot, "Task ID")
-      assert plot.id_col == "Task ID"
+      assert plot.mapping.column_map.id_col == "Task ID"
     end
 
     test "raises when given column is not in the dataset", %{plot: plot} do
       assert_raise(
         RuntimeError,
-        "Column \"Wrong Series\" not in the dataset.",
+        "Column(s) \"Wrong Series\" in the column mapping not in the dataset.",
         fn ->
           GanttChart.set_id_col(plot, "Wrong Series")
         end
@@ -163,6 +197,23 @@ defmodule ContexGanttChartTest do
         |> Enum.map(&(Map.get(&1, :label)))
 
       assert labels == ["Task 1", "Task 2", "Task 3", "Task 4"]
+    end
+
+    test "generates equivalent output with map data", %{plot: plot, dataset_maps: dataset_maps} do
+      map_plot_svg =
+        dataset_maps
+        |> Plot.new(GanttChart, 200, 200, mapping: %{
+          category_col: :category,
+          task_col: :task,
+          start_col: :start,
+          finish_col: :finish
+        })
+        |> Plot.to_svg()
+
+      assert map_plot_svg ==
+        plot.dataset
+        |> Plot.new(GanttChart, 200, 200)
+        |> Plot.to_svg()
     end
   end
 end

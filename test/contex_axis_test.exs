@@ -258,8 +258,8 @@ defmodule ContexAxisTest do
   end
 
   # Not tested yet because it's not clear how it's used
-  @tag :skip
-  test "gridlines_to_svg/1" do
-  end
+  # @tag :skip
+  # test "gridlines_to_svg/1" do
+  # end
 
 end

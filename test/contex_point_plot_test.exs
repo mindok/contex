@@ -11,24 +11,31 @@ defmodule ContexPointPlotTest do
     %{plot: plot}
   end
 
-  # TODO
-  # Why is width/height set here and not in defaults/1?
-  describe "new/1" do
-    test "returns a PointPlot struct with defaults", %{plot: plot} do
+  describe "new/2" do
+    test "given data from tuples or lists, returns a PointPlot struct with defaults", %{plot: plot} do
       assert plot.width == 100
       assert plot.height == 100
     end
-  end
 
-  # TODO
-  # Separate test from new/1 is not really necessary but doing so
-  # to highlight whether this should be public; why would you call
-  # it except internally?
-  describe "defaults/1" do
-    test "returns a PointPlot struct with default properties", %{plot: plot} do
-      assert plot.colour_palette == :default
-      assert plot.x_col == "aa"
-      assert plot.y_cols == ["bb"]
+    test "given data from a map and a valid column map, returns a PointPlot struct accordingly" do
+      plot =
+        Dataset.new([%{"bb" => 2, "aa" => 2}, %{"aa" => 3, "bb" => 4}])
+        |> PointPlot.new(mapping: %{x_col: "bb", y_cols: ["aa"]})
+      assert plot.width == 100
+      assert plot.height == 100
+      assert plot.mapping.column_map.x_col == "bb"
+      assert plot.mapping.column_map.y_cols == ["aa"]
+    end
+
+    test "Raises if no mapping is passed with map data" do
+      assert_raise(
+        ArgumentError,
+        "Can not create default data mappings with Map data.",
+        fn ->
+          Dataset.new([%{"bb" => 2, "aa" => 2}, %{"aa" => 3, "bb" => 4}])
+          |> PointPlot.new()
+        end
+      )
     end
   end
 
@@ -115,6 +122,18 @@ defmodule ContexPointPlotTest do
         end)
     end
 
+    test "generates equivalent output when passed map data", %{plot: plot} do
+      other_plot =
+        Dataset.new([
+          %{"aa" => 1, "bb" => 2, "cccc" => 3, "dd" => 4},
+          %{"aa" => 4, "bb" => 5, "cccc" => 6, "dd" => 4},
+          %{"aa" => -3, "bb" => -2, "cccc" => -1, "dd" => 0}
+        ])
+        |> PointPlot.new(mapping: %{x_col: "aa", y_cols: ["bb"]})
+
+      assert PointPlot.to_svg(plot) == PointPlot.to_svg(other_plot)
+    end
+
     test "renders custom fill colors properly", %{plot: plot} do
       points_map =
         PointPlot.set_colour_col_name(plot, "d")
@@ -136,17 +155,7 @@ defmodule ContexPointPlotTest do
   describe "set_x_col_name/2" do
     test "sets x column to specified dataset column", %{plot: plot} do
       plot = PointPlot.set_x_col_name(plot, "cccc")
-      assert plot.x_col == "cccc"
-    end
-
-    test "raises when given column is not in the dataset", %{plot: plot} do
-      assert_raise(
-        RuntimeError,
-        "Column \"Wrong Series\" not in the dataset.",
-        fn ->
-          PointPlot.set_x_col_name(plot, "Wrong Series")
-        end
-      )
+      assert plot.mapping.column_map.x_col == "cccc"
     end
   end
 
@@ -155,38 +164,20 @@ defmodule ContexPointPlotTest do
   describe "set_y_col_names/2" do
     test "sets y column(s) to specified dataset column(s)", %{plot: plot} do
       plot = PointPlot.set_y_col_names(plot, ["aa", "bb"])
-      assert plot.y_cols == ["aa", "bb"]
-    end
-
-    test "raises when given columns are not in the dataset", %{plot: plot} do
-      assert_raise(
-        RuntimeError,
-        "Column(s) \"Wrong Series\" not in the dataset.",
-        fn ->
-          PointPlot.set_y_col_names(plot, ["aa", "Wrong Series"])
-        end
-      )
-
-      assert_raise(
-        RuntimeError,
-        "Column(s) \"Wrong Series\", \"Wronger Series\" not in the dataset.",
-        fn ->
-          PointPlot.set_y_col_names(plot, ["Wrong Series", "Wronger Series"])
-        end
-      )
+      assert plot.mapping.column_map.y_cols == ["aa", "bb"]
     end
   end
 
   describe "set_colour_col_name/2" do
     test "sets the fill color column to the given column", %{plot: plot} do
       plot = PointPlot.set_colour_col_name(plot, "cccc")
-      assert plot.fill_col == "cccc"
+      assert plot.mapping.column_map.fill_col == "cccc"
     end
 
     test "raises when given column is not in the dataset", %{plot: plot} do
       assert_raise(
         RuntimeError,
-        "Column \"Wrong Series\" not in the dataset.",
+        "Column(s) \"Wrong Series\" in the column mapping not in the dataset.",
         fn ->
           PointPlot.set_colour_col_name(plot, "Wrong Series")
         end
