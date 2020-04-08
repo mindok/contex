@@ -1,6 +1,9 @@
 # ContEx Change Log
 
 ## v0.3.0 : In Progress
+- Allow Dataset to be created from a list of Maps (previously lists of lists and list of tuples were supported)
+- Implement a data mapping mechanism to provide a consistent way of mapping data into required plot elements. Thanks 
+@srowley for breaking the back of this.
 - Added simplified chart creation API. Thanks @srowley. The existing API remains as-is
 - Added test coverage for some components. Thanks @srowley
 - Refactored SVG generation to minimise, or at least isolate, messy string interpolation, as per @elcritch suggestion. More to do on code tidy up.
@@ -11,6 +14,8 @@
 - A number of bug fixes in TimeScales, plus additional type guards
 - Added basic sanitization of possible user inputs (titles, axis labels, category names from data). Sanitization approach is somewhat naive - basically any text is run through a copy of the `Plug.HTML.html_escape`.
 - Fixed scaling bug in sparkline when data range was small
+- Added axis_label_rotation option to PointPlot and BarChart. Thanks @srowley.
+- Allow plot margins to be optionally specified and override default calcs. Thanks @axelson.
 
 ## v0.2.0 : 2020-01-28
 - Documentation for all modules

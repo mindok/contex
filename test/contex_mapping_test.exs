@@ -71,7 +71,7 @@ defmodule ContexMappingTest do
       assert_raise(
         RuntimeError,
         "Required mapping(s) \"y_cols\" not included in column map.",
-        fn -> Mapping.map!(PointPlot.new(plot_with.maps.dataset, mapping: %{x_col: :x})) end
+        fn -> Mapping.new(plot_with.required_columns, %{x_col: :x}, plot_with.maps_data) end
       )
     end
 
