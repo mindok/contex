@@ -33,7 +33,7 @@ shown. You can force the range using `force_value_range/2`
   alias Contex.Utils
 
   defstruct [:dataset, :mapping, :options, :category_scale, :value_scale, :series_fill_colours,
-    :custom_value_formatter, :phx_event_handler, :select_item, :value_range, width: 100, height: 100,
+    :custom_value_formatter, :phx_event_handler, :select_item, :value_range, axis_label_rotation: :auto, width: 100, height: 100,
     type: :stacked, data_labels: true, orientation: :vertical, colour_palette: :default, padding: 2]
 
   @required_mappings [
@@ -109,6 +109,21 @@ shown. You can force the range using `force_value_range/2`
     %{plot | width: width, height: height}
     |> set_val_col_names(mapping.column_map.value_cols)
     |> set_cat_col_name(mapping.column_map.category_col)
+  end
+
+  @doc """
+  Specifies the label rotation value that will be applied to the bottom axis. Accepts integer
+  values for degrees of rotation or `:auto`. Note that manually set rotation values other than
+  45 or 90 will be treated as zero. The default value is `:auto`, which sets the rotation to
+  zero degrees if the number of items on the axis is greater than eight, 45 degrees otherwise.
+  """
+  @spec axis_label_rotation(Contex.BarChart.t(), integer() | :auto) :: Contex.BarChart.t()
+  def axis_label_rotation(%BarChart{} = plot, rotation) when is_integer(rotation) do
+    %{plot | axis_label_rotation: rotation}
+  end
+
+  def axis_label_rotation(%BarChart{} = plot, _) do
+    %{plot | axis_label_rotation: :auto}
   end
 
   @doc """
@@ -220,15 +235,18 @@ shown. You can force the range using `force_value_range/2`
     Axis.new_left_axis(category_scale) |> Axis.set_offset(plot.width)
   end
   defp get_category_axis(category_scale, _, plot) do
-    category_axis =  Axis.new_bottom_axis(category_scale) |> Axis.set_offset(plot.height)
+    rotation =
+      case plot.axis_label_rotation do
+        :auto ->
+          if length(Scale.ticks_range(category_scale)) > 8, do: 45, else: 0
+        degrees ->
+          degrees
+      end
 
-    #TODO: Move into defaults and options
-    category_axis = case length(Scale.ticks_range(category_scale)) > 8 do
-      true -> %{category_axis | rotation: 45}
-      _ -> category_axis
-    end
-
-    category_axis
+    category_scale
+    |> Axis.new_bottom_axis()
+    |> Axis.set_offset(plot.height)
+    |> Kernel.struct(rotation: rotation)
   end
 
   defp get_value_axis(value_scale, :horizontal, plot), do: Axis.new_bottom_axis(value_scale) |> Axis.set_offset(plot.height)

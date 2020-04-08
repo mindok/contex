@@ -24,7 +24,7 @@ A column in the dataset can optionally be used to control the colours. See
   alias Contex.Axis
   alias Contex.Utils
 
-  defstruct [:dataset, :mapping, :x_scale, :y_scale, :fill_scale, transforms: %{}, width: 100, height: 100, colour_palette: :default]
+  defstruct [:dataset, :mapping, :x_scale, :y_scale, :fill_scale, transforms: %{}, axis_label_rotation: :auto, width: 100, height: 100, colour_palette: :default]
 
   @required_mappings [
     x_col: :exactly_one,
@@ -80,6 +80,21 @@ A column in the dataset can optionally be used to control the colours. See
     |> set_y_col_names(plot.mapping.column_map.y_cols)
   end
 
+  @doc """
+  Specifies the label rotation value that will be applied to the bottom axis. Accepts integer
+  values for degrees of rotation or `:auto`. Note that manually set rotation values other than
+  45 or 90 will be treated as zero. The default value is `:auto`, which sets the rotation to
+  zero degrees if the number of items on the axis is greater than eight, 45 degrees otherwise.
+  """
+  @spec axis_label_rotation(Contex.PointPlot.t(), integer() | :auto) :: Contex.PointPlot.t()
+  def axis_label_rotation(%PointPlot{} = plot, rotation) when is_integer(rotation) do
+    %{plot | axis_label_rotation: rotation}
+  end
+
+  def axis_label_rotation(%PointPlot{} = plot, _) do
+    %{plot | axis_label_rotation: :auto}
+  end
+
   @doc false
   def set_size(%PointPlot{mapping: %{column_map: column_map}} = plot, width, height) do
     # We pretend to set the x & y columns to force a recalculation of scales - may be expensive.
@@ -105,7 +120,7 @@ A column in the dataset can optionally be used to control the colours. See
 
   @doc false
   def to_svg(%PointPlot{x_scale: x_scale, y_scale: y_scale} = plot) do
-    axis_x = get_x_axis(x_scale, plot.height)
+    axis_x = get_x_axis(x_scale, plot)
     axis_y = Axis.new_left_axis(y_scale) |> Axis.set_offset(plot.width)
 
     [
@@ -117,15 +132,19 @@ A column in the dataset can optionally be used to control the colours. See
     ]
   end
 
-  defp get_x_axis(x_scale, offset) do
-    axis
-      = Axis.new_bottom_axis(x_scale)
-        |> Axis.set_offset(offset)
+  defp get_x_axis(x_scale, plot) do
+    rotation =
+      case plot.axis_label_rotation do
+        :auto ->
+          if length(Scale.ticks_range(x_scale)) > 8, do: 45, else: 0
+        degrees ->
+          degrees
+      end
 
-    case length(Scale.ticks_range(x_scale)) > 8 do
-      true -> %{axis | rotation: 45}
-      _ -> axis
-    end
+    x_scale
+    |> Axis.new_bottom_axis()
+    |> Axis.set_offset(plot.height)
+    |> Kernel.struct(rotation: rotation)
   end
 
   defp get_svg_points(%PointPlot{dataset: dataset} = plot) do

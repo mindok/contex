@@ -1,7 +1,7 @@
 defmodule ContexPointPlotTest do
   use ExUnit.Case
 
-  alias Contex.{CategoryColourScale, Dataset, PointPlot}
+  alias Contex.{CategoryColourScale, Dataset, PointPlot, Plot}
   import SweetXml
 
   setup do
@@ -65,6 +65,24 @@ defmodule ContexPointPlotTest do
       plot = PointPlot.set_size(plot, 666, 222)
       assert plot.width == 666
       assert plot.height == 222
+    end
+  end
+
+  describe "axis_label_rotation/2" do
+    test "sets the axis label rotation", %{plot: plot} do
+      plot = PointPlot.axis_label_rotation(plot, 45)
+      assert plot.axis_label_rotation == 45
+    end
+
+   test "rotates the labels when set", %{plot: plot} do
+     plot = PointPlot.axis_label_rotation(plot, 45)
+     assert ["rotate(-45)"] ==
+       Plot.new(200, 200, plot)
+       |> Plot.to_svg()
+       |> elem(1)
+       |> IO.chardata_to_string()
+       |> xpath(~x"/svg/g/g/g/text/@transform"sl)
+       |> Enum.uniq()
     end
   end
 

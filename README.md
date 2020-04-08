@@ -38,7 +38,7 @@ Each chart type implements the `PlotContent` protocol which requires it to scale
 So to generate SVG ready for your web-page you would do something like:
 
 ```elixir
-plot = Plot(600, 400, point_plot)
+plot = Plot.new(600, 400, point_plot)
  |> Plot.plot_options(%{legend_setting: :legend_right})
  |> Plot.titles("My first plot", "With a fancy subtitle")
 
