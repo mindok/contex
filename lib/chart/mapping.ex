@@ -70,9 +70,13 @@ defmodule Contex.Mapping do
   updates the mapping accordingly and returns the plot.
   """
   @spec update(Contex.Mapping.t(), map()) :: Contex.Mapping.t()
-  def update(%__MODULE__{expected_mappings: expected_mappings, dataset: dataset} = mapping, updated_mappings) do
-    column_map = Map.merge(mapping.column_map, updated_mappings)
-    |> check_mappings(expected_mappings, dataset)
+  def update(
+        %__MODULE__{expected_mappings: expected_mappings, dataset: dataset} = mapping,
+        updated_mappings
+      ) do
+    column_map =
+      Map.merge(mapping.column_map, updated_mappings)
+      |> check_mappings(expected_mappings, dataset)
 
     mapped_accessors = accessors(dataset, column_map)
 
@@ -82,35 +86,49 @@ defmodule Contex.Mapping do
   defp check_mappings(nil, expected_mappings, %Dataset{} = dataset) do
     check_mappings(default_mapping(expected_mappings, dataset), expected_mappings, dataset)
   end
+
   defp check_mappings(mappings, expected_mappings, %Dataset{} = dataset) do
     add_nil_for_optional_mappings(mappings, expected_mappings)
-      |> validate_mappings(expected_mappings, dataset)
+    |> validate_mappings(expected_mappings, dataset)
   end
 
-  defp default_mapping(_expected_mappings, %Dataset{data: [first | _rest]} = _dataset) when is_map(first) do
+  defp default_mapping(_expected_mappings, %Dataset{data: [first | _rest]} = _dataset)
+       when is_map(first) do
     raise(ArgumentError, "Can not create default data mappings with Map data.")
   end
 
   defp default_mapping(expected_mappings, %Dataset{} = dataset) do
     Enum.with_index(expected_mappings)
-      |> Enum.reduce(%{}, fn({{expected_mapping, expected_count}, index}, mapping) ->
-        column_name = Dataset.column_name(dataset, index)
-        column_names = case expected_count do
+    |> Enum.reduce(%{}, fn {{expected_mapping, expected_count}, index}, mapping ->
+      column_name = Dataset.column_name(dataset, index)
+
+      column_names =
+        case expected_count do
           :exactly_one -> column_name
           :one_or_more -> [column_name]
           :zero_or_one -> nil
           :zero_or_more -> [nil]
         end
-        Map.put(mapping, expected_mapping, column_names)
-      end)
+
+      Map.put(mapping, expected_mapping, column_names)
+    end)
   end
 
   defp add_nil_for_optional_mappings(mappings, expected_mappings) do
     Enum.reduce(expected_mappings, mappings, fn {expected_mapping, expected_count}, mapping ->
       case expected_count do
-        :zero_or_one -> if mapping[expected_mapping] == nil, do: Map.put(mapping, expected_mapping, nil), else: mapping
-        :zero_or_more -> if mapping[expected_mapping] == nil, do: Map.put(mapping, expected_mapping, [nil]), else: mapping
-        _ -> mapping
+        :zero_or_one ->
+          if mapping[expected_mapping] == nil,
+            do: Map.put(mapping, expected_mapping, nil),
+            else: mapping
+
+        :zero_or_more ->
+          if mapping[expected_mapping] == nil,
+            do: Map.put(mapping, expected_mapping, [nil]),
+            else: mapping
+
+        _ ->
+          mapping
       end
     end)
   end
@@ -123,7 +141,6 @@ defmodule Contex.Mapping do
     provided_mappings
   end
 
-
   defp check_required_columns!(expected_mappings, column_map) do
     required_mappings = Enum.map(expected_mappings, fn {k, _v} -> k end)
 
@@ -131,24 +148,29 @@ defmodule Contex.Mapping do
     missing_mappings = missing_columns(required_mappings, provided_mappings)
 
     case missing_mappings do
-      [] -> :ok
+      [] ->
+        :ok
+
       mappings ->
-        mapping_string = Enum.map_join(mappings, ", ", &("\"#{&1}\""))
+        mapping_string = Enum.map_join(mappings, ", ", &"\"#{&1}\"")
         raise "Required mapping(s) #{mapping_string} not included in column map."
     end
   end
 
   defp confirm_columns_in_dataset!(dataset, column_map) do
     available_columns = [nil | Dataset.column_names(dataset)]
+
     missing_columns =
       Map.values(column_map)
       |> List.flatten()
       |> missing_columns(available_columns)
 
     case missing_columns do
-      [] -> :ok
+      [] ->
+        :ok
+
       columns ->
-        column_string = Enum.map_join(columns, ", ", &("\"#{&1}\""))
+        column_string = Enum.map_join(columns, ", ", &"\"#{&1}\"")
         raise "Column(s) #{column_string} in the column mapping not in the dataset."
     end
   end
@@ -167,7 +189,7 @@ defmodule Contex.Mapping do
   end
 
   defp accessor(dataset, columns) when is_list(columns) do
-    Enum.map(columns, &(accessor(dataset, &1)))
+    Enum.map(columns, &accessor(dataset, &1))
   end
 
   defp accessor(_dataset, nil) do

@@ -8,11 +8,14 @@ defmodule ContexPointPlotTest do
     plot =
       Dataset.new([{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}], ["aa", "bb", "cccc", "d"])
       |> PointPlot.new()
+
     %{plot: plot}
   end
 
   describe "new/2" do
-    test "given data from tuples or lists, returns a PointPlot struct with defaults", %{plot: plot} do
+    test "given data from tuples or lists, returns a PointPlot struct with defaults", %{
+      plot: plot
+    } do
       assert plot.width == 100
       assert plot.height == 100
     end
@@ -21,6 +24,7 @@ defmodule ContexPointPlotTest do
       plot =
         Dataset.new([%{"bb" => 2, "aa" => 2}, %{"aa" => 3, "bb" => 4}])
         |> PointPlot.new(mapping: %{x_col: "bb", y_cols: ["aa"]})
+
       assert plot.width == 100
       assert plot.height == 100
       assert plot.mapping.column_map.x_col == "bb"
@@ -74,29 +78,29 @@ defmodule ContexPointPlotTest do
       assert plot.axis_label_rotation == 45
     end
 
-   test "rotates the labels when set", %{plot: plot} do
-     plot = PointPlot.axis_label_rotation(plot, 45)
-     assert ["rotate(-45)"] ==
-       Plot.new(200, 200, plot)
-       |> Plot.to_svg()
-       |> elem(1)
-       |> IO.chardata_to_string()
-       |> xpath(~x"/svg/g/g/g/text/@transform"sl)
-       |> Enum.uniq()
+    test "rotates the labels when set", %{plot: plot} do
+      plot = PointPlot.axis_label_rotation(plot, 45)
+
+      assert ["rotate(-45)"] ==
+               Plot.new(200, 200, plot)
+               |> Plot.to_svg()
+               |> elem(1)
+               |> IO.chardata_to_string()
+               |> xpath(~x"/svg/g/g/g/text/@transform"sl)
+               |> Enum.uniq()
     end
   end
 
   describe "to_svg/1" do
-
     defp plot_iodata_to_map(plot_iodata) do
       IO.chardata_to_string(plot_iodata)
       |> String.replace_prefix("", "<svg>")
       |> String.replace_suffix("", "</svg>")
-      |> xpath(~x"//g/circle"l, [
+      |> xpath(~x"//g/circle"l,
         cx: ~x"./@cx"s,
         cy: ~x"./@cy"s,
         style: ~x"./@style"s
-      ])
+      )
     end
 
     # Axis svg not tested as it is for practical purposes handled
@@ -107,19 +111,18 @@ defmodule ContexPointPlotTest do
         |> plot_iodata_to_map()
 
       assert ["fill:#1f77b4;"] ==
-        Enum.map(points_map, fn point -> Map.get(point, :style) end)
-        |> Enum.uniq()
+               Enum.map(points_map, fn point -> Map.get(point, :style) end)
+               |> Enum.uniq()
 
       assert [{57.143, 42.857}, {100, 0}, {0, 100}] ==
-        Enum.map(points_map, fn point ->
-          {Map.get(point, :cx)
-           |> String.to_float()
-           |> Float.round(3),
-           Map.get(point, :cy)
-           |> String.to_float()
-           |> Float.round(3)
-          }
-        end)
+               Enum.map(points_map, fn point ->
+                 {Map.get(point, :cx)
+                  |> String.to_float()
+                  |> Float.round(3),
+                  Map.get(point, :cy)
+                  |> String.to_float()
+                  |> Float.round(3)}
+               end)
     end
 
     test "generates equivalent output when passed map data", %{plot: plot} do
@@ -141,10 +144,9 @@ defmodule ContexPointPlotTest do
         |> plot_iodata_to_map()
 
       assert 2 ==
-        Enum.map(points_map, fn point -> Map.get(point, :style) end)
-        |> Enum.uniq()
-        |> Enum.count()
-
+               Enum.map(points_map, fn point -> Map.get(point, :style) end)
+               |> Enum.uniq()
+               |> Enum.count()
     end
   end
 

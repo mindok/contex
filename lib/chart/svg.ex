@@ -1,7 +1,7 @@
 defmodule Contex.SVG do
-@moduledoc """
-Convenience functions for generating SVG output
-"""
+  @moduledoc """
+  Convenience functions for generating SVG output
+  """
 
   def text(x, y, content, opts \\ []) do
     attrs = opts_to_attrs(opts)
@@ -40,7 +40,7 @@ Convenience functions for generating SVG output
     ]
   end
 
-  def rect({_x1, _x2}=x_extents, {_y1, _y2}=y_extents, inner_content, opts \\ []) do
+  def rect({_x1, _x2} = x_extents, {_y1, _y2} = y_extents, inner_content, opts \\ []) do
     width = width(x_extents)
     height = width(y_extents)
     y = min(y_extents)
@@ -76,41 +76,54 @@ Convenience functions for generating SVG output
 
   defp opts_to_attrs([{:phx_click, val} | t], attrs),
     do: opts_to_attrs(t, [[" phx-click=\"", val, "\""] | attrs])
+
   defp opts_to_attrs([{:series, val} | t], attrs),
     do: opts_to_attrs(t, [[" phx-value-series=\"", "#{clean(val)}", "\""] | attrs])
+
   defp opts_to_attrs([{:category, val} | t], attrs),
     do: opts_to_attrs(t, [[" phx-value-category=\"", "#{clean(val)}", "\""] | attrs])
+
   defp opts_to_attrs([{:value, val} | t], attrs),
     do: opts_to_attrs(t, [[" phx-value-value=\"", "#{clean(val)}", "\""] | attrs])
+
   defp opts_to_attrs([{:id, val} | t], attrs),
     do: opts_to_attrs(t, [[" phx-value-id=\"", "#{val}", "\""] | attrs])
+
   defp opts_to_attrs([{:task, val} | t], attrs),
     do: opts_to_attrs(t, [[" phx-value-task=\"", "#{clean(val)}", "\""] | attrs])
-  #TODO: This is going to break down with more complex styles
+
+  # TODO: This is going to break down with more complex styles
   defp opts_to_attrs([{:fill, val} | t], attrs),
     do: opts_to_attrs(t, [[" style=\"fill:#", val, ";\""] | attrs])
+
   defp opts_to_attrs([{:opacity, val} | t], attrs),
     do: opts_to_attrs(t, [[" fill-opacity=\"", val, "\""] | attrs])
+
   defp opts_to_attrs([{:class, val} | t], attrs),
     do: opts_to_attrs(t, [[" class=\"", val, "\""] | attrs])
+
   defp opts_to_attrs([{:transform, val} | t], attrs),
     do: opts_to_attrs(t, [[" transform=\"", val, "\""] | attrs])
+
   defp opts_to_attrs([{:text_anchor, val} | t], attrs),
     do: opts_to_attrs(t, [[" text-anchor=\"", val, "\""] | attrs])
+
   defp opts_to_attrs([{:dominant_baseline, val} | t], attrs),
     do: opts_to_attrs(t, [[" dominant-baseline=\"", val, "\""] | attrs])
+
   defp opts_to_attrs([{:alignment_baseline, val} | t], attrs),
     do: opts_to_attrs(t, [[" alignment-baseline=\"", val, "\""] | attrs])
 
   defp opts_to_attrs([{key, val} | t], attrs) when is_atom(key),
     do: opts_to_attrs(t, [[" ", Atom.to_string(key), "=\"", clean(val), "\""] | attrs])
+
   defp opts_to_attrs([{key, val} | t], attrs) when is_binary(key),
     do: opts_to_attrs(t, [[" ", key, "=\"", clean(val), "\""] | attrs])
+
   defp opts_to_attrs([], attrs), do: attrs
 
   defp width({a, b}), do: abs(a - b)
-  defp min({a, b}), do: min(a,b)
+  defp min({a, b}), do: min(a, b)
 
   defp clean(s), do: Contex.SVG.Sanitize.basic_sanitize(s)
-
 end

@@ -6,7 +6,7 @@ defmodule Contex.MixProject do
       app: :contex,
       version: "0.2.0",
       elixir: "~> 1.9",
-      build_embedded: Mix.env == :prod,
+      build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
       description: description(),
       package: package(),

@@ -21,17 +21,19 @@ defmodule ContexPlotTest do
 
       assert plot.width == 150
       assert plot.height == 200
+
       assert plot.plot_options == %{
-        show_x_axis: true,
-        show_y_axis: true,
-        legend_setting: :legend_none
-      }
+               show_x_axis: true,
+               show_y_axis: true,
+               legend_setting: :legend_none
+             }
+
       assert plot.margins == %{
-        left: 70,
-        top: 10,
-        right: 10,
-        bottom: 70
-      }
+               left: 70,
+               top: 10,
+               right: 10,
+               bottom: 70
+             }
     end
 
     test "Sets orientation on BarChart" do
@@ -44,17 +46,18 @@ defmodule ContexPlotTest do
 
     test "can override margins" do
       plot_options = %{top_margin: 5, right_margin: 6, bottom_margin: 7, left_margin: 8}
+
       plot =
         Dataset.new([{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}], ["aa", "bb", "cccc", "d"])
         |> Plot.new(BarChart, 150, 200, plot_options: plot_options)
         |> Contex.Plot.plot_options(plot_options)
 
       assert plot.margins == %{
-        top: 5,
-        right: 6,
-        bottom: 7,
-        left: 8
-      }
+               top: 5,
+               right: 6,
+               bottom: 7,
+               left: 8
+             }
     end
 
     test "returns a Plot struct using assigned attributes" do
@@ -72,12 +75,13 @@ defmodule ContexPlotTest do
       assert plot.title == "Title"
       assert plot.x_label == "X Label"
       assert plot.plot_options.legend_setting == :legend_right
+
       assert plot.margins == %{
-        left: 70,
-        top: 40,
-        right: 110,
-        bottom: 90
-      }
+               left: 70,
+               top: 40,
+               right: 110,
+               bottom: 90
+             }
     end
   end
 
@@ -85,23 +89,25 @@ defmodule ContexPlotTest do
     test "returns a Plot struct with default options and margins", %{plot: plot} do
       assert plot.width == 150
       assert plot.height == 200
+
       assert plot.plot_options == %{
-        show_x_axis: true,
-        show_y_axis: true,
-        legend_setting: :legend_none
-      }
+               show_x_axis: true,
+               show_y_axis: true,
+               legend_setting: :legend_none
+             }
+
       assert plot.margins == %{
-        left: 70,
-        top: 10,
-        right: 10,
-        bottom: 70
-      }
+               left: 70,
+               top: 10,
+               right: 10,
+               bottom: 70
+             }
     end
   end
 
   describe "dataset/3" do
     test "given two lists updates the dataset and headers", %{plot: plot} do
-      plot = Plot.dataset(plot, [{1,2}, {3,4}], ["x", "y"])
+      plot = Plot.dataset(plot, [{1, 2}, {3, 4}], ["x", "y"])
       assert plot.plot_content.dataset.data == [{1, 2}, {3, 4}]
       assert plot.plot_content.dataset.headers == ["x", "y"]
     end
@@ -109,7 +115,7 @@ defmodule ContexPlotTest do
 
   describe "dataset/2" do
     test "given a Dataset updates the dataset", %{plot: plot} do
-      dataset = Dataset.new([{1,2}, {3,4}],["first", "second"])
+      dataset = Dataset.new([{1, 2}, {3, 4}], ["first", "second"])
       plot = Plot.dataset(plot, dataset)
       assert plot.plot_content.dataset.headers == ["first", "second"]
       assert plot.plot_content.dataset.data == [{1, 2}, {3, 4}]
@@ -117,7 +123,7 @@ defmodule ContexPlotTest do
 
     test "given one list updates the dataset, preserving headers", %{plot: plot} do
       headers = plot.plot_content.dataset.headers
-      plot = Plot.dataset(plot, [{1,2}, {3,4}])
+      plot = Plot.dataset(plot, [{1, 2}, {3, 4}])
       assert plot.plot_content.dataset.data == [{1, 2}, {3, 4}]
       assert plot.plot_content.dataset.headers == headers
     end
@@ -125,7 +131,8 @@ defmodule ContexPlotTest do
 
   describe "attributes/2" do
     test "updates provided attributes", %{plot: plot} do
-      plot = Plot.attributes(plot, title: "Title", x_label: "X Label", legend_setting: :legend_right)
+      plot =
+        Plot.attributes(plot, title: "Title", x_label: "X Label", legend_setting: :legend_right)
 
       assert plot.title == "Title"
       assert plot.x_label == "X Label"
@@ -133,37 +140,41 @@ defmodule ContexPlotTest do
     end
 
     test "recalculates margins", %{plot: plot} do
-      plot = Plot.attributes(plot, title: "Title", x_label: "X Label", legend_setting: :legend_right)
+      plot =
+        Plot.attributes(plot, title: "Title", x_label: "X Label", legend_setting: :legend_right)
 
       assert plot.margins == %{
-        left: 70,
-        top: 40,
-        right: 110,
-        bottom: 90
-      }
+               left: 70,
+               top: 40,
+               right: 110,
+               bottom: 90
+             }
     end
   end
 
   describe "plot_options/2" do
     setup context do
-      %{plot: Plot.plot_options(context.plot, %{show_y_axis: false, legend_setting: :legend_right})}
+      %{
+        plot:
+          Plot.plot_options(context.plot, %{show_y_axis: false, legend_setting: :legend_right})
+      }
     end
 
     test "sets plot options", %{plot: plot} do
       assert plot.plot_options == %{
-        show_x_axis: true,
-        show_y_axis: false,
-        legend_setting: :legend_right
-      }
+               show_x_axis: true,
+               show_y_axis: false,
+               legend_setting: :legend_right
+             }
     end
 
     test "recalculates margins", %{plot: plot} do
       assert plot.margins == %{
-        left: 0,
-        top: 10,
-        right: 110,
-        bottom: 70
-      }
+               left: 0,
+               top: 10,
+               right: 110,
+               bottom: 70
+             }
     end
   end
 
@@ -179,14 +190,14 @@ defmodule ContexPlotTest do
 
     test "recalculates margins", %{plot: plot} do
       assert plot.margins == %{
-        left: 70,
-        top: 55,
-        right: 10,
-        bottom: 70
-      }
+               left: 70,
+               top: 55,
+               right: 10,
+               bottom: 70
+             }
     end
   end
-    
+
   describe "axis_labels/3" do
     setup context do
       %{plot: Plot.axis_labels(context.plot, "X Side", "Y Side")}
@@ -199,11 +210,11 @@ defmodule ContexPlotTest do
 
     test "recalculates margins", %{plot: plot} do
       assert plot.margins == %{
-        left: 90,
-        top: 10,
-        right: 10,
-        bottom: 90
-      }
+               left: 90,
+               top: 10,
+               right: 10,
+               bottom: 90
+             }
     end
   end
 
@@ -223,11 +234,11 @@ defmodule ContexPlotTest do
     # not clear why.
     test "doesn't affect margins", %{plot: plot} do
       assert plot.margins == %{
-        left: 70,
-        top: 10,
-        right: 10,
-        bottom: 70
-      }
+               left: 70,
+               top: 10,
+               right: 10,
+               bottom: 70
+             }
     end
   end
 
@@ -238,37 +249,37 @@ defmodule ContexPlotTest do
         |> Plot.axis_labels("X Side", "Y Side")
         |> Plot.plot_options(%{legend_setting: :legend_right})
         |> Plot.to_svg()
-      
+
       svg =
-        IO.chardata_to_string(svg) 
-        |> xpath(~x"/svg", 
-             viewbox: ~x"./@viewBox"s,
-             title: [
-               ~x"./text[@class='exc-title']",
-               text: ~x"./text()"s,
-               x: ~x"./@x"s,
-               y: ~x"./@y"s
-             ],
-             subtitle: [
-               ~x".//text[@class='exc-subtitle'][1]",
-               text: ~x"./text()"s,
-               x: ~x"./@x"s,
-               y: ~x"./@y"s
-             ],
-             x_axis_label: [
-               ~x".//text[@class='exc-subtitle'][2]",
-               text: ~x"./text()"s,
-               x: ~x"./@x"s,
-               y: ~x"./@y"s
-             ],
-             y_axis_label: [
-               ~x".//text[@class='exc-subtitle'][3]",
-               text: ~x"./text()"s,
-               x: ~x"./@x"s,
-               y: ~x"./@y"s
-             ],
-             legend_transform: ~x"./g[last()]/@transform"s
-           )
+        IO.chardata_to_string(svg)
+        |> xpath(~x"/svg",
+          viewbox: ~x"./@viewBox"s,
+          title: [
+            ~x"./text[@class='exc-title']",
+            text: ~x"./text()"s,
+            x: ~x"./@x"s,
+            y: ~x"./@y"s
+          ],
+          subtitle: [
+            ~x".//text[@class='exc-subtitle'][1]",
+            text: ~x"./text()"s,
+            x: ~x"./@x"s,
+            y: ~x"./@y"s
+          ],
+          x_axis_label: [
+            ~x".//text[@class='exc-subtitle'][2]",
+            text: ~x"./text()"s,
+            x: ~x"./@x"s,
+            y: ~x"./@y"s
+          ],
+          y_axis_label: [
+            ~x".//text[@class='exc-subtitle'][3]",
+            text: ~x"./text()"s,
+            x: ~x"./@x"s,
+            y: ~x"./@y"s
+          ],
+          legend_transform: ~x"./g[last()]/@transform"s
+        )
 
       # Only test elements that are not rendered ultimately rendered 
       # by PlotContent.to_svg/1 or PlotContent.get_svg_legend/1

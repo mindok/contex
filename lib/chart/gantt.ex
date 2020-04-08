@@ -1,19 +1,19 @@
 defmodule Contex.GanttChart do
-@moduledoc """
-Generates a Gantt Chart.
+  @moduledoc """
+  Generates a Gantt Chart.
 
-Bars are drawn for each task covering the start and end time for each task. In addition, tasks can be grouped
-into categories which have a different coloured background - this is useful for showing projects that are
-in major phases.
+  Bars are drawn for each task covering the start and end time for each task. In addition, tasks can be grouped
+  into categories which have a different coloured background - this is useful for showing projects that are
+  in major phases.
 
-The time interval columns must be of a date time type (either `NaiveDateTime` or `DateTime`)
+  The time interval columns must be of a date time type (either `NaiveDateTime` or `DateTime`)
 
-Labels can optionally be drawn for each task (use `show_task_labels/2`) and a description for each task, including
-the time interval is generated and added as a '&lt;title&gt;' element attached to the bar. Most browsers provide
-a tooltip functionality to display the title when the mouse hovers over the containing element.
+  Labels can optionally be drawn for each task (use `show_task_labels/2`) and a description for each task, including
+  the time interval is generated and added as a '&lt;title&gt;' element attached to the bar. Most browsers provide
+  a tooltip functionality to display the title when the mouse hovers over the containing element.
 
-By default, the first four columns of the supplied dataset are used for the category, task, start time and end time.
-"""
+  By default, the first four columns of the supplied dataset are used for the category, task, start time and end time.
+  """
 
   import Contex.SVG
 
@@ -23,7 +23,18 @@ By default, the first four columns of the supplied dataset are used for the cate
   alias Contex.Axis
   alias Contex.Utils
 
-  defstruct [:dataset, :mapping, :time_scale, :task_scale, :category_scale, :phx_event_handler, width: 100, height: 100, show_task_labels: true,  padding: 2]
+  defstruct [
+    :dataset,
+    :mapping,
+    :time_scale,
+    :task_scale,
+    :category_scale,
+    :phx_event_handler,
+    width: 100,
+    height: 100,
+    show_task_labels: true,
+    padding: 2
+  ]
 
   @required_mappings [
     category_col: :exactly_one,
@@ -81,9 +92,17 @@ By default, the first four columns of the supplied dataset are used for the cate
   @doc """
   Specify the columns used for category and task
   """
-  @spec set_category_task_cols(Contex.GanttChart.t(), Contex.Dataset.column_name(), Contex.Dataset.column_name()) ::
+  @spec set_category_task_cols(
+          Contex.GanttChart.t(),
+          Contex.Dataset.column_name(),
+          Contex.Dataset.column_name()
+        ) ::
           Contex.GanttChart.t()
-  def set_category_task_cols(%GanttChart{dataset: dataset, height: height, padding: padding, mapping: mapping} = plot, cat_col_name, task_col_name) do
+  def set_category_task_cols(
+        %GanttChart{dataset: dataset, height: height, padding: padding, mapping: mapping} = plot,
+        cat_col_name,
+        task_col_name
+      ) do
     mapping = Mapping.update(mapping, %{category_col: cat_col_name, task_col: task_col_name})
 
     tasks = Dataset.unique_values(dataset, task_col_name)
@@ -102,9 +121,15 @@ By default, the first four columns of the supplied dataset are used for the cate
   @doc """
   Specify the columns used for start and end time of each task.
   """
-  @spec set_task_interval_cols(Contex.GanttChart.t(), {Contex.Dataset.column_name(), Contex.Dataset.column_name()}) ::
+  @spec set_task_interval_cols(
+          Contex.GanttChart.t(),
+          {Contex.Dataset.column_name(), Contex.Dataset.column_name()}
+        ) ::
           Contex.GanttChart.t()
-  def set_task_interval_cols(%GanttChart{dataset: dataset, width: width, mapping: mapping} = plot, {start_col_name, finish_col_name}) do
+  def set_task_interval_cols(
+        %GanttChart{dataset: dataset, width: width, mapping: mapping} = plot,
+        {start_col_name, finish_col_name}
+      ) do
     mapping = Mapping.update(mapping, %{start_col: start_col_name, finish_col: finish_col_name})
     {min, _} = Dataset.column_extents(dataset, start_col_name)
     {_, max} = Dataset.column_extents(dataset, finish_col_name)
@@ -152,7 +177,9 @@ By default, the first four columns of the supplied dataset are used for the cate
     ]
   end
 
-  defp get_category_rects_svg(%GanttChart{mapping: mapping, dataset: dataset, category_scale: cat_scale} = plot) do
+  defp get_category_rects_svg(
+         %GanttChart{mapping: mapping, dataset: dataset, category_scale: cat_scale} = plot
+       ) do
     categories = Dataset.unique_values(dataset, mapping.column_map.category_col)
 
     Enum.map(categories, fn cat ->
@@ -173,9 +200,11 @@ By default, the first four columns of the supplied dataset are used for the cate
   defp adjust_category_band({y1, y2}), do: {y1 - 1, y2 + 1}
 
   defp get_category_tick_svg(text, {_min_y, max_y} = _band) do
-    #y = midpoint(band)
+    # y = midpoint(band)
     y = max_y
-    [~s|<g class="exc-tick" font-size="10" text-anchor="start" transform="translate(0, #{y})">|,
+
+    [
+      ~s|<g class="exc-tick" font-size="10" text-anchor="start" transform="translate(0, #{y})">|,
       text(text, x: "2", dy: "-0.32em", alignment_baseline: "baseline"),
       "</g>"
     ]
@@ -186,7 +215,15 @@ By default, the first four columns of the supplied dataset are used for the cate
     |> Enum.map(fn row -> get_svg_bar(row, plot) end)
   end
 
-  defp get_svg_bar(row, %GanttChart{mapping: mapping, task_scale: task_scale, time_scale: time_scale, category_scale: cat_scale} = plot) do
+  defp get_svg_bar(
+         row,
+         %GanttChart{
+           mapping: mapping,
+           task_scale: task_scale,
+           time_scale: time_scale,
+           category_scale: cat_scale
+         } = plot
+       ) do
     task_data = mapping.accessors.task_col.(row)
     cat_data = mapping.accessors.category_col.(row)
     start_time = mapping.accessors.start_col.(row)
@@ -207,34 +244,59 @@ By default, the first four columns of the supplied dataset are used for the cate
   end
 
   defp get_svg_bar_label(%GanttChart{show_task_labels: false}, _, _, _), do: ""
-  defp get_svg_bar_label(_plot, {bar_start, bar_end}=bar, label, band) do
+
+  defp get_svg_bar_label(_plot, {bar_start, bar_end} = bar, label, band) do
     text_y = midpoint(band)
     width = width(bar)
 
-    {text_x, class, anchor} = case width < 50 do
-      true -> {bar_end + 2, "exc-barlabel-out", "start"}
-      _ -> {bar_start + 5, "exc-barlabel-in", "start"}
-    end
+    {text_x, class, anchor} =
+      case width < 50 do
+        true -> {bar_end + 2, "exc-barlabel-out", "start"}
+        _ -> {bar_start + 5, "exc-barlabel-in", "start"}
+      end
 
     text(text_x, text_y, label, anchor: anchor, dominant_baseline: "central", class: class)
   end
 
-  defp get_bar_event_handler_opts(_row, %GanttChart{mapping: %{column_map: %{id_col: nil}}, phx_event_handler: phx_event_handler}, category, task) when is_binary(phx_event_handler) and phx_event_handler != "" do
+  defp get_bar_event_handler_opts(
+         _row,
+         %GanttChart{
+           mapping: %{column_map: %{id_col: nil}},
+           phx_event_handler: phx_event_handler
+         },
+         category,
+         task
+       )
+       when is_binary(phx_event_handler) and phx_event_handler != "" do
     [category: "#{category}", task: task, phx_click: phx_event_handler]
   end
-  defp get_bar_event_handler_opts(row, %GanttChart{mapping: mapping, phx_event_handler: phx_event_handler}, _category, _task) when is_binary(phx_event_handler) and phx_event_handler != "" do
+
+  defp get_bar_event_handler_opts(
+         row,
+         %GanttChart{mapping: mapping, phx_event_handler: phx_event_handler},
+         _category,
+         _task
+       )
+       when is_binary(phx_event_handler) and phx_event_handler != "" do
     id = mapping.accessors.id_col.(row)
 
     [id: "#{id}", phx_click: phx_event_handler]
   end
+
   defp get_bar_event_handler_opts(_row, %GanttChart{} = _plot, _category, _task), do: []
 
-  defp get_category_band(%GanttChart{mapping: mapping, task_scale: task_scale, dataset: dataset}, category) do
-    Enum.reduce(dataset.data, {nil, nil}, fn row, {min, max}=acc ->
+  defp get_category_band(
+         %GanttChart{mapping: mapping, task_scale: task_scale, dataset: dataset},
+         category
+       ) do
+    Enum.reduce(dataset.data, {nil, nil}, fn row, {min, max} = acc ->
       task = mapping.accessors.task_col.(row)
       cat = mapping.accessors.category_col.(row)
+
       case cat == category do
-        false -> {min, max}
+        false ->
+          {min, max}
+
         _ ->
           task_band = OrdinalScale.get_band(task_scale, task)
           max_band(acc, task_band)

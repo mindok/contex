@@ -28,9 +28,19 @@ defmodule Contex.Sparkline do
   alias __MODULE__
   alias Contex.{ContinuousLinearScale, Scale}
 
-  defstruct [:data, :extents, :length, :spot_radius, :spot_colour,
-      :line_width, :line_colour, :fill_colour, :y_transform,
-      :height, :width]
+  defstruct [
+    :data,
+    :extents,
+    :length,
+    :spot_radius,
+    :spot_colour,
+    :line_width,
+    :line_colour,
+    :fill_colour,
+    :y_transform,
+    :height,
+    :width
+  ]
 
   @type t() :: %__MODULE__{}
 
@@ -40,7 +50,7 @@ defmodule Contex.Sparkline do
   @spec new([number()]) :: Contex.Sparkline.t()
   def new(data) when is_list(data) do
     %Sparkline{data: data, extents: ContinuousLinearScale.extents(data), length: length(data)}
-      |> set_default_style
+    |> set_default_style
   end
 
   @doc """
@@ -56,15 +66,22 @@ defmodule Contex.Sparkline do
   ```
   """
   @spec colours(Contex.Sparkline.t(), String.t(), String.t()) :: Contex.Sparkline.t()
-  def colours(%Sparkline{} = sparkline,  fill, line) do
-    #TODO: Really need some validation...
+  def colours(%Sparkline{} = sparkline, fill, line) do
+    # TODO: Really need some validation...
     %{sparkline | fill_colour: fill, line_colour: line}
   end
 
   defp set_default_style(%Sparkline{} = sparkline) do
-    %{sparkline | spot_radius: 2, spot_colour: "red", line_width: 1,
-        line_colour: "rgba(0, 200, 50, 0.7)", fill_colour: "rgba(0, 200, 50, 0.2)",
-        height: 20, width: 100}
+    %{
+      sparkline
+      | spot_radius: 2,
+        spot_colour: "red",
+        line_width: 1,
+        line_colour: "rgba(0, 200, 50, 0.7)",
+        fill_colour: "rgba(0, 200, 50, 0.2)",
+        height: 20,
+        width: 100
+    }
   end
 
   @doc """
@@ -73,17 +90,16 @@ defmodule Contex.Sparkline do
   """
   def draw(%Sparkline{height: height, width: width, line_width: line_width} = sparkline) do
     vb_width = sparkline.length + 1
-    vb_height = height - (2 * line_width)
+    vb_height = height - 2 * line_width
 
-    scale
-      = ContinuousLinearScale.new()
-        |> ContinuousLinearScale.domain(sparkline.data)
-        |> Scale.set_range(vb_height, 0)
+    scale =
+      ContinuousLinearScale.new()
+      |> ContinuousLinearScale.domain(sparkline.data)
+      |> Scale.set_range(vb_height, 0)
 
     sparkline = %{sparkline | y_transform: Scale.domain_to_range_fn(scale)}
 
-    output =
-    ~s"""
+    output = ~s"""
        <svg height="#{height}" width="#{width}" viewBox="0 0 #{vb_width} #{vb_height}" preserveAspectRatio="none" role="img">
         <path d="#{get_closed_path(sparkline, vb_height)}" #{get_fill_style(sparkline)}></path>
         <path d="#{get_path(sparkline)}" #{get_line_style(sparkline)}></path>
@@ -110,17 +126,18 @@ defmodule Contex.Sparkline do
   # This is the IO List approach
   defp get_path(%Sparkline{y_transform: transform_func} = sparkline) do
     last_item = Enum.count(sparkline.data) - 1
-    ["M", sparkline.data
-         |> Enum.map(transform_func)
-         |> Enum.with_index()
-         |> Enum.map(fn {value, i} ->
-            case i < last_item do
-              true -> "#{i} #{value} L "
-              _ -> "#{i} #{value}"
-            end
-          end)
+
+    [
+      "M",
+      sparkline.data
+      |> Enum.map(transform_func)
+      |> Enum.with_index()
+      |> Enum.map(fn {value, i} ->
+        case i < last_item do
+          true -> "#{i} #{value} L "
+          _ -> "#{i} #{value}"
+        end
+      end)
     ]
   end
-
 end
-

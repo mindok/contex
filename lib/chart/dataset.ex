@@ -1,68 +1,67 @@
 defmodule Contex.Dataset do
-@moduledoc """
-`Dataset` is a simple wrapper around a datasource for plotting charts.
+  @moduledoc """
+  `Dataset` is a simple wrapper around a datasource for plotting charts.
 
-Dataset marshalls a couple of different data structures into a consistent form for consumption
-by the chart plotting functions. It allows a list of maps, list of lists or a list of tuples to be
-treated the same.
+  Dataset marshalls a couple of different data structures into a consistent form for consumption
+  by the chart plotting functions. It allows a list of maps, list of lists or a list of tuples to be
+  treated the same.
 
-The most sensible way to work with a dataset is to provide column headers - it makes code elsewhere
-readable. When the provided data is a list of maps, headers are inferred from the map keys. If you
-don't want to, you can also refer to columns by index.
+  The most sensible way to work with a dataset is to provide column headers - it makes code elsewhere
+  readable. When the provided data is a list of maps, headers are inferred from the map keys. If you
+  don't want to, you can also refer to columns by index.
 
-Dataset provides a few convenience functions for calculating data extents for a column, extracting unique
-values from columns, calculating combined extents for multiple columns (handy when plotting bar charts)
-and guessing column type (handy when determining whether to use a `Contex.TimeScale` or a `Contex.ContinuousLinearScale`).
+  Dataset provides a few convenience functions for calculating data extents for a column, extracting unique
+  values from columns, calculating combined extents for multiple columns (handy when plotting bar charts)
+  and guessing column type (handy when determining whether to use a `Contex.TimeScale` or a `Contex.ContinuousLinearScale`).
 
-Datasets can be created from a list of maps:
-    iex> data = [
-    ...>        %{x: 0.0, y: 0.0, category: "Hippo"},
-    ...>        %{x: 0.2, y: 0.3, category: "Rabbit"}
-    ...>        ] # Wherever your data comes from (e.g. could be straight from Ecto)
-    ...> dataset = Dataset.new(data)
-    %Contex.Dataset{
-      data: [
-        %{category: "Hippo", x: 0.0, y: 0.0},
-        %{category: "Rabbit", x: 0.2, y: 0.3}
-      ],
-      headers: nil,
-      title: nil
-    }
-    iex> Dataset.column_names(dataset)
-    [:category, :x, :y] # Note ordering of column names from map data is not guaranteed
+  Datasets can be created from a list of maps:
+      iex> data = [
+      ...>        %{x: 0.0, y: 0.0, category: "Hippo"},
+      ...>        %{x: 0.2, y: 0.3, category: "Rabbit"}
+      ...>        ] # Wherever your data comes from (e.g. could be straight from Ecto)
+      ...> dataset = Dataset.new(data)
+      %Contex.Dataset{
+        data: [
+          %{category: "Hippo", x: 0.0, y: 0.0},
+          %{category: "Rabbit", x: 0.2, y: 0.3}
+        ],
+        headers: nil,
+        title: nil
+      }
+      iex> Dataset.column_names(dataset)
+      [:category, :x, :y] # Note ordering of column names from map data is not guaranteed
 
-or from a list of tuples (or lists):
-    iex> data = [
-    ...>        {0.0, 0.0, "Hippo"},
-    ...>        {0.5, 0.3, "Turtle"},
-    ...>        {0.4, 0.3, "Turtle"},
-    ...>        {0.2, 0.3, "Rabbit"}
-    ...>        ]
-    ...> dataset = Dataset.new(data, ["x", "y", "category"]) # Attach descriptive headers
-    iex> Dataset.column_names(dataset)
-    ["x", "y", "category"]
-    ...> Dataset.column_extents(dataset, "x") # Get extents for a named column
-    {0.0, 0.5}
-    iex> Dataset.column_index(dataset, "x") # Get index of column by name
-    0
-    iex> category_col = Dataset.column_name(dataset, 2) # Get name of column by index
-    "category"
-    iex> Enum.map(dataset.data, fn row -> # Enumerate values in a column
-    ...>    accessor = Dataset.value_fn(dataset, category_col)
-    ...>    accessor.(row)
-    ...> end)
-    ["Hippo", "Turtle", "Turtle", "Rabbit"]
-    iex> Dataset.unique_values(dataset, "category") # Extract unique values for legends etc.
-    ["Hippo", "Turtle", "Rabbit"]
+  or from a list of tuples (or lists):
+      iex> data = [
+      ...>        {0.0, 0.0, "Hippo"},
+      ...>        {0.5, 0.3, "Turtle"},
+      ...>        {0.4, 0.3, "Turtle"},
+      ...>        {0.2, 0.3, "Rabbit"}
+      ...>        ]
+      ...> dataset = Dataset.new(data, ["x", "y", "category"]) # Attach descriptive headers
+      iex> Dataset.column_names(dataset)
+      ["x", "y", "category"]
+      ...> Dataset.column_extents(dataset, "x") # Get extents for a named column
+      {0.0, 0.5}
+      iex> Dataset.column_index(dataset, "x") # Get index of column by name
+      0
+      iex> category_col = Dataset.column_name(dataset, 2) # Get name of column by index
+      "category"
+      iex> Enum.map(dataset.data, fn row -> # Enumerate values in a column
+      ...>    accessor = Dataset.value_fn(dataset, category_col)
+      ...>    accessor.(row)
+      ...> end)
+      ["Hippo", "Turtle", "Turtle", "Rabbit"]
+      iex> Dataset.unique_values(dataset, "category") # Extract unique values for legends etc.
+      ["Hippo", "Turtle", "Rabbit"]
 
-Dataset gives facilities to map between names and column indexes. Where headers are not supplied (either directly or
-via map keys), the column index is treated as the column name internally. Data values are retrieved by column name
-using accessor functions, in order to avoid expensive mappings in tight loops.
+  Dataset gives facilities to map between names and column indexes. Where headers are not supplied (either directly or
+  via map keys), the column index is treated as the column name internally. Data values are retrieved by column name
+  using accessor functions, in order to avoid expensive mappings in tight loops.
 
-**Note** There are very few validation checks when a dataset is created (for example, to checks that number of headers
-supplied matches) the size of each array or tuple in the data. If there are any issues finding a value, nil is returned.
-"""
-
+  **Note** There are very few validation checks when a dataset is created (for example, to checks that number of headers
+  supplied matches) the size of each array or tuple in the data. If there are any issues finding a value, nil is returned.
+  """
 
   alias __MODULE__
   alias Contex.Utils
@@ -123,10 +122,13 @@ supplied matches) the size of each array or tuple in the data. If there are any 
     Enum.find_index(headers, fn col -> col == column_name end)
   end
 
-  def column_index(_, column_name) when is_integer(column_name) do column_name end
+  def column_index(_, column_name) when is_integer(column_name) do
+    column_name
+  end
+
   def column_index(_, _), do: nil
 
-  #TODO: Should this be column_ids - they are essentially the internal column names
+  # TODO: Should this be column_ids - they are essentially the internal column names
   @doc """
   Returns a list of the names of all of the columns in the dataset data (irrespective of
   whether the column names are mapped to plot elements).
@@ -136,14 +138,16 @@ supplied matches) the size of each array or tuple in the data. If there are any 
     Map.keys(first_row)
   end
 
-  def column_names(%Dataset{data: [first_row | _], headers: headers}) when is_nil(headers) and is_tuple(first_row) do
+  def column_names(%Dataset{data: [first_row | _], headers: headers})
+      when is_nil(headers) and is_tuple(first_row) do
     max = tuple_size(first_row) - 1
-    (0..max) |> Enum.into([])
+    0..max |> Enum.into([])
   end
 
-  def column_names(%Dataset{data: [first_row | _], headers: headers}) when is_nil(headers) and is_list(first_row) do
+  def column_names(%Dataset{data: [first_row | _], headers: headers})
+      when is_nil(headers) and is_list(first_row) do
     max = length(first_row) - 1
-    (0..max) |> Enum.into([])
+    0..max |> Enum.into([])
   end
 
   def column_names(%Dataset{headers: headers}), do: headers
@@ -156,10 +160,10 @@ supplied matches) the size of each array or tuple in the data. If there are any 
   """
   @spec column_name(Contex.Dataset.t(), integer() | any) :: column_name()
   def column_name(%Dataset{headers: headers} = _dataset, column_index)
-      when is_list(headers)
-      and is_integer(column_index)
-      and column_index < length(headers) # Maybe drop this guard and have it throw an exception
-  do
+      when is_list(headers) and
+             is_integer(column_index) and
+             # Maybe drop this guard and have it throw an exception
+             column_index < length(headers) do
     Enum.at(headers, column_index)
   end
 
@@ -181,11 +185,13 @@ supplied matches) the size of each array or tuple in the data. If there are any 
     "Hippo"
   """
   @spec value_fn(Contex.Dataset.t(), column_name()) :: (row() -> any)
-  def value_fn(%Dataset{data: [first_row | _]}, column_name) when is_map(first_row) and is_binary(column_name) do
+  def value_fn(%Dataset{data: [first_row | _]}, column_name)
+      when is_map(first_row) and is_binary(column_name) do
     fn row -> row[column_name] end
   end
 
-  def value_fn(%Dataset{data: [first_row | _]}, column_name) when is_map(first_row) and is_atom(column_name) do
+  def value_fn(%Dataset{data: [first_row | _]}, column_name)
+      when is_map(first_row) and is_atom(column_name) do
     fn row -> row[column_name] end
   end
 
@@ -196,6 +202,7 @@ supplied matches) the size of each array or tuple in the data. If there are any 
 
   def value_fn(%Dataset{data: [first_row | _]} = dataset, column_name) when is_tuple(first_row) do
     column_index = column_index(dataset, column_name)
+
     if column_index < tuple_size(first_row) do
       fn row -> elem(row, column_index) end
     else
@@ -211,12 +218,11 @@ supplied matches) the size of each array or tuple in the data. If there are any 
   @spec column_extents(Contex.Dataset.t(), column_name()) :: {any, any}
   def column_extents(%Dataset{data: data} = dataset, column_name) do
     accessor = Dataset.value_fn(dataset, column_name)
-    Enum.reduce(data, {nil, nil},
-        fn row, {min, max} ->
-          val = accessor.(row)
-          {Utils.safe_min(val, min), Utils.safe_max(val, max)}
-        end
-    )
+
+    Enum.reduce(data, {nil, nil}, fn row, {min, max} ->
+      val = accessor.(row)
+      {Utils.safe_min(val, min), Utils.safe_max(val, max)}
+    end)
   end
 
   @doc """
@@ -227,8 +233,10 @@ supplied matches) the size of each array or tuple in the data. If there are any 
   @spec guess_column_type(Contex.Dataset.t(), column_name()) :: column_type()
   def guess_column_type(%Dataset{data: data} = dataset, column_name) do
     accessor = Dataset.value_fn(dataset, column_name)
+
     Enum.reduce_while(data, nil, fn row, _result ->
       val = accessor.(row)
+
       case evaluate_type(val) do
         {:ok, type} -> {:halt, type}
         _ -> {:cont, nil}
@@ -250,13 +258,13 @@ supplied matches) the size of each array or tuple in the data. If there are any 
   """
   @spec combined_column_extents(Contex.Dataset.t(), list(column_name())) :: {any(), any()}
   def combined_column_extents(%Dataset{data: data} = dataset, column_names) do
-    accessors = Enum.map(column_names, fn column_name -> Dataset.value_fn(dataset, column_name) end)
-    Enum.reduce(data, {nil, nil},
-        fn row, {min, max} ->
-          val = sum_row_values(row, accessors)
-          {Utils.safe_min(val, min), Utils.safe_max(val, max)}
-        end
-    )
+    accessors =
+      Enum.map(column_names, fn column_name -> Dataset.value_fn(dataset, column_name) end)
+
+    Enum.reduce(data, {nil, nil}, fn row, {min, max} ->
+      val = sum_row_values(row, accessors)
+      {Utils.safe_min(val, min), Utils.safe_max(val, max)}
+    end)
   end
 
   defp sum_row_values(row, accessors) do
@@ -275,15 +283,16 @@ supplied matches) the size of each array or tuple in the data. If there are any 
   @spec unique_values(Contex.Dataset.t(), String.t() | integer()) :: [any]
   def unique_values(%Dataset{data: data} = dataset, column_name) do
     accessor = Dataset.value_fn(dataset, column_name)
-    {result, _found} = Enum.reduce(data, {[], MapSet.new},
-      fn row, {result, found} ->
+
+    {result, _found} =
+      Enum.reduce(data, {[], MapSet.new()}, fn row, {result, found} ->
         val = accessor.(row)
+
         case MapSet.member?(found, val) do
           true -> {result, found}
           _ -> {[val | result], MapSet.put(found, val)}
         end
-      end
-    )
+      end)
 
     # Maintain order they are found in
     Enum.reverse(result)

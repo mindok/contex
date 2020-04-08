@@ -1,19 +1,19 @@
 defmodule Contex.PointPlot do
-@moduledoc """
-A simple point plot, plotting points showing y values against x values.
+  @moduledoc """
+  A simple point plot, plotting points showing y values against x values.
 
-It is possible to specify multiple y columns with the same x column. It is not
-yet possible to specify multiple independent series.
+  It is possible to specify multiple y columns with the same x column. It is not
+  yet possible to specify multiple independent series.
 
-The x column can either be numeric or date time data. If numeric, a
-`Contex.ContinuousLinearScale` is used to scale the values to the plot,
-and if date time, a `Contex.TimeScale` is used.
+  The x column can either be numeric or date time data. If numeric, a
+  `Contex.ContinuousLinearScale` is used to scale the values to the plot,
+  and if date time, a `Contex.TimeScale` is used.
 
-Fill colours for each y column can be specified with `colours/2`.
+  Fill colours for each y column can be specified with `colours/2`.
 
-A column in the dataset can optionally be used to control the colours. See
-`colours/2` and `set_colour_col_name/2`
-"""
+  A column in the dataset can optionally be used to control the colours. See
+  `colours/2` and `set_colour_col_name/2`
+  """
 
   import Contex.SVG
 
@@ -24,7 +24,18 @@ A column in the dataset can optionally be used to control the colours. See
   alias Contex.Axis
   alias Contex.Utils
 
-  defstruct [:dataset, :mapping, :x_scale, :y_scale, :fill_scale, transforms: %{}, axis_label_rotation: :auto, width: 100, height: 100, colour_palette: :default]
+  defstruct [
+    :dataset,
+    :mapping,
+    :x_scale,
+    :y_scale,
+    :fill_scale,
+    transforms: %{},
+    axis_label_rotation: :auto,
+    width: 100,
+    height: 100,
+    colour_palette: :default
+  ]
 
   @required_mappings [
     x_col: :exactly_one,
@@ -70,11 +81,13 @@ A column in the dataset can optionally be used to control the colours. See
   If a single y column is defined and no colour column is defined, the first colour
   in the supplied colour palette will be used to plot the points.
   """
-  @spec colours(Contex.PointPlot.t(), Contex.CategoryColourScale.colour_palette()) :: Contex.PointPlot.t()
+  @spec colours(Contex.PointPlot.t(), Contex.CategoryColourScale.colour_palette()) ::
+          Contex.PointPlot.t()
   def colours(plot, colour_palette) when is_list(colour_palette) or is_atom(colour_palette) do
     %{plot | colour_palette: colour_palette}
     |> set_y_col_names(plot.mapping.column_map.y_cols)
   end
+
   def colours(plot, _) do
     %{plot | colour_palette: :default}
     |> set_y_col_names(plot.mapping.column_map.y_cols)
@@ -105,7 +118,10 @@ A column in the dataset can optionally be used to control the colours. See
   end
 
   @doc false
-  def get_svg_legend(%PointPlot{mapping: %{column_map: %{y_cols: y_cols, fill_col: fill_col}}} = plot) when length(y_cols) > 0 or is_nil(fill_col) do
+  def get_svg_legend(
+        %PointPlot{mapping: %{column_map: %{y_cols: y_cols, fill_col: fill_col}}} = plot
+      )
+      when length(y_cols) > 0 or is_nil(fill_col) do
     # We do the point plotting with an index to look up the colours. For the legend we need the names
     series_fill_colours =
       CategoryColourScale.new(y_cols)
@@ -113,9 +129,11 @@ A column in the dataset can optionally be used to control the colours. See
 
     Contex.Legend.to_svg(series_fill_colours)
   end
+
   def get_svg_legend(%PointPlot{fill_scale: scale}) do
     Contex.Legend.to_svg(scale)
   end
+
   def get_svg_legend(_), do: ""
 
   @doc false
@@ -137,6 +155,7 @@ A column in the dataset can optionally be used to control the colours. See
       case plot.axis_label_rotation do
         :auto ->
           if length(Scale.ticks_range(x_scale)) > 8, do: 45, else: 0
+
         degrees ->
           degrees
       end
@@ -180,7 +199,15 @@ A column in the dataset can optionally be used to control the colours. See
   #   [~s|<path d="|, path, ~s|"|, style, "></path>"]
   # end
 
-  defp get_svg_point(%PointPlot{mapping: %{accessors: accessors, column_map: %{y_cols: y_cols}}, transforms: transforms, fill_scale: fill_scale}, row) when length(y_cols) == 1 do
+  defp get_svg_point(
+         %PointPlot{
+           mapping: %{accessors: accessors, column_map: %{y_cols: y_cols}},
+           transforms: transforms,
+           fill_scale: fill_scale
+         },
+         row
+       )
+       when length(y_cols) == 1 do
     x =
       accessors.x_col.(row)
       |> transforms.x.()
@@ -200,22 +227,30 @@ A column in the dataset can optionally be used to control the colours. See
     get_svg_point(x, y, fill)
   end
 
-  defp get_svg_point(%PointPlot{mapping: %{accessors: accessors}, transforms: transforms, fill_scale: fill_scale}, row) do
+  defp get_svg_point(
+         %PointPlot{
+           mapping: %{accessors: accessors},
+           transforms: transforms,
+           fill_scale: fill_scale
+         },
+         row
+       ) do
     x =
       accessors.x_col.(row)
       |> transforms.x.()
 
     Enum.with_index(accessors.y_cols)
     |> Enum.map(fn {accessor, index} ->
-         y = accessor.(row) |> transforms.y.()
-         fill = CategoryColourScale.colour_for_value(fill_scale, index)
-         get_svg_point(x, y, fill)
+      y = accessor.(row) |> transforms.y.()
+      fill = CategoryColourScale.colour_for_value(fill_scale, index)
+      get_svg_point(x, y, fill)
     end)
   end
 
   defp get_svg_point(x, y, fill) when is_number(x) and is_number(y) do
     circle(x, y, 3, fill: fill)
   end
+
   defp get_svg_point(_x, _y, _fill), do: ""
 
   @doc """
@@ -224,7 +259,10 @@ A column in the dataset can optionally be used to control the colours. See
   This column must contain numeric or date time data.
   """
   @spec set_x_col_name(Contex.PointPlot.t(), Contex.Dataset.column_name()) :: Contex.PointPlot.t()
-  def set_x_col_name(%PointPlot{dataset: dataset, width: width, mapping: mapping} = plot, x_col_name) do
+  def set_x_col_name(
+        %PointPlot{dataset: dataset, width: width, mapping: mapping} = plot,
+        x_col_name
+      ) do
     mapping = Mapping.update(mapping, %{x_col: x_col_name})
 
     x_scale = create_scale_for_column(dataset, x_col_name, {0, width})
@@ -242,9 +280,15 @@ A column in the dataset can optionally be used to control the colours. See
   Where more than one y column is specified the colours are used to identify data from
   each column.
   """
-  @spec set_y_col_names(Contex.PointPlot.t(), [Contex.Dataset.column_name()]) :: Contex.PointPlot.t()
-  def set_y_col_names(%PointPlot{dataset: dataset, height: height, mapping: mapping} = plot, y_col_names) when is_list(y_col_names) do
+  @spec set_y_col_names(Contex.PointPlot.t(), [Contex.Dataset.column_name()]) ::
+          Contex.PointPlot.t()
+  def set_y_col_names(
+        %PointPlot{dataset: dataset, height: height, mapping: mapping} = plot,
+        y_col_names
+      )
+      when is_list(y_col_names) do
     mapping = Mapping.update(mapping, %{y_cols: y_col_names})
+
     {min, max} =
       get_overall_domain(dataset, y_col_names)
       |> Utils.fixup_value_range()
@@ -265,16 +309,24 @@ A column in the dataset can optionally be used to control the colours. See
       CategoryColourScale.new(fill_indices)
       |> CategoryColourScale.set_palette(plot.colour_palette)
 
-    %{plot | y_scale: y_scale, transforms: transforms, fill_scale: series_fill_colours, mapping: mapping}
+    %{
+      plot
+      | y_scale: y_scale,
+        transforms: transforms,
+        fill_scale: series_fill_colours,
+        mapping: mapping
+    }
   end
 
   defp get_overall_domain(dataset, col_names) do
-    combiner = fn {min1, max1}, {min2, max2} -> {Utils.safe_min(min1, min2), Utils.safe_max(max1, max2)} end
+    combiner = fn {min1, max1}, {min2, max2} ->
+      {Utils.safe_min(min1, min2), Utils.safe_max(max1, max2)}
+    end
 
     Enum.reduce(col_names, {nil, nil}, fn col, acc_extents ->
-          inner_extents = Dataset.column_extents(dataset, col)
-          combiner.(acc_extents, inner_extents)
-        end )
+      inner_extents = Dataset.column_extents(dataset, col)
+      combiner.(acc_extents, inner_extents)
+    end)
   end
 
   defp create_scale_for_column(dataset, column, {r_min, r_max}) do
@@ -283,12 +335,13 @@ A column in the dataset can optionally be used to control the colours. See
     case Dataset.guess_column_type(dataset, column) do
       :datetime ->
         TimeScale.new()
-          |> TimeScale.domain(min, max)
-          |> Scale.set_range(r_min, r_max)
+        |> TimeScale.domain(min, max)
+        |> Scale.set_range(r_min, r_max)
+
       :number ->
         ContinuousLinearScale.new()
-          |> ContinuousLinearScale.domain(min, max)
-          |> Scale.set_range(r_min, r_max)
+        |> ContinuousLinearScale.domain(min, max)
+        |> Scale.set_range(r_min, r_max)
     end
   end
 
@@ -297,9 +350,11 @@ A column in the dataset can optionally be used to control the colours. See
 
   Note: This is ignored if there are multiple y columns.
   """
-  @spec set_colour_col_name(Contex.PointPlot.t(), Contex.Dataset.column_name()) :: Contex.PointPlot.t()
-  def set_colour_col_name(%PointPlot{}=plot, nil), do: plot
-  def set_colour_col_name(%PointPlot{dataset: dataset, mapping: mapping}=plot, fill_col_name) do
+  @spec set_colour_col_name(Contex.PointPlot.t(), Contex.Dataset.column_name()) ::
+          Contex.PointPlot.t()
+  def set_colour_col_name(%PointPlot{} = plot, nil), do: plot
+
+  def set_colour_col_name(%PointPlot{dataset: dataset, mapping: mapping} = plot, fill_col_name) do
     mapping = Mapping.update(mapping, %{fill_col: fill_col_name})
     vals = Dataset.unique_values(dataset, fill_col_name)
     colour_scale = CategoryColourScale.new(vals)

@@ -60,7 +60,6 @@ defmodule ContexAxisTest do
       scale = Contex.CategoryColourScale.new([5, 10, 15], :default)
       assert_raise ArgumentError, fn -> Axis.new(scale, :top) end
     end
-
   end
 
   describe "new_top_axis/1" do
@@ -105,6 +104,7 @@ defmodule ContexAxisTest do
         ContinuousLinearScale.new()
         |> ContinuousLinearScale.domain(0, 1)
         |> Axis.new(:right)
+
       %{axis_map: axis_map(axis)}
     end
 
@@ -122,19 +122,19 @@ defmodule ContexAxisTest do
 
     test "positions tick marks properly", %{axis_map: axis_map} do
       assert ["(0, 0.5)", "(0, 0.7)", "(0, 0.9)", "(0, 1.1)", "(0, 1.3)", "(0, 1.5)"] ==
-        Enum.map(axis_map.ticks, fn tick -> Map.get(tick, :transform) end)
-        |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end)
+               Enum.map(axis_map.ticks, fn tick -> Map.get(tick, :transform) end)
+               |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end)
 
       assert ["6"] ==
-        Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:line, :x2]) end)
-        |> Enum.uniq()
+               Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:line, :x2]) end)
+               |> Enum.uniq()
 
       assert ["0.32em"] ==
-        Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :dy]) end)
-        |> Enum.uniq()
+               Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :dy]) end)
+               |> Enum.uniq()
 
       assert ["0.00", "0.20", "0.40", "0.60", "0.80", "1.00"] ==
-        Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :text]) end)
+               Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :text]) end)
     end
   end
 
@@ -144,6 +144,7 @@ defmodule ContexAxisTest do
         ContinuousLinearScale.new()
         |> ContinuousLinearScale.domain(0, 1)
         |> Axis.new(:bottom)
+
       %{axis_map: axis_map(axis)}
     end
 
@@ -161,19 +162,19 @@ defmodule ContexAxisTest do
 
     test "positions tick marks properly", %{axis_map: axis_map} do
       assert ["(0.5,0)", "(0.7,0)", "(0.9,0)", "(1.1,0)", "(1.3,0)", "(1.5,0)"] ==
-        Enum.map(axis_map.ticks, fn tick -> Map.get(tick, :transform) end)
-        |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end)
+               Enum.map(axis_map.ticks, fn tick -> Map.get(tick, :transform) end)
+               |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end)
 
       assert ["6"] ==
-        Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:line, :y2]) end)
-        |> Enum.uniq()
+               Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:line, :y2]) end)
+               |> Enum.uniq()
 
-     assert ["0.71em"] ==
-        Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :dy]) end)
-        |> Enum.uniq()
+      assert ["0.71em"] ==
+               Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :dy]) end)
+               |> Enum.uniq()
 
       assert ["0.00", "0.20", "0.40", "0.60", "0.80", "1.00"] ==
-        Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :text]) end)
+               Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :text]) end)
     end
   end
 
@@ -183,6 +184,7 @@ defmodule ContexAxisTest do
         ContinuousLinearScale.new()
         |> ContinuousLinearScale.domain(0, 1)
         |> Axis.new(:top)
+
       %{axis_map: axis_map(axis)}
     end
 
@@ -202,19 +204,19 @@ defmodule ContexAxisTest do
     # For top/bottom there's not space between the values;
     test "positions tick marks properly", %{axis_map: axis_map} do
       assert ["(0.5,0)", "(0.7,0)", "(0.9,0)", "(1.1,0)", "(1.3,0)", "(1.5,0)"] ==
-        Enum.map(axis_map.ticks, fn tick -> Map.get(tick, :transform) end)
-        |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end)
+               Enum.map(axis_map.ticks, fn tick -> Map.get(tick, :transform) end)
+               |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end)
 
       assert ["-6"] ==
-        Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:line, :y2]) end)
-        |> Enum.uniq()
+               Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:line, :y2]) end)
+               |> Enum.uniq()
 
       assert [""] ==
-        Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :dy]) end)
-        |> Enum.uniq()
+               Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :dy]) end)
+               |> Enum.uniq()
 
       assert ["0.00", "0.20", "0.40", "0.60", "0.80", "1.00"] ==
-        Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :text]) end)
+               Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :text]) end)
     end
   end
 
@@ -224,6 +226,7 @@ defmodule ContexAxisTest do
         ContinuousLinearScale.new()
         |> ContinuousLinearScale.domain(0, 1)
         |> Axis.new(:left)
+
       %{axis_map: axis_map(axis)}
     end
 
@@ -241,19 +244,19 @@ defmodule ContexAxisTest do
 
     test "positions tick marks properly", %{axis_map: axis_map} do
       assert ["(0, 0.5)", "(0, 0.7)", "(0, 0.9)", "(0, 1.1)", "(0, 1.3)", "(0, 1.5)"] ==
-        Enum.map(axis_map.ticks, fn tick -> Map.get(tick, :transform) end)
-        |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end)
+               Enum.map(axis_map.ticks, fn tick -> Map.get(tick, :transform) end)
+               |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end)
 
       assert ["-6"] ==
-        Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:line, :x2]) end)
-        |> Enum.uniq()
+               Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:line, :x2]) end)
+               |> Enum.uniq()
 
       assert ["0.32em"] ==
-        Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :dy]) end)
-        |> Enum.uniq()
+               Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :dy]) end)
+               |> Enum.uniq()
 
       assert ["0.00", "0.20", "0.40", "0.60", "0.80", "1.00"] ==
-        Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :text]) end)
+               Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :text]) end)
     end
   end
 
@@ -261,5 +264,4 @@ defmodule ContexAxisTest do
   # @tag :skip
   # test "gridlines_to_svg/1" do
   # end
-
 end

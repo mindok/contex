@@ -20,7 +20,6 @@ defprotocol Contex.PlotContent do
   def set_size(plot, width, height)
 end
 
-
 defmodule Contex.Plot do
   @moduledoc """
   Manages the layout of various plot elements, including titles, axis labels, legends etc and calculates
@@ -30,7 +29,17 @@ defmodule Contex.Plot do
   alias __MODULE__
   alias Contex.{Dataset, PlotContent}
 
-  defstruct [:title, :subtitle, :x_label, :y_label, :height, :width, :plot_content, :margins, :plot_options]
+  defstruct [
+    :title,
+    :subtitle,
+    :x_label,
+    :y_label,
+    :height,
+    :width,
+    :plot_content,
+    :margins,
+    :plot_options
+  ]
 
   @type t() :: %__MODULE__{}
   @type plot_text() :: String.t() | nil
@@ -60,6 +69,7 @@ defmodule Contex.Plot do
     # TODO
     # Seems like should just add new/3 to PlotContent protocol, but my efforts to do this failed.
     plot_content = apply(type, :new, [dataset, attrs])
+
     attributes =
       Keyword.merge(@default_plot_options, attrs)
       |> parse_attributes()
@@ -82,7 +92,8 @@ defmodule Contex.Plot do
   """
   @spec new(integer(), integer(), Contex.PlotContent.t()) :: Contex.Plot.t()
   def new(width, height, plot_content) do
-    plot_options = %{show_x_axis: true, show_y_axis: true, legend_setting: :legend_none }
+    plot_options = %{show_x_axis: true, show_y_axis: true, legend_setting: :legend_none}
+
     %Plot{plot_content: plot_content, width: width, height: height, plot_options: plot_options}
     |> calculate_margins()
   end
@@ -91,7 +102,7 @@ defmodule Contex.Plot do
   Replaces the plot dataset and updates the plot content. Accepts list of lists/tuples
   representing the new data and a list of strings with new headers.
   """
-  @spec dataset(Contex.Plot.t(), list(row()), list(String.t())):: Contex.Plot.t()
+  @spec dataset(Contex.Plot.t(), list(row()), list(String.t())) :: Contex.Plot.t()
   def dataset(%Plot{} = plot, data, headers) do
     dataset = Dataset.new(data, headers)
     plot_content = apply(plot.plot_content.__struct__, :new, [dataset])
@@ -102,8 +113,8 @@ defmodule Contex.Plot do
   Replaces the plot dataset and updates the plot content. Accepts a dataset or a list of lists/tuples
   representing the new data. The plot's dataset's original headers are preserved.
   """
-  @spec dataset(Contex.Plot.t(), Contex.Dataset.t() | list(row())):: Contex.Plot.t()
-  def dataset(%Plot{} = plot, %Dataset{}=dataset) do
+  @spec dataset(Contex.Plot.t(), Contex.Dataset.t() | list(row())) :: Contex.Plot.t()
+  def dataset(%Plot{} = plot, %Dataset{} = dataset) do
     plot_content = apply(plot.plot_content.__struct__, :new, [dataset])
     %{plot | plot_content: plot_content}
   end
@@ -113,9 +124,11 @@ defmodule Contex.Plot do
       case plot.plot_content.dataset.headers do
         nil ->
           Dataset.new(data)
+
         headers ->
           Dataset.new(data, headers)
       end
+
     plot_content = apply(plot.plot_content.__struct__, :new, [dataset])
     %{plot | plot_content: plot_content}
   end
@@ -127,10 +140,17 @@ defmodule Contex.Plot do
   @spec attributes(Contex.Plot.t(), keyword()) :: Contex.Plot.t()
   def attributes(%Plot{} = plot, attrs) do
     attributes_map = Enum.into(attrs, %{})
-    plot_options = Map.merge(plot.plot_options, Map.take(attributes_map, [:show_x_axis, :show_y_axis, :legend_setting]))
+
+    plot_options =
+      Map.merge(
+        plot.plot_options,
+        Map.take(attributes_map, [:show_x_axis, :show_y_axis, :legend_setting])
+      )
 
     plot
-    |> Map.merge(Map.take(attributes_map, [:title, :subtitle, :x_label, :y_label, :width, :height]))
+    |> Map.merge(
+      Map.take(attributes_map, [:title, :subtitle, :x_label, :y_label, :width, :height])
+    )
     |> Map.put(:plot_options, plot_options)
     |> calculate_margins()
   end
@@ -140,6 +160,7 @@ defmodule Contex.Plot do
   """
   def plot_options(%Plot{} = plot, new_plot_options) do
     existing_plot_options = plot.plot_options
+
     %{plot | plot_options: Map.merge(existing_plot_options, new_plot_options)}
     |> calculate_margins()
   end
@@ -183,77 +204,105 @@ defmodule Contex.Plot do
 
     plot_content = PlotContent.set_size(plot_content, content_width, content_height)
 
-    output =
-      [~s|<svg class="chart" viewBox="0 0 #{width} #{height}"  role="img">|,
+    output = [
+      ~s|<svg class="chart" viewBox="0 0 #{width} #{height}"  role="img">|,
       get_titles_svg(plot, content_width),
       get_axis_labels_svg(plot, content_width, content_height),
       ~s|<g transform="translate(#{left},#{top})">|,
-        PlotContent.to_svg(plot_content, plot.plot_options),
+      PlotContent.to_svg(plot_content, plot.plot_options),
       "</g>",
       get_svg_legend(plot_content, legend_left, legend_top, plot.plot_options),
-    "</svg>"
+      "</svg>"
     ]
 
     {:safe, output}
   end
 
   defp get_svg_legend(plot_content, legend_left, legend_top, %{legend_setting: :legend_right}) do
-    [~s|<g transform="translate(#{legend_left}, #{legend_top})">|,
+    [
+      ~s|<g transform="translate(#{legend_left}, #{legend_top})">|,
       PlotContent.get_svg_legend(plot_content),
       "</g>"
     ]
   end
+
   defp get_svg_legend(_plot_content, _legend_left, _legend_top, _opts), do: ""
 
-  defp get_titles_svg(%Plot{title: title, subtitle: subtitle, margins: margins} = _plot, content_width) when is_binary(title) or is_binary(subtitle) do
-    centre = margins.left + (content_width / 2.0)
+  defp get_titles_svg(
+         %Plot{title: title, subtitle: subtitle, margins: margins} = _plot,
+         content_width
+       )
+       when is_binary(title) or is_binary(subtitle) do
+    centre = margins.left + content_width / 2.0
     title_y = @top_title_margin
 
-    title_svg = case is_non_empty_string(title) do
-      true ->
-        text(centre, title_y, title, class: "exc-title", text_anchor: "middle")
-      _ -> ""
-    end
+    title_svg =
+      case is_non_empty_string(title) do
+        true ->
+          text(centre, title_y, title, class: "exc-title", text_anchor: "middle")
 
-    subtitle_y = case is_non_empty_string(title) do
-      true -> @top_subtitle_margin + @top_title_margin
-      _ -> @top_subtitle_margin
-    end
+        _ ->
+          ""
+      end
 
-    subtitle_svg = case is_non_empty_string(subtitle) do
-      true ->
-        text(centre, subtitle_y, subtitle, class: "exc-subtitle", text_anchor: "middle")
-      _ ->
-        ""
-    end
+    subtitle_y =
+      case is_non_empty_string(title) do
+        true -> @top_subtitle_margin + @top_title_margin
+        _ -> @top_subtitle_margin
+      end
+
+    subtitle_svg =
+      case is_non_empty_string(subtitle) do
+        true ->
+          text(centre, subtitle_y, subtitle, class: "exc-subtitle", text_anchor: "middle")
+
+        _ ->
+          ""
+      end
 
     [title_svg, subtitle_svg]
   end
+
   defp get_titles_svg(_, _), do: ""
 
-  defp get_axis_labels_svg(%Plot{x_label: x_label, y_label: y_label, margins: margins} = _plot, content_width, content_height) when is_binary(x_label) or is_binary(y_label) do
-    x_label_x = margins.left + (content_width / 2.0)
+  defp get_axis_labels_svg(
+         %Plot{x_label: x_label, y_label: y_label, margins: margins} = _plot,
+         content_width,
+         content_height
+       )
+       when is_binary(x_label) or is_binary(y_label) do
+    x_label_x = margins.left + content_width / 2.0
     x_label_y = margins.top + content_height + @x_axis_tick_labels
 
-    y_label_x = -1.0 * (margins.top + (content_height / 2.0)) # -90 rotation screws with coordinates
+    # -90 rotation screws with coordinates
+    y_label_x = -1.0 * (margins.top + content_height / 2.0)
     y_label_y = @y_axis_margin
 
-    x_label_svg = case is_non_empty_string(x_label) do
-      true ->
-        text(x_label_x, x_label_y, x_label, class: "exc-subtitle", text_anchor: "middle")
-      _ ->
-        ""
-    end
+    x_label_svg =
+      case is_non_empty_string(x_label) do
+        true ->
+          text(x_label_x, x_label_y, x_label, class: "exc-subtitle", text_anchor: "middle")
 
-    y_label_svg = case is_non_empty_string(y_label) do
-      true ->
-        text(y_label_x, y_label_y, y_label, class: "exc-subtitle", text_anchor: "middle", transform: "rotate(-90)")
-      false ->
+        _ ->
           ""
-    end
+      end
+
+    y_label_svg =
+      case is_non_empty_string(y_label) do
+        true ->
+          text(y_label_x, y_label_y, y_label,
+            class: "exc-subtitle",
+            text_anchor: "middle",
+            transform: "rotate(-90)"
+          )
+
+        false ->
+          ""
+      end
 
     [x_label_svg, y_label_svg]
   end
+
   defp get_axis_labels_svg(_, _, _), do: ""
 
   defp parse_attributes(attrs) do
@@ -262,7 +311,8 @@ defmodule Contex.Plot do
       subtitle: Keyword.get(attrs, :subtitle),
       x_label: Keyword.get(attrs, :x_label),
       y_label: Keyword.get(attrs, :y_label),
-      plot_options: Enum.into(Keyword.take(attrs, [:show_x_axis, :show_y_axis, :legend_setting]), %{})
+      plot_options:
+        Enum.into(Keyword.take(attrs, [:show_x_axis, :show_y_axis, :legend_setting]), %{})
     }
   end
 
@@ -287,7 +337,9 @@ defmodule Contex.Plot do
 
   defp calculate_right_margin(%Plot{} = plot) do
     margin = @default_padding
-    margin = margin + if (plot.plot_options.legend_setting == :legend_right), do: @legend_width, else: 0
+
+    margin =
+      margin + if plot.plot_options.legend_setting == :legend_right, do: @legend_width, else: 0
 
     margin
   end
@@ -302,7 +354,11 @@ defmodule Contex.Plot do
 
   defp calculate_top_margin(%Plot{} = plot) do
     margin = @default_padding
-    margin = margin + if is_non_empty_string(plot.title), do: @top_title_margin + @default_padding, else: 0
+
+    margin =
+      margin +
+        if is_non_empty_string(plot.title), do: @top_title_margin + @default_padding, else: 0
+
     margin = margin + if is_non_empty_string(plot.subtitle), do: @top_subtitle_margin, else: 0
 
     margin
@@ -314,9 +370,7 @@ defmodule Contex.Plot do
   defp is_non_empty_string(_), do: false
 end
 
-
-
-#TODO: Probably move to appropriate module files...
+# TODO: Probably move to appropriate module files...
 defimpl Contex.PlotContent, for: Contex.BarChart do
   def to_svg(plot, options), do: Contex.BarChart.to_svg(plot, options)
   def get_svg_legend(plot), do: Contex.BarChart.get_svg_legend(plot)
@@ -331,6 +385,7 @@ end
 
 defimpl Contex.PlotContent, for: Contex.GanttChart do
   def to_svg(plot, options), do: Contex.GanttChart.to_svg(plot, options)
-  def get_svg_legend(_plot), do: "" #Contex.PointPlot.get_legend_svg(plot)
+  # Contex.PointPlot.get_legend_svg(plot)
+  def get_svg_legend(_plot), do: ""
   def set_size(plot, width, height), do: Contex.GanttChart.set_size(plot, width, height)
 end

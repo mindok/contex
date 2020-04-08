@@ -15,7 +15,7 @@ defmodule ContexDatasetTest do
   describe "new/1" do
     test "returns a Dataset struct with no headers when passed a list" do
       dataset = Dataset.new([{1, 2}, {1, 2}])
-      assert %Dataset{} = dataset 
+      assert %Dataset{} = dataset
       assert dataset.headers == nil
     end
 
@@ -28,20 +28,20 @@ defmodule ContexDatasetTest do
   describe "new/2" do
     test "returns a Dataset struct with headers when passed two lists" do
       dataset = Dataset.new([{1, 2}, {1, 2}], ["x", "y"])
-      assert %Dataset{} = dataset 
-      assert dataset.headers == ["x", "y"] 
+      assert %Dataset{} = dataset
+      assert dataset.headers == ["x", "y"]
     end
 
     test "raises when not passed two lists" do
-      data = {{1, 2}, {1, 2}} 
+      data = {{1, 2}, {1, 2}}
       headers = {"x", "y"}
       assert_raise FunctionClauseError, fn -> Dataset.new(data, headers) end
 
-      data = [{1, 2}, {1, 2}] 
+      data = [{1, 2}, {1, 2}]
       headers = {"x", "y"}
       assert_raise FunctionClauseError, fn -> Dataset.new(data, headers) end
 
-      data = {{1, 2}, {1, 2}} 
+      data = {{1, 2}, {1, 2}}
       headers = ["x", "y"]
       assert_raise FunctionClauseError, fn -> Dataset.new(data, headers) end
     end
@@ -58,8 +58,8 @@ defmodule ContexDatasetTest do
   describe "column_names/1" do
     test "returns names if data is a map", %{dataset_maps: dataset_maps} do
       assert [:x, :y, :z] ==
-        Dataset.column_names(dataset_maps)
-        |> Enum.sort()
+               Dataset.column_names(dataset_maps)
+               |> Enum.sort()
     end
 
     test "returns names if data has headers", %{dataset: dataset} do
@@ -72,8 +72,8 @@ defmodule ContexDatasetTest do
 
     test "returns names if list data does not have headers" do
       assert [0, 1, 2, 3] ==
-        Dataset.new([[1, 2, 3, 4], [4, 5, 6, 4], [-3, -2, -1, 0]])
-        |> Dataset.column_names()
+               Dataset.new([[1, 2, 3, 4], [4, 5, 6, 4], [-3, -2, -1, 0]])
+               |> Dataset.column_names()
     end
   end
 
@@ -92,7 +92,7 @@ defmodule ContexDatasetTest do
     end
 
     test "returns nil if dataset has no headers", %{dataset_nocols: dataset_nocols} do
-      assert Dataset.column_index(dataset_nocols, "bb") == nil 
+      assert Dataset.column_index(dataset_nocols, "bb") == nil
     end
 
     test "returns index of header value in headers list if it exists", %{dataset: dataset} do
@@ -100,7 +100,7 @@ defmodule ContexDatasetTest do
     end
 
     test "returns nil if header not in list", %{dataset: dataset} do
-      assert Dataset.column_index(dataset, "bbb") == nil 
+      assert Dataset.column_index(dataset, "bbb") == nil
     end
   end
 
@@ -115,13 +115,15 @@ defmodule ContexDatasetTest do
       assert accessor.(hd(dataset.data)) == 1
     end
 
-    test "returns accessor function for tuple data with no headers", %{dataset_nocols: dataset_nocols} do
+    test "returns accessor function for tuple data with no headers", %{
+      dataset_nocols: dataset_nocols
+    } do
       accessor = Dataset.value_fn(dataset_nocols, 0)
       assert accessor.(hd(dataset_nocols.data)) == 1
     end
 
     test "returns accessor function for list data with no headers" do
-      dataset =  Dataset.new([[1, 2, 3, 4], [4, 5, 6, 4], [-3, -2, -1, 0]])
+      dataset = Dataset.new([[1, 2, 3, 4], [4, 5, 6, 4], [-3, -2, -1, 0]])
       accessor = Dataset.value_fn(dataset, 0)
       assert accessor.(hd(dataset.data)) == 1
     end
@@ -134,7 +136,9 @@ defmodule ContexDatasetTest do
   end
 
   describe "column_name/2" do
-    test "returns the map key when given the key for a column in map data", %{dataset_maps: dataset_maps} do
+    test "returns the map key when given the key for a column in map data", %{
+      dataset_maps: dataset_maps
+    } do
       assert Dataset.column_name(dataset_maps, :x) == :x
     end
 
@@ -157,10 +161,17 @@ defmodule ContexDatasetTest do
       naive_date_time_1 = DateTime.to_naive(date_time_1)
       date_time_2 = DateTime.from_unix!(2)
       naive_date_time_2 = DateTime.to_naive(date_time_2)
-      %{dataset: Dataset.new([
-        {1, "foo", date_time_1, naive_date_time_1},
-        {2, "bar", date_time_2, naive_date_time_2}
-      ], ["number", "string", "date_time", "naive_date_time"])}
+
+      %{
+        dataset:
+          Dataset.new(
+            [
+              {1, "foo", date_time_1, naive_date_time_1},
+              {2, "bar", date_time_2, naive_date_time_2}
+            ],
+            ["number", "string", "date_time", "naive_date_time"]
+          )
+      }
     end
 
     test "guesses numbers", %{dataset: dataset} do
