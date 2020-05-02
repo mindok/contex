@@ -26,3 +26,5 @@ jobs:
        run: mix test
      - name: Format
        run: mix format --check-formatted
+     - name: Dialyzer
+       run: mix dialyzer
