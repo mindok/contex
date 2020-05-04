@@ -8,6 +8,8 @@ ContEx is a simple server side charting package for elixir.
 
 ![Animated Barchart](./samples/rolling.gif "Animated Barchart")
 
+![](https://github.com/mindok/contex/workflows/CI/badge.svg)
+
 ## Core concepts
 
 ### Dataset 
