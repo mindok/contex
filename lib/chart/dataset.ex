@@ -162,8 +162,8 @@ defmodule Contex.Dataset do
   def column_name(%Dataset{headers: headers} = _dataset, column_index)
       when is_list(headers) and
              is_integer(column_index) and
-             # Maybe drop this guard and have it throw an exception
              column_index < length(headers) do
+    # Maybe drop the length guard above and have it throw an exception
     Enum.at(headers, column_index)
   end
 
