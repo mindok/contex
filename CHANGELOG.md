@@ -1,6 +1,6 @@
 # ContEx Change Log
 
-## v0.3.0 : In Progress
+## v0.3.0 : 2020-06-08
 - Allow Dataset to be created from a list of Maps (previously lists of lists and list of tuples were supported)
 - Implement a data mapping mechanism to provide a consistent way of mapping data into required plot elements. Thanks 
 @srowley for breaking the back of this.
