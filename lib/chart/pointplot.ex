@@ -32,6 +32,8 @@ defmodule Contex.PointPlot do
     :fill_scale,
     transforms: %{},
     axis_label_rotation: :auto,
+    custom_x_formatter: nil,
+    custom_y_formatter: nil,
     width: 100,
     height: 100,
     colour_palette: :default
@@ -117,6 +119,48 @@ defmodule Contex.PointPlot do
     |> set_y_col_names(column_map.y_cols)
   end
 
+  @doc ~S"""
+  Allows the axis tick labels to be overridden. For example, if you have a numeric representation of money and you want to
+  have the value axis show it as millions of dollars you might do something like:
+
+        # Turns 1_234_567.67 into $1.23M
+        defp money_formatter_millions(value) when is_number(value) do
+          "$#{:erlang.float_to_binary(value/1_000_000.0, [decimals: 2])}M"
+        end
+
+        defp show_chart(data) do
+          PointPlot.new(data)
+          |> PointPlot.custom_x_formatter(&money_formatter_millions/1)
+        end
+
+  """
+  @spec custom_x_formatter(Contex.PointPlot.t(), nil | fun) :: Contex.PointPlot.t()
+  def custom_x_formatter(%PointPlot{} = plot, custom_x_formatter)
+      when is_function(custom_x_formatter) or custom_x_formatter == nil do
+    %{plot | custom_x_formatter: custom_x_formatter}
+  end
+
+  @doc ~S"""
+  Allows the axis tick labels to be overridden. For example, if you have a numeric representation of money and you want to
+  have the value axis show it as millions of dollars you might do something like:
+
+        # Turns 1_234_567.67 into $1.23M
+        defp money_formatter_millions(value) when is_number(value) do
+          "$#{:erlang.float_to_binary(value/1_000_000.0, [decimals: 2])}M"
+        end
+
+        defp show_chart(data) do
+          PointPlot.new(data)
+          |> PointPlot.custom_y_formatter(&money_formatter_millions/1)
+        end
+
+  """
+  @spec custom_y_formatter(Contex.PointPlot.t(), nil | fun) :: Contex.PointPlot.t()
+  def custom_y_formatter(%PointPlot{} = plot, custom_y_formatter)
+      when is_function(custom_y_formatter) or custom_y_formatter == nil do
+    %{plot | custom_y_formatter: custom_y_formatter}
+  end
+
   @doc false
   def get_svg_legend(
         %PointPlot{mapping: %{column_map: %{y_cols: y_cols, fill_col: fill_col}}} = plot
@@ -138,6 +182,9 @@ defmodule Contex.PointPlot do
 
   @doc false
   def to_svg(%PointPlot{x_scale: x_scale, y_scale: y_scale} = plot) do
+    x_scale = %{x_scale | custom_tick_formatter: plot.custom_x_formatter}
+    y_scale = %{y_scale | custom_tick_formatter: plot.custom_y_formatter}
+
     axis_x = get_x_axis(x_scale, plot)
     axis_y = Axis.new_left_axis(y_scale) |> Axis.set_offset(plot.width)
 
