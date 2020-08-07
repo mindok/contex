@@ -205,7 +205,9 @@ defmodule Contex.Plot do
     plot_content = PlotContent.set_size(plot_content, content_width, content_height)
 
     output = [
-      ~s|<svg class="chart" viewBox="0 0 #{width} #{height}"  role="img">|,
+      ~s|<svg version="1.1" xmlns="http://www.w3.org/2000/svg\" |,
+      ~s|xmlns:xlink="http://www.w3.org/1999/xlink" class="chart" |,
+      ~s|viewBox="0 0 #{width} #{height}" role="img">|,
       get_titles_svg(plot, content_width),
       get_axis_labels_svg(plot, content_width, content_height),
       ~s|<g transform="translate(#{left},#{top})">|,
