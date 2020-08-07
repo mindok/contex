@@ -218,6 +218,17 @@ defmodule Contex.Plot do
     {:safe, output}
   end
 
+  @doc """
+  Generates a complete XML document string.
+  """
+  @spec to_xml(Contex.Plot.t()) :: iolist()
+  def to_xml(%Plot{} = plot) do
+    plot
+    |> Plot.to_svg()
+    |> elem(1)
+    |> List.insert_at(0, ~s|<?xml version="1.0" encoding="utf-8"?>|)
+  end
+
   defp get_svg_legend(plot_content, legend_left, legend_top, %{legend_setting: :legend_right}) do
     [
       ~s|<g transform="translate(#{legend_left}, #{legend_top})">|,
