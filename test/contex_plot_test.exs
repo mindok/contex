@@ -281,7 +281,7 @@ defmodule ContexPlotTest do
           legend_transform: ~x"./g[last()]/@transform"s
         )
 
-      # Only test elements that are not rendered ultimately rendered 
+      # Only test elements that are not rendered ultimately rendered
       # by PlotContent.to_svg/1 or PlotContent.get_svg_legend/1
       assert svg.viewbox == "0 0 150 200"
       assert svg.title == %{text: "The Title", x: "65.0", y: "20"}
@@ -321,6 +321,15 @@ defmodule ContexPlotTest do
         )
 
       assert results.barlabels == [%{text: "42"}, %{text: "8.2"}]
+    end
+  end
+
+  describe "to_xml/1" do
+    test "prepends an XML declaration to plot SVG", %{plot: plot} do
+      assert plot
+             |> Plot.to_xml()
+             |> IO.chardata_to_string()
+             |> String.starts_with?(~s|<?xml version="1.0" encoding="utf-8"?>|)
     end
   end
 end

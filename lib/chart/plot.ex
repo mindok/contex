@@ -205,7 +205,9 @@ defmodule Contex.Plot do
     plot_content = PlotContent.set_size(plot_content, content_width, content_height)
 
     output = [
-      ~s|<svg class="chart" viewBox="0 0 #{width} #{height}"  role="img">|,
+      ~s|<svg version="1.1" xmlns="http://www.w3.org/2000/svg\" |,
+      ~s|xmlns:xlink="http://www.w3.org/1999/xlink" class="chart" |,
+      ~s|viewBox="0 0 #{width} #{height}" role="img">|,
       get_titles_svg(plot, content_width),
       get_axis_labels_svg(plot, content_width, content_height),
       ~s|<g transform="translate(#{left},#{top})">|,
@@ -216,6 +218,17 @@ defmodule Contex.Plot do
     ]
 
     {:safe, output}
+  end
+
+  @doc """
+  Generates a complete XML document string.
+  """
+  @spec to_xml(Contex.Plot.t()) :: iolist()
+  def to_xml(%Plot{} = plot) do
+    plot
+    |> Plot.to_svg()
+    |> elem(1)
+    |> List.insert_at(0, ~s|<?xml version="1.0" encoding="utf-8"?>|)
   end
 
   defp get_svg_legend(plot_content, legend_left, legend_top, %{legend_setting: :legend_right}) do
