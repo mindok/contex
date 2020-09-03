@@ -1,6 +1,6 @@
 # ContEx
 
-ContEx is a simple server side charting package for elixir.
+ContEx is a simple server side charting package for elixir. See these demos on the live site: https://contex-charts.org/
 
 ![Example Charts](./samples/mashup.png "Example Charts")
 
