@@ -13,14 +13,20 @@ defmodule Contex do
   A minimal example might look like:
   ```
     data = [["Apples", 10], ["Bananas", 12], ["Pears", 2]]
-    dataset = Contex.Dataset.new(data)
-    plot_content = Contex.BarChart.new(dataset)
-    plot = Contex.Plot.new(600, 400, plot_content)
-    output = Contex.Plot.to_svg(plot)
+    output =
+      data
+      |> Contex.Dataset.new()
+      |> Contex.Plot.new(Contex.BarChart, 600, 400)
+      |> Contex.Plot.to_svg(plot)
   ```
 
   ## CSS Styling
-  Various CSS classes are used to style the output. Sample CSS is shown below
+  A minimal stylesheet is embedded in the SVG by default, for the purpose of making lines and text
+  visible if no stylesheet is supplied. It is expected that these styles will be overridden using
+  provided Contex-specific classes. The default style can also be removed by setting the
+  `:default_style` Plot attribute to `false`.
+
+  Sample CSS is shown below:
   ```css
   /* Styling for tick line */
   .exc-tick {

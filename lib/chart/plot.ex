@@ -38,7 +38,8 @@ defmodule Contex.Plot do
     :width,
     :plot_content,
     :margins,
-    :plot_options
+    :plot_options,
+    default_style: true
   ]
 
   @type t() :: %__MODULE__{}
@@ -59,6 +60,12 @@ defmodule Contex.Plot do
   @legend_width 100
   @x_axis_margin 20
   @x_axis_tick_labels 70
+  @default_style """
+  <style type="text/css"><![CDATA[
+    text {fill: black}
+    line {stroke: black}
+  ]]></style>
+  """
 
   @doc """
   Creates a new plot with specified dataset and plot type. Other plot attributes can be set via a
@@ -208,6 +215,7 @@ defmodule Contex.Plot do
       ~s|<svg version="1.1" xmlns="http://www.w3.org/2000/svg\" |,
       ~s|xmlns:xlink="http://www.w3.org/1999/xlink" class="chart" |,
       ~s|viewBox="0 0 #{width} #{height}" role="img">|,
+      get_default_style(plot),
       get_titles_svg(plot, content_width),
       get_axis_labels_svg(plot, content_width, content_height),
       ~s|<g transform="translate(#{left},#{top})">|,
@@ -229,6 +237,10 @@ defmodule Contex.Plot do
     |> Plot.to_svg()
     |> elem(1)
     |> List.insert_at(0, ~s|<?xml version="1.0" encoding="utf-8"?>|)
+  end
+
+  defp get_default_style(%Plot{} = plot) do
+    if plot.default_style, do: @default_style, else: ""
   end
 
   defp get_svg_legend(plot_content, legend_left, legend_top, %{legend_setting: :legend_right}) do

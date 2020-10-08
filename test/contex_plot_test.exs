@@ -292,6 +292,23 @@ defmodule ContexPlotTest do
       assert svg.legend_transform == "translate(50, 65)"
     end
 
+    test "includes default styles by default", %{plot: plot} do
+      assert plot
+             |> Plot.to_svg()
+             |> elem(1)
+             |> IO.chardata_to_string()
+             |> String.contains?(~s|<style type="text/css">|)
+    end
+
+    test "does not render styles if default turned off", %{plot: plot} do
+      refute plot
+             |> struct(default_style: false)
+             |> Plot.to_svg()
+             |> elem(1)
+             |> IO.chardata_to_string()
+             |> String.contains?(~s|<style type="text/css">|)
+    end
+
     test "renders integer data as bar labels" do
       test_data =
         Dataset.new([["aa", 42, 8.222222222]], [
