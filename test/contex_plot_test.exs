@@ -13,6 +13,10 @@ defmodule ContexPlotTest do
     %{plot: plot}
   end
 
+  def get_option(plot_content, key) do
+    Keyword.get(plot_content.options, key)
+  end
+
   describe "new/5" do
     test "returns a Plot struct with default options and margins" do
       plot =
@@ -41,7 +45,7 @@ defmodule ContexPlotTest do
         Dataset.new([{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}], ["aa", "bb", "cccc", "d"])
         |> Plot.new(BarChart, 150, 200, orientation: :horizontal)
 
-      assert plot.plot_content.orientation == :horizontal
+      assert get_option(plot.plot_content, :orientation) == :horizontal
     end
 
     test "can override margins" do

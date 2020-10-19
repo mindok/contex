@@ -6,7 +6,7 @@ defprotocol Contex.PlotContent do
   @doc """
   Generates svg as a string or improper list of strings *without* the SVG containing element.
   """
-  def to_svg(plot, options)
+  def to_svg(plot, plot_options)
 
   @doc """
   Generates svg content for a legend appropriate for the plot content.

@@ -89,7 +89,7 @@ by adding `contex` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:contex, "~> 0.1.0"}
+    {:contex, "~> 0.3.0"}
   ]
 end
 ```
