@@ -2,6 +2,7 @@
 
 ## v0.4.0 : In progress
 
+- Add target option when setting `BarChart` event handler.
 - Refactor `BarChart` to honour all options passed in `new`.
 - Provide minimal default style so labels don't disappear unexpectedly if no CSS is set. Thanks @srowley.
 - XML declaration added to generated SVG so the output can be served as an image. Thanks @srowley.

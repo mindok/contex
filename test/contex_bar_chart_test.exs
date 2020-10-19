@@ -58,6 +58,28 @@ defmodule ContexBarChartTest do
         end
       )
     end
+
+    test "Check data labels value can be passed with option" do
+      plot =
+        Dataset.new([%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}])
+        |> BarChart.new(mapping: %{category_col: "bb", value_cols: ["aa"]}, data_labels: false)
+
+      assert get_option(plot, :data_labels) == false
+
+      plot =
+        Dataset.new([%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}])
+        |> BarChart.new(mapping: %{category_col: "bb", value_cols: ["aa"]}, data_labels: true)
+
+      assert get_option(plot, :data_labels) == true
+    end
+
+    test "Check colour scheme can be passed with option" do
+      plot =
+        Dataset.new([%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}])
+        |> BarChart.new(mapping: %{category_col: "bb", value_cols: ["aa"]}, colour_palette: :warm)
+
+      assert get_option(plot, :colour_palette) == :warm
+    end
   end
 
   describe "data_labels/2" do

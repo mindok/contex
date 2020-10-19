@@ -103,16 +103,6 @@ defmodule Contex.BarChart do
     set_option(plot, :data_labels, data_labels)
   end
 
-  defp set_option(%BarChart{options: options} = plot, key, value) do
-    options = Keyword.put(options, key, value)
-
-    %{plot | options: options}
-  end
-
-  defp get_option(%BarChart{options: options}, key) do
-    Keyword.get(options, key)
-  end
-
   @doc """
   Specifies whether the bars are drawn stacked or grouped.
   """
@@ -207,6 +197,17 @@ defmodule Contex.BarChart do
     |> set_option(:phx_event_target, event_target)
   end
 
+  defp set_option(%BarChart{options: options} = plot, key, value) do
+    options = Keyword.put(options, key, value)
+
+    %{plot | options: options}
+  end
+
+  defp get_option(%BarChart{options: options}, key) do
+    Keyword.get(options, key)
+  end
+
+
   @doc """
   Highlights a selected value based on matching category and series.
   """
@@ -259,11 +260,6 @@ defmodule Contex.BarChart do
     plot_options = refine_options(plot_options, orientation)
 
     category_axis = get_category_axis(category_scale, orientation, plot)
-
-    value_scale = %{
-      value_scale
-      | custom_tick_formatter: get_option(plot, :custom_value_formatter)
-    }
 
     value_axis = get_value_axis(value_scale, orientation, plot)
     plot = %{plot | value_scale: value_scale}
@@ -351,6 +347,13 @@ defmodule Contex.BarChart do
 
   defp get_bar_event_handlers(%BarChart{mapping: mapping} = plot, category, series_values) do
     handler = get_option(plot, :phx_event_handler)
+    target = get_option(plot, :phx_event_target)
+
+    base_opts = case target do
+      nil -> [phx_click: handler]
+      "" -> [phx_click: handler]
+      _ ->  [phx_click: handler, phx_target: target]
+    end
 
     case handler do
       nil ->
@@ -362,7 +365,7 @@ defmodule Contex.BarChart do
       _ ->
         Enum.zip(mapping.column_map.value_cols, series_values)
         |> Enum.map(fn {col, value} ->
-          [category: category, series: col, value: value, phx_click: handler]
+          Keyword.merge(base_opts, [category: category, series: col, value: value])
         end)
     end
   end
@@ -539,6 +542,7 @@ defmodule Contex.BarChart do
     plot
     |> prepare_value_scale()
     |> prepare_category_scale()
+    |> prepare_colour_scale()
   end
 
   defp prepare_category_scale(
@@ -571,12 +575,19 @@ defmodule Contex.BarChart do
       ContinuousLinearScale.new()
       |> ContinuousLinearScale.domain(min, max)
       |> Scale.set_range(r_start, r_end)
+      |> struct(custom_tick_formatter: get_option(plot, :custom_value_formatter))
+
+    %{plot | value_scale: val_scale, mapping: mapping}
+  end
+
+  defp prepare_colour_scale(%BarChart{mapping: mapping} = plot) do
+    val_col_names = mapping.column_map[:value_cols]
 
     series_fill_colours =
       CategoryColourScale.new(val_col_names)
       |> CategoryColourScale.set_palette(get_option(plot, :colour_palette))
 
-    %{plot | value_scale: val_scale, series_fill_colours: series_fill_colours, mapping: mapping}
+    %{plot | series_fill_colours: series_fill_colours, mapping: mapping}
   end
 
   defp get_range(:category, %BarChart{} = plot) do
