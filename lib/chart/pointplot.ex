@@ -229,6 +229,52 @@ defmodule Contex.PointPlot do
     set_option(plot, :custom_y_formatter, custom_y_formatter)
   end
 
+  @doc """
+  Specify which column in the dataset is used for the x values.
+
+  This column must contain numeric or date time data.
+  """
+  @deprecated "Use `:mapping` option in `new/2`"
+  @spec set_x_col_name(Contex.PointPlot.t(), Contex.Dataset.column_name()) :: Contex.PointPlot.t()
+  def set_x_col_name(%PointPlot{mapping: mapping} = plot, x_col_name) do
+    mapping = Mapping.update(mapping, %{x_col: x_col_name})
+
+    %{plot | mapping: mapping}
+  end
+
+  @doc """
+  Specify which column(s) in the dataset is/are used for the y values.
+
+  These columns must contain numeric data.
+
+  Where more than one y column is specified the colours are used to identify data from
+  each column.
+  """
+  @deprecated "Use `:mapping` option in `new/2`"
+  @spec set_y_col_names(Contex.PointPlot.t(), [Contex.Dataset.column_name()]) ::
+          Contex.PointPlot.t()
+  def set_y_col_names(%PointPlot{mapping: mapping} = plot, y_col_names)
+      when is_list(y_col_names) do
+    mapping = Mapping.update(mapping, %{y_cols: y_col_names})
+
+    %{plot | mapping: mapping}
+  end
+
+  @doc """
+  If a single y column is specified, it is possible to use another column to control the point colour.
+
+  Note: This is ignored if there are multiple y columns.
+  """
+  @deprecated "Use `:mapping` option in `new/2`"
+  @spec set_colour_col_name(Contex.PointPlot.t(), Contex.Dataset.column_name()) ::
+          Contex.PointPlot.t()
+  def set_colour_col_name(%PointPlot{} = plot, nil), do: plot
+
+  def set_colour_col_name(%PointPlot{mapping: mapping} = plot, fill_col_name) do
+    mapping = Mapping.update(mapping, %{fill_col: fill_col_name})
+    %{plot | mapping: mapping}
+  end
+
   defp set_option(%PointPlot{options: options} = plot, key, value) do
     options = Keyword.put(options, key, value)
 
@@ -339,37 +385,6 @@ defmodule Contex.PointPlot do
   end
 
   defp get_svg_point(_x, _y, _fill), do: ""
-
-  @doc """
-  Specify which column in the dataset is used for the x values.
-
-  This column must contain numeric or date time data.
-  """
-  @deprecated "Use `:mapping` option in `new/2`"
-  @spec set_x_col_name(Contex.PointPlot.t(), Contex.Dataset.column_name()) :: Contex.PointPlot.t()
-  def set_x_col_name(%PointPlot{mapping: mapping} = plot, x_col_name) do
-    mapping = Mapping.update(mapping, %{x_col: x_col_name})
-
-    %{plot | mapping: mapping}
-  end
-
-  @doc """
-  Specify which column(s) in the dataset is/are used for the y values.
-
-  These columns must contain numeric data.
-
-  Where more than one y column is specified the colours are used to identify data from
-  each column.
-  """
-  @deprecated "Use `:mapping` option in `new/2`"
-  @spec set_y_col_names(Contex.PointPlot.t(), [Contex.Dataset.column_name()]) ::
-          Contex.PointPlot.t()
-  def set_y_col_names(%PointPlot{mapping: mapping} = plot, y_col_names)
-      when is_list(y_col_names) do
-    mapping = Mapping.update(mapping, %{y_cols: y_col_names})
-
-    %{plot | mapping: mapping}
-  end
 
   @doc false
   def prepare_scales(%PointPlot{} = plot) do
@@ -482,20 +497,5 @@ defmodule Contex.PointPlot do
         |> ContinuousLinearScale.domain(min, max)
         |> Scale.set_range(r_min, r_max)
     end
-  end
-
-  @doc """
-  If a single y column is specified, it is possible to use another column to control the point colour.
-
-  Note: This is ignored if there are multiple y columns.
-  """
-  @deprecated "Use `:mapping` option in `new/2`"
-  @spec set_colour_col_name(Contex.PointPlot.t(), Contex.Dataset.column_name()) ::
-          Contex.PointPlot.t()
-  def set_colour_col_name(%PointPlot{} = plot, nil), do: plot
-
-  def set_colour_col_name(%PointPlot{mapping: mapping} = plot, fill_col_name) do
-    mapping = Mapping.update(mapping, %{fill_col: fill_col_name})
-    %{plot | mapping: mapping}
   end
 end
