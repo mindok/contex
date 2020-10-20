@@ -12,12 +12,16 @@ defmodule ContexPointPlotTest do
     %{plot: plot}
   end
 
+  def get_option(plot_content, key) do
+    Keyword.get(plot_content.options, key)
+  end
+
   describe "new/2" do
     test "given data from tuples or lists, returns a PointPlot struct with defaults", %{
       plot: plot
     } do
-      assert plot.width == 100
-      assert plot.height == 100
+      assert get_option(plot, :width) == 100
+      assert get_option(plot, :height) == 100
     end
 
     test "given data from a map and a valid column map, returns a PointPlot struct accordingly" do
@@ -25,8 +29,8 @@ defmodule ContexPointPlotTest do
         Dataset.new([%{"bb" => 2, "aa" => 2}, %{"aa" => 3, "bb" => 4}])
         |> PointPlot.new(mapping: %{x_col: "bb", y_cols: ["aa"]})
 
-      assert plot.width == 100
-      assert plot.height == 100
+      assert get_option(plot, :width) == 100
+      assert get_option(plot, :height) == 100
       assert plot.mapping.column_map.x_col == "bb"
       assert plot.mapping.column_map.y_cols == ["aa"]
     end
@@ -50,32 +54,32 @@ defmodule ContexPointPlotTest do
     test "accepts a list of (whatever)", %{plot: plot} do
       colours = ["blah", "blurgh", "blee"]
       plot = PointPlot.colours(plot, colours)
-      assert plot.colour_palette == colours
+      assert get_option(plot, :colour_palette) == colours
     end
 
     test "accepts an atom (any atom)", %{plot: plot} do
       plot = PointPlot.colours(plot, :meat)
-      assert plot.colour_palette == :meat
+      assert get_option(plot, :colour_palette) == :meat
     end
 
     test "sets the palette to :default without an atom or list", %{plot: plot} do
       plot = PointPlot.colours(plot, 12345)
-      assert plot.colour_palette == :default
+      assert get_option(plot, :colour_palette) == :default
     end
   end
 
   describe "set_size/3" do
     test "updates the height and width", %{plot: plot} do
       plot = PointPlot.set_size(plot, 666, 222)
-      assert plot.width == 666
-      assert plot.height == 222
+      assert get_option(plot, :width) == 666
+      assert get_option(plot, :height) == 222
     end
   end
 
   describe "axis_label_rotation/2" do
     test "sets the axis label rotation", %{plot: plot} do
       plot = PointPlot.axis_label_rotation(plot, 45)
-      assert plot.axis_label_rotation == 45
+      assert get_option(plot, :axis_label_rotation) == 45
     end
 
     test "rotates the labels when set", %{plot: plot} do
@@ -187,8 +191,8 @@ defmodule ContexPointPlotTest do
     end
 
     test "sets the fill scale to the unique values of the given column", %{plot: plot} do
-      plot = PointPlot.set_colour_col_name(plot, "d")
-      assert %CategoryColourScale{values: [4, 0]} = plot.fill_scale
+      plot = PointPlot.set_colour_col_name(plot, "d") |> PointPlot.prepare_scales()
+      assert %CategoryColourScale{values: [4, 0]} = plot.legend_scale
     end
   end
 end

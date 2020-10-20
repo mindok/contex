@@ -48,10 +48,14 @@ defmodule ContexGanttChartTest do
     %{plot: plot, dataset_maps: dataset_maps}
   end
 
+  def get_option(plot_content, key) do
+    Keyword.get(plot_content.options, key)
+  end
+
   describe "new/2" do
     test "returns a GanttChart struct with defaults", %{plot: plot} do
-      assert plot.width == 100
-      assert plot.height == 100
+      assert get_option(plot, :width) == 100
+      assert get_option(plot, :height) == 100
     end
 
     test "given data from a map and a valid column map, returns GanttChart struct accordingly", %{
@@ -68,8 +72,8 @@ defmodule ContexGanttChartTest do
           }
         )
 
-      assert plot.padding == 2
-      assert plot.show_task_labels == true
+      assert get_option(plot, :padding) == 2
+      assert get_option(plot, :show_task_labels) == true
       assert plot.mapping.column_map.category_col == :category
       assert plot.mapping.column_map.task_col == :task
       assert plot.mapping.column_map.start_col == :start
@@ -97,7 +101,7 @@ defmodule ContexGanttChartTest do
   describe "show_task_labels/2" do
     test "sets the show task label switch", %{plot: plot} do
       plot = GanttChart.show_task_labels(plot, false)
-      assert plot.show_task_labels == false
+      assert get_option(plot, :show_task_labels) == false
     end
   end
 
@@ -140,7 +144,7 @@ defmodule ContexGanttChartTest do
   describe "event_handler/2" do
     test "sets the Phoenix event handler", %{plot: plot} do
       plot = GanttChart.event_handler(plot, "clicked")
-      assert plot.phx_event_handler == "clicked"
+      assert get_option(plot, :phx_event_handler) == "clicked"
     end
   end
 

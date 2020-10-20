@@ -1,5 +1,18 @@
 # ContEx Change Log
 
+## v0.4.0 : In progress
+
+- Add target option when setting `BarChart` event handler.
+- Refactor `BarChart` to honour all options passed in `new`.
+- Refactor `PointPlot` to honour all options passed in `new`.
+- Refactor `GanttChart` to honour all options passed in `new`.
+- Provide minimal default style so labels don't disappear unexpectedly if no CSS is set. Thanks @srowley.
+- XML declaration added to generated SVG so the output can be served as an image. Thanks @srowley.
+- Custom tick formatting enabled for PointPlot
+
+### Deprecated
+- Most of the options set via functions, e.g. `BarChart.colours/2`. Use the options in the relevant `new` functions instead.
+
 ## v0.3.0 : 2020-06-08
 - Allow Dataset to be created from a list of Maps (previously lists of lists and list of tuples were supported)
 - Implement a data mapping mechanism to provide a consistent way of mapping data into required plot elements. Thanks 

@@ -77,6 +77,9 @@ defmodule Contex.SVG do
   defp opts_to_attrs([{:phx_click, val} | t], attrs),
     do: opts_to_attrs(t, [[" phx-click=\"", val, "\""] | attrs])
 
+  defp opts_to_attrs([{:phx_target, val} | t], attrs),
+    do: opts_to_attrs(t, [[" phx-target=\"", val, "\""] | attrs])
+
   defp opts_to_attrs([{:series, val} | t], attrs),
     do: opts_to_attrs(t, [[" phx-value-series=\"", "#{clean(val)}", "\""] | attrs])
 

@@ -16,12 +16,14 @@ defmodule ContexBarChartTest do
     %{plot: plot}
   end
 
-  # TODO
-  # Why is width/height set here and not in defaults/1?
+  def get_option(plot_content, key) do
+    Keyword.get(plot_content.options, key)
+  end
+
   describe "new/2" do
     test "given data from tuples or lists, returns a BarChart struct with defaults", %{plot: plot} do
-      assert plot.width == 100
-      assert plot.height == 100
+      assert get_option(plot, :width) == 100
+      assert get_option(plot, :height) == 100
     end
 
     test "given data from a map and a valid column map, returns a BarChart struct accordingly" do
@@ -29,8 +31,8 @@ defmodule ContexBarChartTest do
         Dataset.new([%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}])
         |> BarChart.new(mapping: %{category_col: "bb", value_cols: ["aa"]})
 
-      assert plot.width == 100
-      assert plot.height == 100
+      assert get_option(plot, :width) == 100
+      assert get_option(plot, :height) == 100
       assert plot.mapping.column_map.category_col == "bb"
       assert plot.mapping.column_map.value_cols == ["aa"]
     end
@@ -56,26 +58,48 @@ defmodule ContexBarChartTest do
         end
       )
     end
+
+    test "Check data labels value can be passed with option" do
+      plot =
+        Dataset.new([%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}])
+        |> BarChart.new(mapping: %{category_col: "bb", value_cols: ["aa"]}, data_labels: false)
+
+      assert get_option(plot, :data_labels) == false
+
+      plot =
+        Dataset.new([%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}])
+        |> BarChart.new(mapping: %{category_col: "bb", value_cols: ["aa"]}, data_labels: true)
+
+      assert get_option(plot, :data_labels) == true
+    end
+
+    test "Check colour scheme can be passed with option" do
+      plot =
+        Dataset.new([%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}])
+        |> BarChart.new(mapping: %{category_col: "bb", value_cols: ["aa"]}, colour_palette: :warm)
+
+      assert get_option(plot, :colour_palette) == :warm
+    end
   end
 
   describe "data_labels/2" do
     test "sets the data labels value", %{plot: plot} do
       plot = BarChart.data_labels(plot, false)
-      assert plot.data_labels == false
+      assert get_option(plot, :data_labels) == false
     end
   end
 
   describe "type/2" do
     test "sets the plot type", %{plot: plot} do
       plot = BarChart.type(plot, :grouped)
-      assert plot.type == :grouped
+      assert get_option(plot, :type) == :grouped
     end
   end
 
   describe "orientation/2" do
     test "sets the orientation", %{plot: plot} do
       plot = BarChart.orientation(plot, :horizontal)
-      assert plot.orientation == :horizontal
+      assert get_option(plot, :orientation) == :horizontal
     end
   end
 
@@ -89,7 +113,7 @@ defmodule ContexBarChartTest do
   describe "axis_label_rotation/2" do
     test "sets the axis label rotation", %{plot: plot} do
       plot = BarChart.axis_label_rotation(plot, 45)
-      assert plot.axis_label_rotation == 45
+      assert get_option(plot, :axis_label_rotation) == 45
     end
 
     test "rotates the labels when set", %{plot: plot} do
@@ -108,8 +132,7 @@ defmodule ContexBarChartTest do
   describe "padding/2" do
     test "sets padding and updates scale padding", %{plot: plot} do
       plot = BarChart.padding(plot, 4)
-      assert plot.padding == 4
-      assert plot.category_scale.padding == 4
+      assert get_option(plot, :padding) == 4
     end
 
     # Not testing clause where category scale is not ordinal, since there is
@@ -126,24 +149,24 @@ defmodule ContexBarChartTest do
     test "accepts a list of (whatever)", %{plot: plot} do
       colours = ["blah", "blurgh", "blee"]
       plot = BarChart.colours(plot, colours)
-      assert plot.colour_palette == colours
+      assert get_option(plot, :colour_palette) == colours
     end
 
     test "accepts an atom (any atom)", %{plot: plot} do
       plot = BarChart.colours(plot, :meat)
-      assert plot.colour_palette == :meat
+      assert get_option(plot, :colour_palette) == :meat
     end
 
     test "sets the palette to :default without an atom or list", %{plot: plot} do
       plot = BarChart.colours(plot, 12345)
-      assert plot.colour_palette == :default
+      assert get_option(plot, :colour_palette) == :default
     end
   end
 
   describe "event_handler/2" do
     test "sets the Phoenix event handler", %{plot: plot} do
       plot = BarChart.event_handler(plot, "clicked")
-      assert plot.phx_event_handler == "clicked"
+      assert get_option(plot, :phx_event_handler) == "clicked"
     end
   end
 
@@ -153,20 +176,20 @@ defmodule ContexBarChartTest do
     # with certain keys
     test "sets the selected item", %{plot: plot} do
       plot = BarChart.select_item(plot, :meat)
-      assert plot.select_item == :meat
+      assert get_option(plot, :select_item) == :meat
     end
   end
 
   describe "custom_value_formatter/2" do
     test "sets the custom value formatter when passed nil", %{plot: plot} do
       plot = BarChart.custom_value_formatter(plot, nil)
-      assert plot.custom_value_formatter == nil
+      assert get_option(plot, :custom_value_formatter) == nil
     end
 
     test "sets the custom value formatter when passed a function", %{plot: plot} do
       format_function = fn x -> x end
       plot = BarChart.custom_value_formatter(plot, format_function)
-      assert plot.custom_value_formatter == format_function
+      assert get_option(plot, :custom_value_formatter) == format_function
     end
 
     test "raises when not passed a function or nil", %{plot: plot} do

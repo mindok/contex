@@ -39,18 +39,9 @@ defmodule Contex.BarChart do
     :category_scale,
     :value_scale,
     :series_fill_colours,
-    :custom_value_formatter,
     :phx_event_handler,
-    :select_item,
     :value_range,
-    axis_label_rotation: :auto,
-    width: 100,
-    height: 100,
-    type: :stacked,
-    data_labels: true,
-    orientation: :vertical,
-    colour_palette: :default,
-    padding: 2
+    :select_item
   ]
 
   @required_mappings [
@@ -58,32 +49,112 @@ defmodule Contex.BarChart do
     value_cols: :one_or_more
   ]
 
+  @default_options [
+    type: :stacked,
+    orientation: :vertical,
+    axis_label_rotation: :auto,
+    custom_value_formatter: nil,
+    width: 100,
+    height: 100,
+    padding: 2,
+    data_labels: true,
+    colour_palette: :default,
+    phx_event_handler: nil,
+    phx_event_target: nil,
+    select_item: nil
+  ]
+
   @type t() :: %__MODULE__{}
   @type orientation() :: :vertical | :horizontal
   @type plot_type() :: :stacked | :grouped
   @type selected_item() :: %{category: any(), series: any()}
 
-  @doc """
+  @doc ~S"""
   Creates a new barchart from a dataset and sets defaults.
 
-  If the data in the dataset is stored as a map, the `:mapping` option is required. This value must be a map of the plot's `:category_col` and `:value_cols` to keys in the map, such as `%{category_col: :column_a, value_cols: [:column_b, column_c]`. The value for the `:value_cols` key must be a list.
+  Options may be passed to control the settings for the barchart. Options available are:
+
+    - `:type` : `:stacked` (default) or `:grouped`
+    - `:orientation` : `:vertical` (default) or `:horizontal`
+    - `:axis_label_rotation` : `:auto` (default), 45 or 90
+
+  Specifies the label rotation value that will be applied to the bottom axis. Accepts integer
+  values for degrees of rotation or `:auto`. Note that manually set rotation values other than
+  45 or 90 will be treated as zero. The default value is `:auto`, which sets the rotation to
+  zero degrees if the number of items on the axis is greater than eight, 45 degrees otherwise.
+
+    - `:custom_value_formatter` : `nil` (default) or a function with arity 1
+
+  Allows the axis tick labels to be overridden. For example, if you have a numeric representation of money and you want to
+  have the value axis show it as millions of dollars you might do something like:
+
+        # Turns 1_234_567.67 into $1.23M
+        defp money_formatter_millions(value) when is_number(value) do
+          "$#{:erlang.float_to_binary(value/1_000_000.0, [decimals: 2])}M"
+        end
+
+        defp show_chart(data) do
+          BarChart.new(
+            dataset,
+            mapping: %{category_col: :column_a, value_cols: [:column_b, column_c]},
+            custom_value_formatter: &money_formatter_millions/1
+          )
+        end
+
+    - `:padding` : integer (default 2) - Specifies the padding between the category groups. Defaults to 2. Specified relative to the plot size.
+    - `:data_labels` : `true` (default) or false - display labels for each bar value
+    - `:colour_palette` : `:default` (default) or colour palette - see `colours/2`
+
+  Overrides the default colours.
+
+  Colours can either be a named palette defined in `Contex.CategoryColourScale` or a list of strings representing hex code
+  of the colour as per CSS colour hex codes, but without the #. For example:
+
+    ```
+    barchart = BarChart.new(
+        dataset,
+        mapping: %{category_col: :column_a, value_cols: [:column_b, column_c]},
+        colour_palette: ["fbb4ae", "b3cde3", "ccebc5"]
+      )
+    ```
+
+    The colours will be applied to the data series in the same order as the columns are specified in `set_val_col_names/2`
+
+    - `:phx_event_handler` : `nil` (default) or string representing `phx-click` event handler
+    - `:phx_event_target` : `nil` (default) or string representing `phx-target` for handler
+
+  Optionally specify a LiveView event handler. This attaches a `phx-click` attribute to each bar element.
+  You can specify the event_target for LiveComponents - a `phx-target` attribute will also be attached.
+
+  Note that it may not work with some browsers (e.g. Safari on iOS).
+
+    - `:select_item` - optional selected item to highlight. See `select_item/2`.
+
+    - `:mapping` : Maps attributes required to generate the barchart to columns in the dataset.
+
+  If the data in the dataset is stored as a map, the `:mapping` option is required. If the dataset
+  is not stored as a map, `:mapping` may be left out, in which case the first column will be used
+  for the category and the second column used as the value.
+  This value must be a map of the plot's `:category_col` and `:value_cols` to keys in the map,
+  such as `%{category_col: :column_a, value_cols: [:column_b, column_c]}`.
+  The value for the `:value_cols` key must be a list.
   """
   @spec new(Contex.Dataset.t(), keyword()) :: Contex.BarChart.t()
-  def new(%Dataset{} = dataset, options \\ [orientation: :vertical]) when is_list(options) do
+  def new(%Dataset{} = dataset, options \\ []) when is_list(options) do
+    options = Keyword.merge(@default_options, options)
     mapping = Mapping.new(@required_mappings, Keyword.get(options, :mapping), dataset)
 
     %BarChart{
       dataset: dataset,
       mapping: mapping,
-      orientation: get_orientation_from_options(options),
       options: options
     }
-    |> set_default_scales()
   end
 
   @doc """
   Sets the default scales for the plot based on its column mapping.
   """
+  @deprecated "Default scales are now silently applied"
   @spec set_default_scales(Contex.BarChart.t()) :: Contex.BarChart.t()
   def set_default_scales(%BarChart{mapping: %{column_map: column_map}} = plot) do
     set_cat_col_name(plot, column_map.category_col)
@@ -93,26 +164,28 @@ defmodule Contex.BarChart do
   @doc """
   Specifies whether data labels are shown on the bars
   """
+  @deprecated "Set in new/2 options"
   @spec data_labels(Contex.BarChart.t(), boolean()) :: Contex.BarChart.t()
   def data_labels(%BarChart{} = plot, data_labels) do
-    %{plot | data_labels: data_labels}
+    set_option(plot, :data_labels, data_labels)
   end
 
   @doc """
   Specifies whether the bars are drawn stacked or grouped.
   """
+  @deprecated "Set in new/2 options"
   @spec type(Contex.BarChart.t(), plot_type()) :: Contex.BarChart.t()
-  def type(%BarChart{mapping: mapping} = plot, type) do
-    %{plot | type: type}
-    |> set_val_col_names(mapping.column_map.value_cols)
+  def type(%BarChart{} = plot, type) do
+    set_option(plot, :type, type)
   end
 
   @doc """
   Specifies whether the bars are drawn horizontally or vertically.
   """
+  @deprecated "Set in new/2 options"
   @spec orientation(Contex.BarChart.t(), orientation()) :: Contex.BarChart.t()
   def orientation(%BarChart{} = plot, orientation) do
-    %{plot | orientation: orientation}
+    set_option(plot, :orientation, orientation)
   end
 
   @doc """
@@ -126,12 +199,10 @@ defmodule Contex.BarChart do
   end
 
   @doc false
-  def set_size(%BarChart{mapping: mapping} = plot, width, height) do
-    # We pretend to set the value and category columns to force a recalculation of scales - may be expensive.
-    # We only really need to set the range, not recalculate the domain
-    %{plot | width: width, height: height}
-    |> set_val_col_names(mapping.column_map.value_cols)
-    |> set_cat_col_name(mapping.column_map.category_col)
+  def set_size(%BarChart{} = plot, width, height) do
+    plot
+    |> set_option(:width, width)
+    |> set_option(:height, height)
   end
 
   @doc """
@@ -140,27 +211,23 @@ defmodule Contex.BarChart do
   45 or 90 will be treated as zero. The default value is `:auto`, which sets the rotation to
   zero degrees if the number of items on the axis is greater than eight, 45 degrees otherwise.
   """
+  @deprecated "Set in new/2 options"
   @spec axis_label_rotation(Contex.BarChart.t(), integer() | :auto) :: Contex.BarChart.t()
   def axis_label_rotation(%BarChart{} = plot, rotation) when is_integer(rotation) do
-    %{plot | axis_label_rotation: rotation}
+    set_option(plot, :axis_label_rotation, rotation)
   end
 
   def axis_label_rotation(%BarChart{} = plot, _) do
-    %{plot | axis_label_rotation: :auto}
+    set_option(plot, :axis_label_rotation, :auto)
   end
 
   @doc """
   Specifies the padding between the category groups. Defaults to 2. Specified relative to the plot size.
   """
+  @deprecated "Set in new/2 options"
   @spec padding(Contex.BarChart.t(), number) :: Contex.BarChart.t()
-  def padding(%BarChart{category_scale: %OrdinalScale{} = cat_scale} = plot, padding)
-      when is_number(padding) do
-    cat_scale = OrdinalScale.padding(cat_scale, padding)
-    %{plot | padding: padding, category_scale: cat_scale}
-  end
-
   def padding(%BarChart{} = plot, padding) when is_number(padding) do
-    %{plot | padding: padding}
+    set_option(plot, :padding, padding)
   end
 
   @doc """
@@ -175,29 +242,42 @@ defmodule Contex.BarChart do
 
     The colours will be applied to the data series in the same order as the columns are specified in `set_val_col_names/2`
   """
+  @deprecated "Set in new/2 options"
   @spec colours(Contex.BarChart.t(), Contex.CategoryColourScale.colour_palette()) ::
           Contex.BarChart.t()
-  def colours(%BarChart{mapping: mapping} = plot, colour_palette) when is_list(colour_palette) do
-    %{plot | colour_palette: colour_palette}
-    |> set_val_col_names(mapping.column_map.value_cols)
+  def colours(%BarChart{} = plot, colour_palette) when is_list(colour_palette) do
+    set_option(plot, :colour_palette, colour_palette)
   end
 
-  def colours(%BarChart{mapping: mapping} = plot, colour_palette) when is_atom(colour_palette) do
-    %{plot | colour_palette: colour_palette}
-    |> set_val_col_names(mapping.column_map.value_cols)
+  def colours(%BarChart{} = plot, colour_palette) when is_atom(colour_palette) do
+    set_option(plot, :colour_palette, colour_palette)
   end
 
-  def colours(%BarChart{mapping: mapping} = plot, _) do
-    %{plot | colour_palette: :default}
-    |> set_val_col_names(mapping.column_map.value_cols)
+  def colours(%BarChart{} = plot, _) do
+    set_option(plot, :colour_palette, :default)
   end
 
   @doc """
-  Optionally specify a LiveView event handler. This attaches a `phx-click` attribute to each bar element. Note that it may
-  not work with some browsers (e.g. Safari on iOS).
+  Optionally specify a LiveView event handler. This attaches a `phx-click` attribute to each bar element.
+  You can specify the event_target for LiveComponents - a `phx-target` attribute will also be attached.
+
+  Note that it may not work with some browsers (e.g. Safari on iOS).
   """
-  def event_handler(%BarChart{} = plot, event_handler) do
-    %{plot | phx_event_handler: event_handler}
+  @deprecated "Set in new/2 options"
+  def event_handler(%BarChart{} = plot, event_handler, event_target \\ nil) do
+    plot
+    |> set_option(:phx_event_handler, event_handler)
+    |> set_option(:phx_event_target, event_target)
+  end
+
+  defp set_option(%BarChart{options: options} = plot, key, value) do
+    options = Keyword.put(options, key, value)
+
+    %{plot | options: options}
+  end
+
+  defp get_option(%BarChart{options: options}, key) do
+    Keyword.get(options, key)
   end
 
   @doc """
@@ -205,7 +285,7 @@ defmodule Contex.BarChart do
   """
   @spec select_item(Contex.BarChart.t(), selected_item()) :: Contex.BarChart.t()
   def select_item(%BarChart{} = plot, select_item) do
-    %{plot | select_item: select_item}
+    set_option(plot, :select_item, select_item)
   end
 
   @doc ~S"""
@@ -224,30 +304,43 @@ defmodule Contex.BarChart do
 
   """
   @spec custom_value_formatter(Contex.BarChart.t(), nil | fun) :: Contex.BarChart.t()
+  @deprecated "Set in new/2 options"
   def custom_value_formatter(%BarChart{} = plot, custom_value_formatter)
       when is_function(custom_value_formatter) or custom_value_formatter == nil do
-    %{plot | custom_value_formatter: custom_value_formatter}
+    set_option(plot, :custom_value_formatter, custom_value_formatter)
   end
 
   @doc false
-  def to_svg(
-        %BarChart{
-          category_scale: category_scale,
-          value_scale: value_scale,
-          orientation: orientation
-        } = plot,
-        options
-      ) do
-    options = refine_options(options, orientation)
+  def get_svg_legend(%BarChart{options: options} = plot) do
+    plot = prepare_scales(plot)
+    scale = plot.series_fill_colours
+
+    orientation = Keyword.get(options, :orientation)
+    type = Keyword.get(options, :type)
+
+    invert = orientation == :vertical and type == :stacked
+
+    Contex.Legend.to_svg(scale, invert)
+  end
+
+  @doc false
+  def to_svg(%BarChart{options: options} = plot, plot_options) do
+    # TODO: Some kind of option validation before removing deprecated option functions
+    plot = prepare_scales(plot)
+    category_scale = plot.category_scale
+    value_scale = plot.value_scale
+
+    orientation = Keyword.get(options, :orientation)
+    plot_options = refine_options(plot_options, orientation)
 
     category_axis = get_category_axis(category_scale, orientation, plot)
-    value_scale = %{value_scale | custom_tick_formatter: plot.custom_value_formatter}
+
     value_axis = get_value_axis(value_scale, orientation, plot)
-    plot = %{plot | value_scale: value_scale}
+    plot = %{plot | value_scale: value_scale, select_item: get_option(plot, :select_item)}
 
-    cat_axis_svg = if options.show_cat_axis, do: Axis.to_svg(category_axis), else: ""
+    cat_axis_svg = if plot_options.show_cat_axis, do: Axis.to_svg(category_axis), else: ""
 
-    val_axis_svg = if options.show_val_axis, do: Axis.to_svg(value_axis), else: ""
+    val_axis_svg = if plot_options.show_val_axis, do: Axis.to_svg(value_axis), else: ""
 
     [
       cat_axis_svg,
@@ -256,13 +349,6 @@ defmodule Contex.BarChart do
       get_svg_bars(plot),
       "</g>"
     ]
-  end
-
-  defp get_orientation_from_options(options) when is_list(options) do
-    case Keyword.get(options, :orientation) do
-      :horizontal -> :horizontal
-      _ -> :vertical
-    end
   end
 
   defp refine_options(options, :horizontal),
@@ -278,12 +364,12 @@ defmodule Contex.BarChart do
       |> Map.put(:show_val_axis, options.show_y_axis)
 
   defp get_category_axis(category_scale, :horizontal, plot) do
-    Axis.new_left_axis(category_scale) |> Axis.set_offset(plot.width)
+    Axis.new_left_axis(category_scale) |> Axis.set_offset(get_option(plot, :width))
   end
 
   defp get_category_axis(category_scale, _, plot) do
     rotation =
-      case plot.axis_label_rotation do
+      case get_option(plot, :axis_label_rotation) do
         :auto ->
           if length(Scale.ticks_range(category_scale)) > 8, do: 45, else: 0
 
@@ -293,24 +379,15 @@ defmodule Contex.BarChart do
 
     category_scale
     |> Axis.new_bottom_axis()
-    |> Axis.set_offset(plot.height)
+    |> Axis.set_offset(get_option(plot, :height))
     |> Kernel.struct(rotation: rotation)
   end
 
   defp get_value_axis(value_scale, :horizontal, plot),
-    do: Axis.new_bottom_axis(value_scale) |> Axis.set_offset(plot.height)
+    do: Axis.new_bottom_axis(value_scale) |> Axis.set_offset(get_option(plot, :height))
 
   defp get_value_axis(value_scale, _, plot),
-    do: Axis.new_left_axis(value_scale) |> Axis.set_offset(plot.width)
-
-  @doc false
-  def get_svg_legend(%BarChart{series_fill_colours: scale, orientation: :vertical, type: :stacked}) do
-    Contex.Legend.to_svg(scale, true)
-  end
-
-  def get_svg_legend(%BarChart{series_fill_colours: scale}) do
-    Contex.Legend.to_svg(scale)
-  end
+    do: Axis.new_left_axis(value_scale) |> Axis.set_offset(get_option(plot, :width))
 
   defp get_svg_bars(%BarChart{mapping: %{column_map: column_map}, dataset: dataset} = plot) do
     series_fill_colours = plot.series_fill_colours
@@ -334,7 +411,7 @@ defmodule Contex.BarChart do
     series_values = Enum.map(mapping.accessors.value_cols, fn value_col -> value_col.(row) end)
 
     cat_band = OrdinalScale.get_band(category_scale, cat_data)
-    bar_values = prepare_bar_values(series_values, value_scale, plot.type)
+    bar_values = prepare_bar_values(series_values, value_scale, get_option(plot, :type))
     labels = Enum.map(series_values, fn val -> Scale.get_formatted_tick(value_scale, val) end)
     event_handlers = get_bar_event_handlers(plot, cat_data, series_values)
     opacities = get_bar_opacities(plot, cat_data)
@@ -342,20 +419,30 @@ defmodule Contex.BarChart do
     get_svg_bar_rects(cat_band, bar_values, labels, plot, fills, event_handlers, opacities)
   end
 
-  defp get_bar_event_handlers(
-         %BarChart{phx_event_handler: phx_event_handler, mapping: mapping},
-         category,
-         series_values
-       )
-       when is_binary(phx_event_handler) and phx_event_handler != "" do
-    Enum.zip(mapping.column_map.value_cols, series_values)
-    |> Enum.map(fn {col, value} ->
-      [category: category, series: col, value: value, phx_click: phx_event_handler]
-    end)
-  end
+  defp get_bar_event_handlers(%BarChart{mapping: mapping} = plot, category, series_values) do
+    handler = get_option(plot, :phx_event_handler)
+    target = get_option(plot, :phx_event_target)
 
-  defp get_bar_event_handlers(%BarChart{mapping: mapping}, _, _) do
-    Enum.map(mapping.column_map.value_cols, fn _ -> [] end)
+    base_opts =
+      case target do
+        nil -> [phx_click: handler]
+        "" -> [phx_click: handler]
+        _ -> [phx_click: handler, phx_target: target]
+      end
+
+    case handler do
+      nil ->
+        Enum.map(mapping.column_map.value_cols, fn _ -> [] end)
+
+      "" ->
+        Enum.map(mapping.column_map.value_cols, fn _ -> [] end)
+
+      _ ->
+        Enum.zip(mapping.column_map.value_cols, series_values)
+        |> Enum.map(fn {col, value} ->
+          Keyword.merge(base_opts, category: category, series: col, value: value)
+        end)
+    end
   end
 
   @bar_faded_opacity "0.3"
@@ -426,28 +513,30 @@ defmodule Contex.BarChart do
     count = length(bar_values)
     indices = 0..(count - 1)
 
+    orientation = get_option(plot, :orientation)
+
     adjusted_bands =
       Enum.map(indices, fn index ->
-        adjust_cat_band(cat_band, index, count, plot.type, plot.orientation)
+        adjust_cat_band(cat_band, index, count, get_option(plot, :type), orientation)
       end)
 
     rects =
       Enum.zip([bar_values, fills, labels, adjusted_bands, event_handlers, opacities])
       |> Enum.map(fn {bar_value, fill, label, adjusted_band, event_opts, opacity} ->
-        {x, y} = get_bar_rect_coords(plot.orientation, adjusted_band, bar_value)
+        {x, y} = get_bar_rect_coords(orientation, adjusted_band, bar_value)
         opts = [fill: fill, opacity: opacity] ++ event_opts
         rect(x, y, title(label), opts)
       end)
 
     texts =
-      case count < 4 and plot.data_labels do
+      case count < 4 and get_option(plot, :data_labels) do
         false ->
           []
 
         _ ->
           Enum.zip([bar_values, labels, adjusted_bands])
           |> Enum.map(fn {bar_value, label, adjusted_band} ->
-            get_svg_bar_label(plot.orientation, bar_value, label, adjusted_band, plot)
+            get_svg_bar_label(orientation, bar_value, label, adjusted_band, plot)
           end)
       end
 
@@ -504,11 +593,41 @@ defmodule Contex.BarChart do
 
   This provides the labels for each bar or group of bars
   """
-  def set_cat_col_name(
-        %BarChart{dataset: dataset, padding: padding, mapping: mapping} = plot,
-        cat_col_name
-      ) do
+  @deprecated "Use `:mapping` option in `new/2`"
+  def set_cat_col_name(%BarChart{mapping: mapping} = plot, cat_col_name) do
     mapping = Mapping.update(mapping, %{category_col: cat_col_name})
+
+    %{plot | mapping: mapping}
+  end
+
+  @doc """
+  Sets the value column names. Each must exist in the dataset.
+
+  This provides the value for each bar.
+  """
+  @deprecated "Use `:mapping` option in `new/2`"
+  def set_val_col_names(%BarChart{mapping: mapping} = plot, val_col_names)
+      when is_list(val_col_names) do
+    mapping = Mapping.update(mapping, %{value_cols: val_col_names})
+
+    %{plot | mapping: mapping}
+  end
+
+  def set_val_col_names(%BarChart{} = plot, _), do: plot
+
+  defp prepare_scales(%BarChart{} = plot) do
+    plot
+    |> prepare_value_scale()
+    |> prepare_category_scale()
+    |> prepare_colour_scale()
+  end
+
+  defp prepare_category_scale(
+         %BarChart{dataset: dataset, options: options, mapping: mapping} = plot
+       ) do
+    padding = Keyword.get(options, :padding, 2)
+
+    cat_col_name = mapping.column_map[:category_col]
     categories = Dataset.unique_values(dataset, cat_col_name)
     {r_min, r_max} = get_range(:category, plot)
 
@@ -517,20 +636,14 @@ defmodule Contex.BarChart do
       |> Scale.set_range(r_min, r_max)
       |> OrdinalScale.padding(padding)
 
-    %{plot | category_scale: cat_scale, mapping: mapping}
+    %{plot | category_scale: cat_scale}
   end
 
-  @doc """
-  Sets the value column names. Each must exist in the dataset.
-
-  This provides the value for each bar.
-  """
-  def set_val_col_names(%BarChart{dataset: dataset, mapping: mapping} = plot, val_col_names)
-      when is_list(val_col_names) do
-    mapping = Mapping.update(mapping, %{value_cols: val_col_names})
+  defp prepare_value_scale(%BarChart{dataset: dataset, mapping: mapping} = plot) do
+    val_col_names = mapping.column_map[:value_cols]
 
     {min, max} =
-      get_overall_value_domain(plot, dataset, val_col_names, plot.type)
+      get_overall_value_domain(plot, dataset, val_col_names, get_option(plot, :type))
       |> Utils.fixup_value_range()
 
     {r_start, r_end} = get_range(:value, plot)
@@ -539,21 +652,34 @@ defmodule Contex.BarChart do
       ContinuousLinearScale.new()
       |> ContinuousLinearScale.domain(min, max)
       |> Scale.set_range(r_start, r_end)
+      |> struct(custom_tick_formatter: get_option(plot, :custom_value_formatter))
+
+    %{plot | value_scale: val_scale, mapping: mapping}
+  end
+
+  defp prepare_colour_scale(%BarChart{mapping: mapping} = plot) do
+    val_col_names = mapping.column_map[:value_cols]
 
     series_fill_colours =
       CategoryColourScale.new(val_col_names)
-      |> CategoryColourScale.set_palette(plot.colour_palette)
+      |> CategoryColourScale.set_palette(get_option(plot, :colour_palette))
 
-    %{plot | value_scale: val_scale, series_fill_colours: series_fill_colours, mapping: mapping}
+    %{plot | series_fill_colours: series_fill_colours, mapping: mapping}
   end
 
-  def set_val_col_names(%BarChart{} = plot, _), do: plot
+  defp get_range(:category, %BarChart{} = plot) do
+    case get_option(plot, :orientation) do
+      :horizontal -> {get_option(plot, :height), 0}
+      _ -> {0, get_option(plot, :width)}
+    end
+  end
 
-  defp get_range(:category, %BarChart{orientation: :horizontal} = plot), do: {plot.height, 0}
-  defp get_range(:category, plot), do: {0, plot.width}
-
-  defp get_range(:value, %BarChart{orientation: :horizontal} = plot), do: {0, plot.width}
-  defp get_range(:value, plot), do: {plot.height, 0}
+  defp get_range(:value, %BarChart{} = plot) do
+    case get_option(plot, :orientation) do
+      :horizontal -> {0, get_option(plot, :width)}
+      _ -> {get_option(plot, :height), 0}
+    end
+  end
 
   defp get_overall_value_domain(%BarChart{value_range: {min, max}}, _, _, _), do: {min, max}
 
