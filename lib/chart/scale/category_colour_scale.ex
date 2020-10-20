@@ -115,6 +115,19 @@ defmodule Contex.CategoryColourScale do
 
   def get_default_colour(_), do: @default_colour
 
+  @doc """
+  Create a function to lookup a value from the palette.
+  """
+  def domain_to_range_fn(%CategoryColourScale{} = scale) do
+    # Note, we basically carry a copy of the scale definition - we could
+    # probably get smarter than this by pre-mapping values to colours
+    # TODO: We could probably implement the Contex.Scale protocol
+
+    fn range_val ->
+      CategoryColourScale.colour_for_value(scale, range_val)
+    end
+  end
+
   defp map_values_to_palette(
          %CategoryColourScale{values: values, colour_palette: palette} = colour_scale
        ) do

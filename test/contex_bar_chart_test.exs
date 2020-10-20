@@ -176,7 +176,7 @@ defmodule ContexBarChartTest do
     # with certain keys
     test "sets the selected item", %{plot: plot} do
       plot = BarChart.select_item(plot, :meat)
-      assert plot.select_item == :meat
+      assert get_option(plot, :select_item) == :meat
     end
   end
 
