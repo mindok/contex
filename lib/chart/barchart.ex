@@ -71,7 +71,25 @@ defmodule Contex.BarChart do
   @doc """
   Creates a new barchart from a dataset and sets defaults.
 
-  If the data in the dataset is stored as a map, the `:mapping` option is required. This value must be a map of the plot's `:category_col` and `:value_cols` to keys in the map, such as `%{category_col: :column_a, value_cols: [:column_b, column_c]`. The value for the `:value_cols` key must be a list.
+  Options may be passed to control the settings for the barchart. Options available are:
+
+    - `type:` : `:stacked` (default) or `:grouped` - see `type/2`
+    - `orientation:` : `:vertical` (default) or `:horizontal` - see `orientation/2`
+    - `axis_label_rotation:` : `:auto` (default) or integer - see `axis_label_rotation/2`
+    - `custom_value_formatter:` : `nil` (default) or a function with arity 1 - see `custom_value_formatter/2`
+    - `padding:` : integer (default 2) - see `padding/2`
+    - `data_labels:` : `true` (default) or false - see `data_labels/2`
+    - `colour_palette:` : `:default` (default) or colour palette - see `colours/2`
+    - `phx_event_handler:` : `nil` (default) or string representing `phx-click` event handler - see `event_handler/3`
+    - `phx_event_target:` : `nil` (default) or string representing `phx-target` for handler - see `event_handler/3`
+
+
+  If the data in the dataset is stored as a map, the `:mapping` option is required. If the dataset
+  is not stored as a map, `:mapping` may be left out, in which case the first column will be used
+  for the category and the second column used as the value.
+  This value must be a map of the plot's `:category_col` and `:value_cols` to keys in the map,
+  such as `%{category_col: :column_a, value_cols: [:column_b, column_c]`.
+  The value for the `:value_cols` key must be a list.
   """
   @spec new(Contex.Dataset.t(), keyword()) :: Contex.BarChart.t()
   def new(%Dataset{} = dataset, options \\ []) when is_list(options) do
@@ -206,7 +224,6 @@ defmodule Contex.BarChart do
   defp get_option(%BarChart{options: options}, key) do
     Keyword.get(options, key)
   end
-
 
   @doc """
   Highlights a selected value based on matching category and series.
@@ -349,11 +366,12 @@ defmodule Contex.BarChart do
     handler = get_option(plot, :phx_event_handler)
     target = get_option(plot, :phx_event_target)
 
-    base_opts = case target do
-      nil -> [phx_click: handler]
-      "" -> [phx_click: handler]
-      _ ->  [phx_click: handler, phx_target: target]
-    end
+    base_opts =
+      case target do
+        nil -> [phx_click: handler]
+        "" -> [phx_click: handler]
+        _ -> [phx_click: handler, phx_target: target]
+      end
 
     case handler do
       nil ->
@@ -365,7 +383,7 @@ defmodule Contex.BarChart do
       _ ->
         Enum.zip(mapping.column_map.value_cols, series_values)
         |> Enum.map(fn {col, value} ->
-          Keyword.merge(base_opts, [category: category, series: col, value: value])
+          Keyword.merge(base_opts, category: category, series: col, value: value)
         end)
     end
   end
