@@ -9,6 +9,8 @@
 - Provide minimal default style so labels don't disappear unexpectedly if no CSS is set. Thanks @srowley.
 - XML declaration added to generated SVG so the output can be served as an image. Thanks @srowley.
 - Custom tick formatting enabled for PointPlot
+- Added `:custom_value_scale` to `BarChart` to allow overriding of the automatically generated scale
+- Added `:custom_x_scale` and `:custom_y_scale` to `PointPlot` to allow overriding of the automatically generated scales
 
 ### Deprecated
 - Most of the options set via functions, e.g. `BarChart.colours/2`. Use the options in the relevant `new` functions instead.

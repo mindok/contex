@@ -68,13 +68,15 @@ Others under consideration:
 There are quite a few things to tidy up to make this ready for the real world, and the API is likely to be unstable for a little while yet...
 
 - [x] Reasonable docs - the best resource currently is the accompanying [demo project](https://github.com/mindok/contex-samples)
-- [ ] Default styling
+- [x] Default styling
 - [ ] Upgrade Elixir required version to 1.10 and fix up some of the data comparison operators to use the new sort capabilities. Holding off on this for a while so we don't force an unwanted Elixir upgrade.
 - [x] Multiple series in point plot
 - [ ] Line plot (probably option in point plot)
 - [x] Some test coverage - it has been built interactively using a liveview page for testing / refinement. Thanks to @srowley for getting some test coverage in place.
 - [ ] More test coverage... An approach for comparing "blessed" output SVG would make sense, including handling minor difference in spacing or element attribute order.
 - [ ] Options handling - needs to be better structured and use keyword lists rather than maps
+  - [x] Options for BarChart, PointPlot and GanttChart
+  - [ ] Plot options
 - [ ] Colour handling
 - [ ] Plot overlays (e.g. line chart on bar chart)
 - [x] SVG generation is poorly structured - lots of string interpolation. 

@@ -43,6 +43,8 @@ defmodule Contex.PointPlot do
 
   @default_options [
     axis_label_rotation: :auto,
+    custom_x_scale: nil,
+    custom_y_scale: nil,
     custom_x_formatter: nil,
     custom_y_formatter: nil,
     width: 100,
@@ -63,6 +65,14 @@ defmodule Contex.PointPlot do
   values for degrees of rotation or `:auto`. Note that manually set rotation values other than
   45 or 90 will be treated as zero. The default value is `:auto`, which sets the rotation to
   zero degrees if the number of items on the axis is greater than eight, 45 degrees otherwise.
+
+    - `:custom_x_scale` : `nil` (default) or an instance of a suitable `Contex.Scale`.
+
+    The scale must be suitable for the data type and would typically be either `Contex.ContinuousLinearScale`
+    or `Contex.TimeScale`. It is not necessary to set the range for the scale as the range is set
+    as part of the chart layout process.
+
+    - `:custom_y_scale` : `nil` (default) or an instance of a suitable `Contex.Scale`.
 
     - `:custom_x_formatter` : `nil` (default) or a function with arity 1
 
@@ -397,8 +407,14 @@ defmodule Contex.PointPlot do
   defp prepare_x_scale(%PointPlot{dataset: dataset, mapping: mapping} = plot) do
     x_col_name = mapping.column_map[:x_col]
     width = get_option(plot, :width)
+    custom_x_scale = get_option(plot, :custom_x_scale)
 
-    x_scale = create_scale_for_column(dataset, x_col_name, {0, width})
+    x_scale =
+      case custom_x_scale do
+        nil -> create_scale_for_column(dataset, x_col_name, {0, width})
+        _ -> custom_x_scale |> Scale.set_range(0, width)
+      end
+
     x_scale = %{x_scale | custom_tick_formatter: get_option(plot, :custom_x_formatter)}
     x_transform = Scale.domain_to_range_fn(x_scale)
     transforms = Map.merge(plot.transforms, %{x: x_transform})
@@ -409,15 +425,22 @@ defmodule Contex.PointPlot do
   defp prepare_y_scale(%PointPlot{dataset: dataset, mapping: mapping} = plot) do
     y_col_names = mapping.column_map[:y_cols]
     height = get_option(plot, :height)
-
-    {min, max} =
-      get_overall_domain(dataset, y_col_names)
-      |> Utils.fixup_value_range()
+    custom_y_scale = get_option(plot, :custom_y_scale)
 
     y_scale =
-      ContinuousLinearScale.new()
-      |> ContinuousLinearScale.domain(min, max)
-      |> Scale.set_range(height, 0)
+      case custom_y_scale do
+        nil ->
+          {min, max} =
+            get_overall_domain(dataset, y_col_names)
+            |> Utils.fixup_value_range()
+
+          ContinuousLinearScale.new()
+          |> ContinuousLinearScale.domain(min, max)
+          |> Scale.set_range(height, 0)
+
+        _ ->
+          custom_y_scale |> Scale.set_range(height, 0)
+      end
 
     y_scale = %{y_scale | custom_tick_formatter: get_option(plot, :custom_y_formatter)}
     y_transform = Scale.domain_to_range_fn(y_scale)
