@@ -19,7 +19,7 @@ defmodule Contex.BarChart do
   of the sum of the values for each category and the value axis is set to {0, that_max}. For a `:grouped` bar chart the
   value axis minimum is set to the minimum value for any category and series, and likewise, the maximum is set to the
   maximum value for any category and series. This may not work. For example, in the situation where you want zero to be
-  shown. You can force the range using `force_value_range/2`
+  shown. You can force the range by setting the `:custom_value_scale` option or `force_value_range/2` (deprecated)
 
   """
 
@@ -53,6 +53,7 @@ defmodule Contex.BarChart do
     type: :stacked,
     orientation: :vertical,
     axis_label_rotation: :auto,
+    custom_value_scale: nil,
     custom_value_formatter: nil,
     width: 100,
     height: 100,
@@ -82,6 +83,12 @@ defmodule Contex.BarChart do
   values for degrees of rotation or `:auto`. Note that manually set rotation values other than
   45 or 90 will be treated as zero. The default value is `:auto`, which sets the rotation to
   zero degrees if the number of items on the axis is greater than eight, 45 degrees otherwise.
+
+    - `:custom_value_scale` : `nil` (default) or an instance of a suitable `Contex.Scale`.
+
+    The scale must be suitable for the data type and would typically be `Contex.ContinuousLinearScale`.
+    It is not necessary to set the range for the scale as the range is set
+    as part of the chart layout process.
 
     - `:custom_value_formatter` : `nil` (default) or a function with arity 1
 
@@ -192,6 +199,7 @@ defmodule Contex.BarChart do
   Forces the value scale to the given data range
   """
   @spec force_value_range(Contex.BarChart.t(), {number, number}) :: Contex.BarChart.t()
+  @deprecated "Use the `:custom_value_scale` option in `new/2`"
   def force_value_range(%BarChart{mapping: mapping} = plot, {min, max} = value_range)
       when is_number(min) and is_number(max) do
     %{plot | value_range: value_range}
@@ -641,18 +649,25 @@ defmodule Contex.BarChart do
 
   defp prepare_value_scale(%BarChart{dataset: dataset, mapping: mapping} = plot) do
     val_col_names = mapping.column_map[:value_cols]
-
-    {min, max} =
-      get_overall_value_domain(plot, dataset, val_col_names, get_option(plot, :type))
-      |> Utils.fixup_value_range()
-
-    {r_start, r_end} = get_range(:value, plot)
+    custom_value_scale = get_option(plot, :custom_value_scale)
 
     val_scale =
-      ContinuousLinearScale.new()
-      |> ContinuousLinearScale.domain(min, max)
-      |> Scale.set_range(r_start, r_end)
-      |> struct(custom_tick_formatter: get_option(plot, :custom_value_formatter))
+      case custom_value_scale do
+        nil ->
+          {min, max} =
+            get_overall_value_domain(plot, dataset, val_col_names, get_option(plot, :type))
+            |> Utils.fixup_value_range()
+
+          ContinuousLinearScale.new()
+          |> ContinuousLinearScale.domain(min, max)
+          |> struct(custom_tick_formatter: get_option(plot, :custom_value_formatter))
+
+        _ ->
+          custom_value_scale
+      end
+
+    {r_start, r_end} = get_range(:value, plot)
+    val_scale = Scale.set_range(val_scale, r_start, r_end)
 
     %{plot | value_scale: val_scale, mapping: mapping}
   end

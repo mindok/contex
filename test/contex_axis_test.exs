@@ -4,6 +4,10 @@ defmodule ContexAxisTest do
   alias Contex.{Axis, ContinuousLinearScale}
   import SweetXml
 
+  # TODO: This is a bit brittle - most of the axis calculations are in float which is imprecise
+  # String representations in the output may not line up depending on how the floats
+  # are calculated on the day
+
   defp axis_map(axis) do
     Axis.to_svg(axis)
     |> IO.chardata_to_string()
@@ -121,7 +125,19 @@ defmodule ContexAxisTest do
     end
 
     test "positions tick marks properly", %{axis_map: axis_map} do
-      assert ["(0, 0.5)", "(0, 0.7)", "(0, 0.9)", "(0, 1.1)", "(0, 1.3)", "(0, 1.5)"] ==
+      assert [
+               "(0, 0.5)",
+               "(0, 0.6)",
+               "(0, 0.7)",
+               "(0, 0.8)",
+               "(0, 0.9)",
+               "(0, 1.0)",
+               "(0, 1.1)",
+               "(0, 1.2000000000000002)",
+               "(0, 1.3)",
+               "(0, 1.4)",
+               "(0, 1.5)"
+             ] ==
                Enum.map(axis_map.ticks, fn tick -> Map.get(tick, :transform) end)
                |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end)
 
@@ -133,7 +149,19 @@ defmodule ContexAxisTest do
                Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :dy]) end)
                |> Enum.uniq()
 
-      assert ["0.00", "0.20", "0.40", "0.60", "0.80", "1.00"] ==
+      assert [
+               "0.000",
+               "0.100",
+               "0.200",
+               "0.300",
+               "0.400",
+               "0.500",
+               "0.600",
+               "0.700",
+               "0.800",
+               "0.900",
+               "1.000"
+             ] ==
                Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :text]) end)
     end
   end
@@ -161,7 +189,19 @@ defmodule ContexAxisTest do
     end
 
     test "positions tick marks properly", %{axis_map: axis_map} do
-      assert ["(0.5,0)", "(0.7,0)", "(0.9,0)", "(1.1,0)", "(1.3,0)", "(1.5,0)"] ==
+      assert [
+               "(0.5,0)",
+               "(0.6,0)",
+               "(0.7,0)",
+               "(0.8,0)",
+               "(0.9,0)",
+               "(1.0,0)",
+               "(1.1,0)",
+               "(1.2000000000000002,0)",
+               "(1.3,0)",
+               "(1.4,0)",
+               "(1.5,0)"
+             ] ==
                Enum.map(axis_map.ticks, fn tick -> Map.get(tick, :transform) end)
                |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end)
 
@@ -173,7 +213,19 @@ defmodule ContexAxisTest do
                Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :dy]) end)
                |> Enum.uniq()
 
-      assert ["0.00", "0.20", "0.40", "0.60", "0.80", "1.00"] ==
+      assert [
+               "0.000",
+               "0.100",
+               "0.200",
+               "0.300",
+               "0.400",
+               "0.500",
+               "0.600",
+               "0.700",
+               "0.800",
+               "0.900",
+               "1.000"
+             ] ==
                Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :text]) end)
     end
   end
@@ -203,7 +255,19 @@ defmodule ContexAxisTest do
     # TODO
     # For top/bottom there's not space between the values;
     test "positions tick marks properly", %{axis_map: axis_map} do
-      assert ["(0.5,0)", "(0.7,0)", "(0.9,0)", "(1.1,0)", "(1.3,0)", "(1.5,0)"] ==
+      assert [
+               "(0.5,0)",
+               "(0.6,0)",
+               "(0.7,0)",
+               "(0.8,0)",
+               "(0.9,0)",
+               "(1.0,0)",
+               "(1.1,0)",
+               "(1.2000000000000002,0)",
+               "(1.3,0)",
+               "(1.4,0)",
+               "(1.5,0)"
+             ] ==
                Enum.map(axis_map.ticks, fn tick -> Map.get(tick, :transform) end)
                |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end)
 
@@ -215,7 +279,19 @@ defmodule ContexAxisTest do
                Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :dy]) end)
                |> Enum.uniq()
 
-      assert ["0.00", "0.20", "0.40", "0.60", "0.80", "1.00"] ==
+      assert [
+               "0.000",
+               "0.100",
+               "0.200",
+               "0.300",
+               "0.400",
+               "0.500",
+               "0.600",
+               "0.700",
+               "0.800",
+               "0.900",
+               "1.000"
+             ] ==
                Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :text]) end)
     end
   end
@@ -243,7 +319,19 @@ defmodule ContexAxisTest do
     end
 
     test "positions tick marks properly", %{axis_map: axis_map} do
-      assert ["(0, 0.5)", "(0, 0.7)", "(0, 0.9)", "(0, 1.1)", "(0, 1.3)", "(0, 1.5)"] ==
+      assert [
+               "(0, 0.5)",
+               "(0, 0.6)",
+               "(0, 0.7)",
+               "(0, 0.8)",
+               "(0, 0.9)",
+               "(0, 1.0)",
+               "(0, 1.1)",
+               "(0, 1.2000000000000002)",
+               "(0, 1.3)",
+               "(0, 1.4)",
+               "(0, 1.5)"
+             ] ==
                Enum.map(axis_map.ticks, fn tick -> Map.get(tick, :transform) end)
                |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end)
 
@@ -255,7 +343,19 @@ defmodule ContexAxisTest do
                Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :dy]) end)
                |> Enum.uniq()
 
-      assert ["0.00", "0.20", "0.40", "0.60", "0.80", "1.00"] ==
+      assert [
+               "0.000",
+               "0.100",
+               "0.200",
+               "0.300",
+               "0.400",
+               "0.500",
+               "0.600",
+               "0.700",
+               "0.800",
+               "0.900",
+               "1.000"
+             ] ==
                Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :text]) end)
     end
   end

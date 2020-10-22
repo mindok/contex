@@ -133,7 +133,7 @@ defmodule Contex.ContinuousLinearScale do
               interval_count > 1 do
     width = max_d - min_d
     width = if width == 0.0, do: 1.0, else: width
-    unrounded_interval_size = width / (interval_count - 1)
+    unrounded_interval_size = width / interval_count
     order_of_magnitude = :math.ceil(:math.log10(unrounded_interval_size) - 1)
     power_of_ten = :math.pow(10, order_of_magnitude)
 
