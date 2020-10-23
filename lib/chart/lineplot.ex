@@ -120,7 +120,7 @@ defmodule Contex.LinePlot do
   of the colour as per CSS colour hex codes, but without the #. For example:
 
     ```
-    barchart = LinePlot.new(
+    chart = LinePlot.new(
         dataset,
         mapping: %{x_col: :column_a, y_cols: [:column_b, column_c]},
         colour_palette: ["fbb4ae", "b3cde3", "ccebc5"]
