@@ -71,7 +71,7 @@ There are quite a few things to tidy up to make this ready for the real world, a
 - [x] Default styling
 - [ ] Upgrade Elixir required version to 1.10 and fix up some of the data comparison operators to use the new sort capabilities. Holding off on this for a while so we don't force an unwanted Elixir upgrade.
 - [x] Multiple series in point plot
-- [ ] Line plot (probably option in point plot)
+- [x] Line plot
 - [x] Some test coverage - it has been built interactively using a liveview page for testing / refinement. Thanks to @srowley for getting some test coverage in place.
 - [ ] More test coverage... An approach for comparing "blessed" output SVG would make sense, including handling minor difference in spacing or element attribute order.
 - [ ] Options handling - needs to be better structured and use keyword lists rather than maps
@@ -91,7 +91,7 @@ by adding `contex` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:contex, "~> 0.3.0"}
+    {:contex, "~> 0.4.0"}
   ]
 end
 ```

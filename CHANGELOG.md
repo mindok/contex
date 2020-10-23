@@ -11,6 +11,7 @@
 - Custom tick formatting enabled for PointPlot
 - Added `:custom_value_scale` to `BarChart` to allow overriding of the automatically generated scale
 - Added `:custom_x_scale` and `:custom_y_scale` to `PointPlot` to allow overriding of the automatically generated scales
+- Added `LinePlot` (finally)
 
 ### Deprecated
 - Most of the options set via functions, e.g. `BarChart.colours/2`. Use the options in the relevant `new` functions instead.
