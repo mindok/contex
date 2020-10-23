@@ -42,7 +42,7 @@ defmodule ContexPointPlotTest do
       C330.6666666666667,237.5 388.3333333333333,60 404,20 "
       """
 
-      output = LinePlot.path(points, true) |> IO.iodata_to_binary()
+      output = Contex.SVG.line(points, true) |> IO.iodata_to_binary()
       IO.inspect(output)
     end
   end

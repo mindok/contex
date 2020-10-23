@@ -17,6 +17,8 @@ defmodule Contex.LinePlot do
   `colours/2` and `set_colour_col_name/2`
   """
 
+  import Contex.SVG
+
   alias __MODULE__
   alias Contex.{Scale, ContinuousLinearScale, TimeScale}
   alias Contex.CategoryColourScale
@@ -230,7 +232,7 @@ defmodule Contex.LinePlot do
        ) do
     smooth = get_option(plot, :smoothed)
 
-    options = [transparent: true, stroke: colour, stroke_width: 2, stroke_linejoin: "round"]
+    options = [transparent: true, stroke: colour, stroke_width: "2", stroke_linejoin: "round"]
 
     points =
       data
@@ -248,74 +250,7 @@ defmodule Contex.LinePlot do
       |> Enum.filter(fn {x, y} -> not (is_nil(x) or is_nil(y)) end)
       |> Enum.sort(fn {x1, _y1}, {x2, _y2} -> x1 < x2 end)
 
-    path = path(points, smooth)
-
-    [~s|<path d="|, path, ~s|"|, style, "></path>"]
-  end
-
-  def path([], _), do: ""
-
-  def path(points, false) do
-    Enum.reduce(points, :first, fn {x, y}, acc ->
-      coord = ~s|#{x} #{y}|
-
-      case acc do
-        :first -> ["M ", coord]
-        _ -> [acc, " L " | coord]
-      end
-    end)
-  end
-
-  def path(points, true) do
-    # Use Catmull-Rom curve - see http://schepers.cc/getting-to-the-point
-    # First point stays as-is. Subsequent points are draw using SVG cubic-spline
-    # where control points are calculated as follows:
-    # - Take the immediately prior data point, the data point itself and the next two into
-    # an array of 4 points. Where this isn't possible (first & last) duplicate
-    # Apply Cardinal Spline to Cubic Bezier conversion matrix (this is with tension = 0.0)
-    #    0       1       0       0
-    #  -1/6      1      1/6      0
-    #    0      1/6      1     -1/6
-    #    0       0       1       0
-    # First control point is second result, second control point is third result, end point is last result
-
-    {_, window, last_p, result} =
-      Enum.reduce(points, {:first, {nil, nil, nil, nil}, nil, ""}, fn p,
-                                                                      {step, window, last_p,
-                                                                       result} ->
-        case step do
-          :first ->
-            {:second, {p, p, p, p}, p, []}
-
-          :second ->
-            {:rest, bump_window(window, p), p, ["M ", coord(last_p)]}
-
-          :rest ->
-            window = bump_window(window, p)
-            {cp1, cp2} = cardinal_spline_control_points(window)
-            {:rest, window, p, [result, " C " | [coord(cp1), coord(cp2), coord(last_p)]]}
-        end
-      end)
-
-    window = bump_window(window, last_p)
-    {cp1, cp2} = cardinal_spline_control_points(window)
-
-    [result, " C " | [coord(cp1), coord(cp2), coord(last_p)]]
-  end
-
-  defp bump_window({_p1, p2, p3, p4}, new_p), do: {p2, p3, p4, new_p}
-
-  @spline_tension 0.3
-  @factor (1.0 - @spline_tension) / 6.0
-  defp cardinal_spline_control_points({{x1, y1}, {x2, y2}, {x3, y3}, {x4, y4}}) do
-    cp1 = {x2 + @factor * (x3 - x1), y2 + @factor * (y3 - y1)}
-    cp2 = {x3 + @factor * (x2 - x4), y3 + @factor * (y2 - y4)}
-
-    {cp1, cp2}
-  end
-
-  defp coord({x, y}) do
-    ~s| #{x} #{y}|
+    line(points, smooth, options)
   end
 
   @doc false
