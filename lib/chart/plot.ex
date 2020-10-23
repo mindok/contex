@@ -408,6 +408,12 @@ defimpl Contex.PlotContent, for: Contex.PointPlot do
   def set_size(plot, width, height), do: Contex.PointPlot.set_size(plot, width, height)
 end
 
+defimpl Contex.PlotContent, for: Contex.LinePlot do
+  def to_svg(plot, _options), do: Contex.LinePlot.to_svg(plot)
+  def get_svg_legend(plot), do: Contex.LinePlot.get_svg_legend(plot)
+  def set_size(plot, width, height), do: Contex.LinePlot.set_size(plot, width, height)
+end
+
 defimpl Contex.PlotContent, for: Contex.GanttChart do
   def to_svg(plot, options), do: Contex.GanttChart.to_svg(plot, options)
   # Contex.PointPlot.get_legend_svg(plot)

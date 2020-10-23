@@ -1,9 +1,11 @@
-defmodule Contex.PointPlot do
+defmodule Contex.LinePlot do
   @moduledoc """
   A simple point plot, plotting points showing y values against x values.
 
   It is possible to specify multiple y columns with the same x column. It is not
   yet possible to specify multiple independent series.
+
+  Data are sorted by the x-value prior to plotting.
 
   The x column can either be numeric or date time data. If numeric, a
   `Contex.ContinuousLinearScale` is used to scale the values to the plot,
@@ -14,8 +16,6 @@ defmodule Contex.PointPlot do
   A column in the dataset can optionally be used to control the colours. See
   `colours/2` and `set_colour_col_name/2`
   """
-
-  import Contex.SVG
 
   alias __MODULE__
   alias Contex.{Scale, ContinuousLinearScale, TimeScale}
@@ -49,6 +49,7 @@ defmodule Contex.PointPlot do
     custom_y_formatter: nil,
     width: 100,
     height: 100,
+    smoothed: true,
     colour_palette: :default
   ]
 
@@ -85,7 +86,7 @@ defmodule Contex.PointPlot do
         end
 
         defp show_chart(data) do
-          PointPlot.new(
+          LinePlot.new(
             dataset,
             mapping: %{x_col: :column_a, y_cols: [:column_b, column_c]},
             custom_x_formatter: &money_formatter_millions/1
@@ -93,6 +94,13 @@ defmodule Contex.PointPlot do
         end
 
     - `:custom_y_formatter` : `nil` (default) or a function with arity 1.
+    - `:smoothed` : true (default) or false - draw the lines smoothed
+
+  Note that the smoothing algorithm is a cardinal spline with tension = 0.3.
+  You may get strange effects (e.g. loops / backtracks) in certain circumstances, e.g.
+  if the x-value spacing is very uneven. This alogorithm forces the smoothed line
+  through the points.
+
     - `:colour_palette` : `:default` (default) or colour palette - see `colours/2`
 
   Overrides the default colours.
@@ -110,7 +118,7 @@ defmodule Contex.PointPlot do
   of the colour as per CSS colour hex codes, but without the #. For example:
 
     ```
-    barchart = PointPlot.new(
+    barchart = LinePlot.new(
         dataset,
         mapping: %{x_col: :column_a, y_cols: [:column_b, column_c]},
         colour_palette: ["fbb4ae", "b3cde3", "ccebc5"]
@@ -131,172 +139,33 @@ defmodule Contex.PointPlot do
   to control the point colour. _This is ignored if there are multiple y columns_.
 
   """
-  @spec new(Contex.Dataset.t(), keyword()) :: Contex.PointPlot.t()
+  @spec new(Contex.Dataset.t(), keyword()) :: Contex.LinePlot.t()
   def new(%Dataset{} = dataset, options \\ []) do
     options = Keyword.merge(@default_options, options)
     mapping = Mapping.new(@required_mappings, Keyword.get(options, :mapping), dataset)
 
-    %PointPlot{dataset: dataset, mapping: mapping, options: options}
-  end
-
-  @doc """
-  Sets the default scales for the plot based on its column mapping.
-  """
-  @deprecated "Default scales are now silently applied"
-  @spec set_default_scales(Contex.PointPlot.t()) :: Contex.PointPlot.t()
-  def set_default_scales(%PointPlot{mapping: %{column_map: column_map}} = plot) do
-    set_x_col_name(plot, column_map.x_col)
-    |> set_y_col_names(column_map.y_cols)
-  end
-
-  @doc """
-  Set the colour palette for fill colours.
-
-  Where multiple y columns are defined for the plot, a different colour will be used for
-  each column.
-
-  If a single y column is defined and a colour column is defined (see `set_colour_col_name/2`),
-  a different colour will be used for each unique value in the colour column.
-
-  If a single y column is defined and no colour column is defined, the first colour
-  in the supplied colour palette will be used to plot the points.
-  """
-  @deprecated "Set in new/2 options"
-  @spec colours(Contex.PointPlot.t(), Contex.CategoryColourScale.colour_palette()) ::
-          Contex.PointPlot.t()
-  def colours(plot, colour_palette) when is_list(colour_palette) or is_atom(colour_palette) do
-    set_option(plot, :colour_palette, colour_palette)
-  end
-
-  def colours(plot, _) do
-    set_option(plot, :colour_palette, :default)
-  end
-
-  @doc """
-  Specifies the label rotation value that will be applied to the bottom axis. Accepts integer
-  values for degrees of rotation or `:auto`. Note that manually set rotation values other than
-  45 or 90 will be treated as zero. The default value is `:auto`, which sets the rotation to
-  zero degrees if the number of items on the axis is greater than eight, 45 degrees otherwise.
-  """
-  @deprecated "Set in new/2 options"
-  @spec axis_label_rotation(Contex.PointPlot.t(), integer() | :auto) :: Contex.PointPlot.t()
-  def axis_label_rotation(%PointPlot{} = plot, rotation) when is_integer(rotation) do
-    set_option(plot, :axis_label_rotation, rotation)
-  end
-
-  def axis_label_rotation(%PointPlot{} = plot, _) do
-    set_option(plot, :axis_label_rotation, :auto)
+    %LinePlot{dataset: dataset, mapping: mapping, options: options}
   end
 
   @doc false
-  def set_size(%PointPlot{} = plot, width, height) do
+  def set_size(%LinePlot{} = plot, width, height) do
     plot
     |> set_option(:width, width)
     |> set_option(:height, height)
   end
 
-  @doc ~S"""
-  Allows the axis tick labels to be overridden. For example, if you have a numeric representation of money and you want to
-  have the value axis show it as millions of dollars you might do something like:
-
-        # Turns 1_234_567.67 into $1.23M
-        defp money_formatter_millions(value) when is_number(value) do
-          "$#{:erlang.float_to_binary(value/1_000_000.0, [decimals: 2])}M"
-        end
-
-        defp show_chart(data) do
-          PointPlot.new(data)
-          |> PointPlot.custom_x_formatter(&money_formatter_millions/1)
-        end
-
-  """
-  @deprecated "Set in new/2 options"
-  @spec custom_x_formatter(Contex.PointPlot.t(), nil | fun) :: Contex.PointPlot.t()
-  def custom_x_formatter(%PointPlot{} = plot, custom_x_formatter)
-      when is_function(custom_x_formatter) or custom_x_formatter == nil do
-    set_option(plot, :custom_x_formatter, custom_x_formatter)
-  end
-
-  @doc ~S"""
-  Allows the axis tick labels to be overridden. For example, if you have a numeric representation of money and you want to
-  have the value axis show it as millions of dollars you might do something like:
-
-        # Turns 1_234_567.67 into $1.23M
-        defp money_formatter_millions(value) when is_number(value) do
-          "$#{:erlang.float_to_binary(value/1_000_000.0, [decimals: 2])}M"
-        end
-
-        defp show_chart(data) do
-          PointPlot.new(data)
-          |> PointPlot.custom_y_formatter(&money_formatter_millions/1)
-        end
-
-  """
-  @deprecated "Set in new/2 options"
-  @spec custom_y_formatter(Contex.PointPlot.t(), nil | fun) :: Contex.PointPlot.t()
-  def custom_y_formatter(%PointPlot{} = plot, custom_y_formatter)
-      when is_function(custom_y_formatter) or custom_y_formatter == nil do
-    set_option(plot, :custom_y_formatter, custom_y_formatter)
-  end
-
-  @doc """
-  Specify which column in the dataset is used for the x values.
-
-  This column must contain numeric or date time data.
-  """
-  @deprecated "Use `:mapping` option in `new/2`"
-  @spec set_x_col_name(Contex.PointPlot.t(), Contex.Dataset.column_name()) :: Contex.PointPlot.t()
-  def set_x_col_name(%PointPlot{mapping: mapping} = plot, x_col_name) do
-    mapping = Mapping.update(mapping, %{x_col: x_col_name})
-
-    %{plot | mapping: mapping}
-  end
-
-  @doc """
-  Specify which column(s) in the dataset is/are used for the y values.
-
-  These columns must contain numeric data.
-
-  Where more than one y column is specified the colours are used to identify data from
-  each column.
-  """
-  @deprecated "Use `:mapping` option in `new/2`"
-  @spec set_y_col_names(Contex.PointPlot.t(), [Contex.Dataset.column_name()]) ::
-          Contex.PointPlot.t()
-  def set_y_col_names(%PointPlot{mapping: mapping} = plot, y_col_names)
-      when is_list(y_col_names) do
-    mapping = Mapping.update(mapping, %{y_cols: y_col_names})
-
-    %{plot | mapping: mapping}
-  end
-
-  @doc """
-  If a single y column is specified, it is possible to use another column to control the point colour.
-
-  Note: This is ignored if there are multiple y columns.
-  """
-  @deprecated "Use `:mapping` option in `new/2`"
-  @spec set_colour_col_name(Contex.PointPlot.t(), Contex.Dataset.column_name()) ::
-          Contex.PointPlot.t()
-  def set_colour_col_name(%PointPlot{} = plot, nil), do: plot
-
-  def set_colour_col_name(%PointPlot{mapping: mapping} = plot, fill_col_name) do
-    mapping = Mapping.update(mapping, %{fill_col: fill_col_name})
-    %{plot | mapping: mapping}
-  end
-
-  defp set_option(%PointPlot{options: options} = plot, key, value) do
+  defp set_option(%LinePlot{options: options} = plot, key, value) do
     options = Keyword.put(options, key, value)
 
     %{plot | options: options}
   end
 
-  defp get_option(%PointPlot{options: options}, key) do
+  defp get_option(%LinePlot{options: options}, key) do
     Keyword.get(options, key)
   end
 
   @doc false
-  def get_svg_legend(%PointPlot{} = plot) do
+  def get_svg_legend(%LinePlot{} = plot) do
     plot = prepare_scales(plot)
     Contex.Legend.to_svg(plot.legend_scale)
   end
@@ -304,7 +173,7 @@ defmodule Contex.PointPlot do
   def get_svg_legend(_), do: ""
 
   @doc false
-  def to_svg(%PointPlot{} = plot) do
+  def to_svg(%LinePlot{} = plot) do
     plot = prepare_scales(plot)
     x_scale = plot.x_scale
     y_scale = plot.y_scale
@@ -316,7 +185,7 @@ defmodule Contex.PointPlot do
       Axis.to_svg(axis_x),
       Axis.to_svg(axis_y),
       "<g>",
-      get_svg_points(plot),
+      get_svg_lines(plot),
       "</g>"
     ]
   end
@@ -337,47 +206,127 @@ defmodule Contex.PointPlot do
     |> Kernel.struct(rotation: rotation)
   end
 
-  defp get_svg_points(%PointPlot{dataset: dataset} = plot) do
-    dataset.data
-    |> Enum.map(fn row -> get_svg_point(plot, row) end)
-  end
-
-  defp get_svg_point(
-         %PointPlot{
-           mapping: %{accessors: accessors},
-           transforms: transforms
-         },
-         row
+  defp get_svg_lines(
+         %LinePlot{dataset: dataset, mapping: %{accessors: accessors}, transforms: transforms} =
+           plot
        ) do
-    x =
-      accessors.x_col.(row)
-      |> transforms.x.()
+    x_accessor = accessors.x_col
 
-    fill_val = accessors.fill_col.(row)
+    # Pre-sort by x-value else we get squiggly lines
+    data = Enum.sort(dataset.data, fn a, b -> x_accessor.(a) > x_accessor.(b) end)
 
     Enum.with_index(accessors.y_cols)
-    |> Enum.map(fn {accessor, index} ->
-      y = accessor.(row) |> transforms.y.()
-      fill = transforms.colour.(index, fill_val)
-      get_svg_point(x, y, fill)
+    |> Enum.map(fn {y_accessor, index} ->
+      colour = transforms.colour.(index, nil)
+      get_svg_line(plot, data, y_accessor, colour)
     end)
   end
 
-  defp get_svg_point(x, y, fill) when is_number(x) and is_number(y) do
-    circle(x, y, 3, fill: fill)
+  defp get_svg_line(
+         %LinePlot{mapping: %{accessors: accessors}, transforms: transforms} = plot,
+         data,
+         y_accessor,
+         colour
+       ) do
+    smooth = get_option(plot, :smoothed)
+
+    options = [transparent: true, stroke: colour, stroke_width: 2, stroke_linejoin: "round"]
+
+    points =
+      data
+      |> Stream.map(fn row ->
+        x =
+          accessors.x_col.(row)
+          |> transforms.x.()
+
+        y =
+          y_accessor.(row)
+          |> transforms.y.()
+
+        {x, y}
+      end)
+      |> Enum.filter(fn {x, y} -> not (is_nil(x) or is_nil(y)) end)
+      |> Enum.sort(fn {x1, _y1}, {x2, _y2} -> x1 < x2 end)
+
+    path = path(points, smooth)
+
+    [~s|<path d="|, path, ~s|"|, style, "></path>"]
   end
 
-  defp get_svg_point(_x, _y, _fill), do: ""
+  def path([], _), do: ""
+
+  def path(points, false) do
+    Enum.reduce(points, :first, fn {x, y}, acc ->
+      coord = ~s|#{x} #{y}|
+
+      case acc do
+        :first -> ["M ", coord]
+        _ -> [acc, " L " | coord]
+      end
+    end)
+  end
+
+  def path(points, true) do
+    # Use Catmull-Rom curve - see http://schepers.cc/getting-to-the-point
+    # First point stays as-is. Subsequent points are draw using SVG cubic-spline
+    # where control points are calculated as follows:
+    # - Take the immediately prior data point, the data point itself and the next two into
+    # an array of 4 points. Where this isn't possible (first & last) duplicate
+    # Apply Cardinal Spline to Cubic Bezier conversion matrix (this is with tension = 0.0)
+    #    0       1       0       0
+    #  -1/6      1      1/6      0
+    #    0      1/6      1     -1/6
+    #    0       0       1       0
+    # First control point is second result, second control point is third result, end point is last result
+
+    {_, window, last_p, result} =
+      Enum.reduce(points, {:first, {nil, nil, nil, nil}, nil, ""}, fn p,
+                                                                      {step, window, last_p,
+                                                                       result} ->
+        case step do
+          :first ->
+            {:second, {p, p, p, p}, p, []}
+
+          :second ->
+            {:rest, bump_window(window, p), p, ["M ", coord(last_p)]}
+
+          :rest ->
+            window = bump_window(window, p)
+            {cp1, cp2} = cardinal_spline_control_points(window)
+            {:rest, window, p, [result, " C " | [coord(cp1), coord(cp2), coord(last_p)]]}
+        end
+      end)
+
+    window = bump_window(window, last_p)
+    {cp1, cp2} = cardinal_spline_control_points(window)
+
+    [result, " C " | [coord(cp1), coord(cp2), coord(last_p)]]
+  end
+
+  defp bump_window({_p1, p2, p3, p4}, new_p), do: {p2, p3, p4, new_p}
+
+  @spline_tension 0.3
+  @factor (1.0 - @spline_tension) / 6.0
+  defp cardinal_spline_control_points({{x1, y1}, {x2, y2}, {x3, y3}, {x4, y4}}) do
+    cp1 = {x2 + @factor * (x3 - x1), y2 + @factor * (y3 - y1)}
+    cp2 = {x3 + @factor * (x2 - x4), y3 + @factor * (y2 - y4)}
+
+    {cp1, cp2}
+  end
+
+  defp coord({x, y}) do
+    ~s| #{x} #{y}|
+  end
 
   @doc false
-  def prepare_scales(%PointPlot{} = plot) do
+  def prepare_scales(%LinePlot{} = plot) do
     plot
     |> prepare_x_scale()
     |> prepare_y_scale()
     |> prepare_colour_scale()
   end
 
-  defp prepare_x_scale(%PointPlot{dataset: dataset, mapping: mapping} = plot) do
+  defp prepare_x_scale(%LinePlot{dataset: dataset, mapping: mapping} = plot) do
     x_col_name = mapping.column_map[:x_col]
     width = get_option(plot, :width)
     custom_x_scale = get_option(plot, :custom_x_scale)
@@ -395,7 +344,7 @@ defmodule Contex.PointPlot do
     %{plot | x_scale: x_scale, transforms: transforms}
   end
 
-  defp prepare_y_scale(%PointPlot{dataset: dataset, mapping: mapping} = plot) do
+  defp prepare_y_scale(%LinePlot{dataset: dataset, mapping: mapping} = plot) do
     y_col_names = mapping.column_map[:y_cols]
     height = get_option(plot, :height)
     custom_y_scale = get_option(plot, :custom_y_scale)
@@ -422,7 +371,7 @@ defmodule Contex.PointPlot do
     %{plot | y_scale: y_scale, transforms: transforms}
   end
 
-  defp prepare_colour_scale(%PointPlot{dataset: dataset, mapping: mapping} = plot) do
+  defp prepare_colour_scale(%LinePlot{dataset: dataset, mapping: mapping} = plot) do
     y_col_names = mapping.column_map[:y_cols]
     fill_col_name = mapping.column_map[:fill_col]
     palette = get_option(plot, :colour_palette)

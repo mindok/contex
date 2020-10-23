@@ -69,6 +69,34 @@ defmodule Contex.SVG do
     ]
   end
 
+  def line(points, smoothed,  opts \\ []) do
+    attrs = opts_to_attrs(opts)
+
+    path = path(points, smoothed)
+
+    [
+      "<path d=\"",
+      path,
+      "\"",
+      attrs,
+      "></path>"
+    ]
+  end
+
+  defp path([], _), do: ""
+
+  defp path(points, false) do
+    Enum.reduce(points, :first, fn {x, y}, acc ->
+      coord = ~s|#{x} #{y}|
+
+      case acc do
+        :first -> ["M ", coord]
+        _ -> [acc, " L " | coord]
+      end
+    end)
+  end
+
+
   def opts_to_attrs(opts), do: opts_to_attrs(opts, [])
 
   defp opts_to_attrs([{_, nil} | t], attrs), do: opts_to_attrs(t, attrs)
@@ -98,6 +126,18 @@ defmodule Contex.SVG do
   # TODO: This is going to break down with more complex styles
   defp opts_to_attrs([{:fill, val} | t], attrs),
     do: opts_to_attrs(t, [[" style=\"fill:#", val, ";\""] | attrs])
+
+  defp opts_to_attrs([{:transparent, true} | t], attrs),
+    do: opts_to_attrs(t, [[" fill=\"transparent\""] | attrs])
+
+  defp opts_to_attrs([{:stroke, val} | t], attrs),
+    do: opts_to_attrs(t, [[" stroke=\"#", val, "\""] | attrs])
+
+  defp opts_to_attrs([{:stroke_width, val} | t], attrs),
+    do: opts_to_attrs(t, [[" stroke-width=\"", val, "\""] | attrs])
+
+  defp opts_to_attrs([{:stroke_linejoin, val} | t], attrs),
+    do: opts_to_attrs(t, [[" stroke-linejoin=\"", val, "\""] | attrs])
 
   defp opts_to_attrs([{:opacity, val} | t], attrs),
     do: opts_to_attrs(t, [[" fill-opacity=\"", val, "\""] | attrs])
