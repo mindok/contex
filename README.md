@@ -35,12 +35,12 @@ Each module has different option. For example, `BarChart` allows you to set the 
 `DataSet` columns are mapped to the attributes each different chart type expects. For example, a `PointPlot` expects an x column and at 
 least one y column. These are set up by passing a `:mapping` option in the options when creating a new chart. For example, 
 
-    ```elixir
-    chart = PointPlot.new(
-        dataset,
-        mapping: %{x_col: :column_a, y_cols: [:column_b, column_c]}
-      )
-    ```
+```elixir
+   chart = PointPlot.new(
+       dataset,
+       mapping: %{x_col: :column_a, y_cols: [:column_b, column_c]}
+     )
+```
 It isn't necessary to supply a mapping unless the `DataSet` is a list of maps. If no mapping is provided, columns will be allocated  
 automatically. For a `PointPlot`, the first column will be used for x, and the second for y.
 
@@ -63,6 +63,7 @@ Plot.to_svg(plot)
 There is a short-cut API which creates the `PlotContent` and plot in a single pass by providing the chart type module to `Plot.new/5`.
 
 For example:
+
 ```elixir
 plot = Plot.new(dataset, Contex.PointPlot, 600, 400, mapping: %{x_col: :column_a, y_cols: [:column_b, column_c]})
 
@@ -112,7 +113,7 @@ by adding `contex` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:contex, "~> 0.4.0"}
+    {:contex, "~> 0.3.0"}
   ]
 end
 ```
@@ -124,6 +125,7 @@ The theory of translating data into graphics is also very well handled by [ggplo
 
 _Pure Elixir Alternatives_
 
+- [GGity](https://github.com/srowley/ggity) - modelled on [ggplot2](https://ggplot2.tidyverse.org/
 - [PlotEx](https://github.com/elcritch/plotex) - has good line & time-series support and more optimised for certain situations.
 - [Sasa Juric Homebrew](https://github.com/sasa1977/demo_system/) - graph.html.leex has examples of injecting data into SVGs for very specific use cases. 
 
