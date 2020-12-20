@@ -14,7 +14,7 @@ defmodule Contex.TimeScale do
 
   alias Contex.Utils
 
-  @type datetimes() :: NaiveDateTime.t() | DateTime.t()
+  @type datetimes() :: NaiveDateTime.t() | DateTime.t() | Date.t()
 
   # Approximate durations in ms for calculating ideal tick intervals
   # Modelled from https://github.com/d3/d3-scale/blob/v2.2.2/src/time.js

@@ -372,6 +372,11 @@ defmodule Contex.LinePlot do
         |> TimeScale.domain(min, max)
         |> Scale.set_range(r_min, r_max)
 
+      :date ->
+        TimeScale.new()
+        |> TimeScale.domain(min, max)
+        |> Scale.set_range(r_min, r_max)
+
       :number ->
         ContinuousLinearScale.new()
         |> ContinuousLinearScale.domain(min, max)

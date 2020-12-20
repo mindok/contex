@@ -158,18 +158,20 @@ defmodule ContexDatasetTest do
   describe "guess_column_type/2" do
     setup do
       date_time_1 = DateTime.from_unix!(1)
+      date_1 = DateTime.to_date(date_time_1)
       naive_date_time_1 = DateTime.to_naive(date_time_1)
       date_time_2 = DateTime.from_unix!(2)
+      date_2 = DateTime.to_date(date_time_2)
       naive_date_time_2 = DateTime.to_naive(date_time_2)
 
       %{
         dataset:
           Dataset.new(
             [
-              {1, "foo", date_time_1, naive_date_time_1},
-              {2, "bar", date_time_2, naive_date_time_2}
+              {1, "foo", date_time_1, naive_date_time_1, date_1},
+              {2, "bar", date_time_2, naive_date_time_2, date_2}
             ],
-            ["number", "string", "date_time", "naive_date_time"]
+            ["number", "string", "date_time", "naive_date_time", "date"]
           )
       }
     end
@@ -188,6 +190,10 @@ defmodule ContexDatasetTest do
 
     test "guesses %NaiveDateTime{}s", %{dataset: dataset} do
       assert Dataset.guess_column_type(dataset, "naive_date_time") == :datetime
+    end
+
+    test "guesses %Date{}s", %{dataset: dataset} do
+      assert Dataset.guess_column_type(dataset, "date") == :date
     end
   end
 
