@@ -9,10 +9,16 @@ defmodule Contex.Utils do
     NaiveDateTime.compare(a, b)
   end
 
+  def date_compare(%Date{} = a, %Date{} = b) do
+    Date.compare(a, b)
+  end
+
   def date_diff(%DateTime{} = a, %DateTime{} = b, unit), do: DateTime.diff(a, b, unit)
 
   def date_diff(%NaiveDateTime{} = a, %NaiveDateTime{} = b, unit),
     do: NaiveDateTime.diff(a, b, unit)
+
+  def date_diff(%Date{} = a, %Date{} = b, _unit), do: Date.diff(a, b)
 
   @doc """
   Adds intervals to dates. Note that only sytem time units (nanosecond, microsecond, millisecond, second) are
