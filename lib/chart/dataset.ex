@@ -246,7 +246,7 @@ defmodule Contex.Dataset do
 
   defp evaluate_type(%DateTime{}), do: {:ok, :datetime}
   defp evaluate_type(%NaiveDateTime{}), do: {:ok, :datetime}
-  defp evaluate_type(%Date{}), do: {:ok, :date}
+  defp evaluate_type(%Date{}), do: {:ok, :datetime}
   defp evaluate_type(v) when is_number(v), do: {:ok, :number}
   defp evaluate_type(v) when is_binary(v), do: {:ok, :string}
   defp evaluate_type(_), do: {:unknown}

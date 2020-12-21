@@ -193,7 +193,7 @@ defmodule ContexDatasetTest do
     end
 
     test "guesses %Date{}s", %{dataset: dataset} do
-      assert Dataset.guess_column_type(dataset, "date") == :date
+      assert Dataset.guess_column_type(dataset, "date") == :datetime
     end
   end
 
