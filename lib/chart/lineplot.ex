@@ -52,6 +52,7 @@ defmodule Contex.LinePlot do
     width: 100,
     height: 100,
     smoothed: true,
+    stroke_width: 2,
     colour_palette: :default
   ]
 
@@ -96,6 +97,9 @@ defmodule Contex.LinePlot do
         end
 
     - `:custom_y_formatter` : `nil` (default) or a function with arity 1.
+
+    - `:stroke_width` : 2 (default) - stroke width of the line
+
     - `:smoothed` : true (default) or false - draw the lines smoothed
 
   Note that the smoothing algorithm is a cardinal spline with tension = 0.3.
@@ -231,8 +235,14 @@ defmodule Contex.LinePlot do
          colour
        ) do
     smooth = get_option(plot, :smoothed)
+    stroke_width = get_option(plot, :stroke_width)
 
-    options = [transparent: true, stroke: colour, stroke_width: "2", stroke_linejoin: "round"]
+    options = [
+      transparent: true,
+      stroke: colour,
+      stroke_width: stroke_width,
+      stroke_linejoin: "round"
+    ]
 
     points =
       data
