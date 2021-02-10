@@ -3,8 +3,6 @@ defmodule Contex.SVG do
   Convenience functions for generating SVG output
   """
 
-  import Logger
-
   def text(x, y, content, opts \\ []) do
     attrs = opts_to_attrs(opts)
 
@@ -72,9 +70,7 @@ defmodule Contex.SVG do
   end
 
   def line(points, smoothed, opts \\ []) do
-    warn(inspect(opts, pretty: true))
     attrs = opts_to_attrs(opts)
-    warn(inspect(attrs, pretty: true))
 
     path = path(points, smoothed)
 

@@ -18,7 +18,6 @@ defmodule Contex.LinePlot do
   """
 
   import Contex.SVG
-  import Logger
 
   alias __MODULE__
   alias Contex.{Scale, ContinuousLinearScale, TimeScale}
@@ -236,7 +235,6 @@ defmodule Contex.LinePlot do
          colour
        ) do
     smooth = get_option(plot, :smoothed)
-    warn(inspect(plot, pretty: true))
     stroke_width = get_option(plot, :stroke_width)
 
     options = [
