@@ -52,7 +52,7 @@ defmodule Contex.LinePlot do
     width: 100,
     height: 100,
     smoothed: true,
-    stroke_width: 2,
+    stroke_width: "2",
     colour_palette: :default
   ]
 
