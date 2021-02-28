@@ -97,6 +97,27 @@ defmodule ContexTimeScaleTest do
       assert expected_ticks == Scale.ticks_domain(scale)
     end
 
+    test "for 10 day timescale (end of month start)" do
+      scale =
+        create_timescale(
+          {~U[2015-11-30 13:00:00.056Z], ~U[2015-12-13 13:00:05.000Z]},
+          {0.0, 100.0}
+        )
+
+      expected_ticks = [
+        ~U[2015-11-30 00:00:00Z],
+        ~U[2015-12-02 00:00:00Z],
+        ~U[2015-12-04 00:00:00Z],
+        ~U[2015-12-06 00:00:00Z],
+        ~U[2015-12-08 00:00:00Z],
+        ~U[2015-12-10 00:00:00Z],
+        ~U[2015-12-12 00:00:00Z],
+        ~U[2015-12-14 00:00:00Z]
+      ]
+
+      assert expected_ticks == Scale.ticks_domain(scale)
+    end
+
     test "for 10 day timescale - 8 intervals" do
       scale =
         create_timescale(

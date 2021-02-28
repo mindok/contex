@@ -187,15 +187,23 @@ defmodule Contex.TimeScale do
   defp round_down_to(dt, {:days, 1, _}),
     do: %{dt | microsecond: {0, 0}, second: 0, minute: 0, hour: 0}
 
-  defp round_down_to(dt, {:days, n, _}),
-    do: %{
+  defp round_down_to(dt, {:days, n, _}) do
+    rounded_day =
+      round_down_multiple(dt.day, n)
+      |> case do
+        0 -> 1
+        day -> day
+      end
+
+    %{
       dt
       | microsecond: {0, 0},
         second: 0,
         minute: 0,
         hour: 0,
-        day: round_down_multiple(dt.day, n) + 1
+        day: rounded_day
     }
+  end
 
   defp round_down_to(dt, {:months, 1, _}),
     do: %{dt | microsecond: {0, 0}, second: 0, minute: 0, hour: 0, day: 1}
