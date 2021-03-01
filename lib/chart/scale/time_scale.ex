@@ -194,7 +194,7 @@ defmodule Contex.TimeScale do
         second: 0,
         minute: 0,
         hour: 0,
-        day: round_down_multiple(dt.day, n) + 1
+        day: round_down_multiple(dt.day, n) |> max(1)
     }
 
   defp round_down_to(dt, {:months, 1, _}),
