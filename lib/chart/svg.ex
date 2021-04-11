@@ -209,6 +209,15 @@ defmodule Contex.SVG do
   defp opts_to_attrs([{:alignment_baseline, val} | t], attrs),
     do: opts_to_attrs(t, [[" alignment-baseline=\"", val, "\""] | attrs])
 
+  defp opts_to_attrs([{:marker_start, val} | t], attrs),
+    do: opts_to_attrs(t, [[" marker-start=\"", val, "\""] | attrs])
+
+  defp opts_to_attrs([{:marker_mid, val} | t], attrs),
+    do: opts_to_attrs(t, [[" marker-mid=\"", val, "\""] | attrs])
+
+  defp opts_to_attrs([{:marker_end, val} | t], attrs),
+    do: opts_to_attrs(t, [[" marker-end=\"", val, "\""] | attrs])
+
   defp opts_to_attrs([{key, val} | t], attrs) when is_atom(key),
     do: opts_to_attrs(t, [[" ", Atom.to_string(key), "=\"", clean(val), "\""] | attrs])
 
