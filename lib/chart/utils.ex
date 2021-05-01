@@ -61,6 +61,8 @@ defmodule Contex.Utils do
 
   def safe_min(nil, nil), do: nil
   def safe_min(nil, b), do: b
+  def safe_min(a, ""), do: a
+  def safe_min("", b), do: b
   def safe_min(a, nil), do: a
   def safe_min(%DateTime{} = a, %DateTime{} = b), do: date_min(a, b)
   def safe_min(%NaiveDateTime{} = a, %NaiveDateTime{} = b), do: date_min(a, b)
@@ -70,6 +72,8 @@ defmodule Contex.Utils do
   def safe_max(nil, nil), do: nil
   def safe_max(nil, b), do: b
   def safe_max(a, nil), do: a
+  def safe_max("", b), do: b
+  def safe_max(a, ""), do: a
   def safe_max(%DateTime{} = a, %DateTime{} = b), do: date_max(a, b)
   def safe_max(%NaiveDateTime{} = a, %NaiveDateTime{} = b), do: date_max(a, b)
   def safe_max(a, b) when is_number(a) and is_number(b), do: max(a, b)
