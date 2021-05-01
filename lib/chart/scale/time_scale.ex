@@ -241,9 +241,15 @@ defmodule Contex.TimeScale do
 
       _ ->
         fn domain_val ->
-          milliseconds_val = Utils.date_diff(domain_val, min_d, :microsecond)
-          ratio = (milliseconds_val - domain_min) / domain_width
-          min_r + ratio * range_width
+          case domain_val do
+            nil ->
+              nil
+
+            _ ->
+              milliseconds_val = Utils.date_diff(domain_val, min_d, :microsecond)
+              ratio = (milliseconds_val - domain_min) / domain_width
+              min_r + ratio * range_width
+          end
         end
     end
   end

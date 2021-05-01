@@ -12,6 +12,9 @@
 - Added `:custom_value_scale` to `BarChart` to allow overriding of the automatically generated scale
 - Added `:custom_x_scale` and `:custom_y_scale` to `PointPlot` to allow overriding of the automatically generated scales
 - Added `LinePlot` (finally)
+- Make stroke width for `LinePlot` adjustable through options. Thanks @littleStudent.
+- Handle nil values in `LinePlot` by creating gaps in line.
+- Stop crash on timescales when interval clashes with days in month resulting in invalid date. Thanks @imsoulfly. 
 
 ### Deprecated
 - Most of the options set via functions, e.g. `BarChart.colours/2`. Use the options in the relevant `new` functions instead.

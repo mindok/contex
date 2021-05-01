@@ -188,8 +188,14 @@ defmodule Contex.ContinuousLinearScale do
 
       _ ->
         fn domain_val ->
-          ratio = (domain_val - min_d) / domain_width
-          min_r + ratio * range_width
+          case domain_val do
+            nil ->
+              nil
+
+            _ ->
+              ratio = (domain_val - min_d) / domain_width
+              min_r + ratio * range_width
+          end
         end
     end
   end

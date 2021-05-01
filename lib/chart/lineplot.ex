@@ -244,7 +244,7 @@ defmodule Contex.LinePlot do
       stroke_linejoin: "round"
     ]
 
-    points =
+    points_list =
       data
       |> Stream.map(fn row ->
         x =
@@ -257,10 +257,12 @@ defmodule Contex.LinePlot do
 
         {x, y}
       end)
-      |> Enum.filter(fn {x, y} -> not (is_nil(x) or is_nil(y)) end)
+      |> Enum.filter(fn {x, _y} -> not is_nil(x) end)
       |> Enum.sort(fn {x1, _y1}, {x2, _y2} -> x1 < x2 end)
+      |> Enum.chunk_by(fn {_x, y} -> is_nil(y) end)
+      |> Enum.filter(fn [{_x, y} | _] -> not is_nil(y) end)
 
-    line(points, smooth, options)
+    Enum.map(points_list, fn points -> line(points, smooth, options) end)
   end
 
   @doc false

@@ -357,9 +357,17 @@ defmodule Contex.PointPlot do
 
     Enum.with_index(accessors.y_cols)
     |> Enum.map(fn {accessor, index} ->
-      y = accessor.(row) |> transforms.y.()
-      fill = transforms.colour.(index, fill_val)
-      get_svg_point(x, y, fill)
+      val = accessor.(row)
+
+      case val do
+        nil ->
+          ""
+
+        _ ->
+          y = transforms.y.(val)
+          fill = transforms.colour.(index, fill_val)
+          get_svg_point(x, y, fill)
+      end
     end)
   end
 
