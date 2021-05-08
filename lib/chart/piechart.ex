@@ -1,4 +1,21 @@
 defmodule Contex.PieChart do
+  @moduledoc """
+  Generates a simple pie chart from an array of numbers and headers in `Contex.Dataset`.
+
+  Usage:
+
+  ```
+    Contex.Dataset.new([30, 23, 40], ["Category #1", "Category #2", "Category #3"])
+    |> Contex.PieChart.new()
+    |> Contex.PieChart.draw() # Emits svg pie chart
+  ```
+
+  The colours are using default from `Contex.CategoryColourScale.new/1` by headers in Dataset.
+
+  The size defaults to 300 pixels high and 420 wide (chart 300 + legend 100 with margin 20). You can override by updating
+  `:height`, `:width`, `:legend_width` and `:legend_margin` directly in the `PieChart` struct before call `draw/1`.
+  The height and width of pie chart is always same, therefor set only height is enough.
+  """
   alias __MODULE__
   alias Contex.Dataset
 
@@ -13,6 +30,9 @@ defmodule Contex.PieChart do
 
   @type t() :: %__MODULE__{}
 
+  @doc """
+  Create a new PieChart struct from Dataset.
+  """
   def new(%Dataset{data: data, headers: headers} = dataset)
       when is_list(data) and is_list(headers) do
     %PieChart{
@@ -22,6 +42,10 @@ defmodule Contex.PieChart do
     }
   end
 
+  @doc """
+  Renders the PieChart to svg, including the svg wrapper, as a string or improper string list that
+  is marked safe.
+  """
   def draw(
         %PieChart{height: height, legend_width: legend_width, legend_margin: legend_margin} =
           chart
