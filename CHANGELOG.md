@@ -2,6 +2,7 @@
 
 ## v0.4.0 : In progress
 
+- Add `SimplePie` - a sparkline-like Pie Chart. Thanks @zdenal.
 - Add target option when setting `BarChart` event handler.
 - Refactor `BarChart` to honour all options passed in `new`.
 - Refactor `PointPlot` to honour all options passed in `new`.
