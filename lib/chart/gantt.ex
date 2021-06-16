@@ -189,9 +189,10 @@ defmodule Contex.GanttChart do
 
   defp prepare_category_scale(%GanttChart{dataset: dataset, mapping: mapping} = plot) do
     cat_col_name = mapping.column_map[:category_col]
+    colour_palette = get_option(plot, :colour_palette)
     categories = Dataset.unique_values(dataset, cat_col_name)
 
-    cat_scale = CategoryColourScale.new(categories)
+    cat_scale = CategoryColourScale.new(categories, colour_palette)
 
     %{plot | category_scale: cat_scale}
   end
