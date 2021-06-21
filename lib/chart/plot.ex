@@ -420,3 +420,9 @@ defimpl Contex.PlotContent, for: Contex.GanttChart do
   def get_svg_legend(_plot), do: ""
   def set_size(plot, width, height), do: Contex.GanttChart.set_size(plot, width, height)
 end
+
+defimpl Contex.PlotContent, for: Contex.PieChart do
+  def to_svg(plot, _options), do: Contex.PieChart.to_svg(plot)
+  def get_svg_legend(plot), do: Contex.PieChart.get_svg_legend(plot)
+  def set_size(plot, width, height), do: Contex.PieChart.set_size(plot, width, height)
+end
