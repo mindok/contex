@@ -38,15 +38,15 @@ defmodule Contex.PieChart do
   end
 
   @doc false
-  def set_size(%PieChart{} = plot, width, height) do
-    plot
+  def set_size(%PieChart{} = chart, width, height) do
+    chart
     |> set_option(:width, width)
     |> set_option(:height, height)
   end
 
   @doc false
-  def get_svg_legend(%PieChart{dataset: dataset} = plot) do
-    Contex.Dataset.column_names(dataset)
+  def get_svg_legend(%PieChart{dataset: dataset, mapping: mapping} = chart) do
+    get_categories(chart)
     |> Contex.CategoryColourScale.new()
     |> Contex.Legend.to_svg()
   end
@@ -61,6 +61,13 @@ defmodule Contex.PieChart do
         generate_slices(chart),
       "</g>",
     ]
+  end
+
+  def get_categories(%PieChart{dataset: dataset, mapping: mapping} = plot) do
+    cat_accessor = dataset |> Dataset.value_fn(mapping.column_map[:category_col])
+
+    dataset.data
+    |> Enum.map(&cat_accessor.(&1))
   end
 
   defp set_option(%PieChart{options: options} = plot, key, value) do
@@ -87,8 +94,7 @@ defmodule Contex.PieChart do
     |> Enum.map_reduce({0, 0}, fn {value, category}, {idx, offset} ->
       text_rotation = rotate_for(value, offset)
 
-      fill_colours = Contex.Dataset.column_names(dataset)
-      |> Contex.CategoryColourScale.new()
+      fill_colours = get_categories(chart) |> Contex.CategoryColourScale.new()
 
       {
         ~s"""
