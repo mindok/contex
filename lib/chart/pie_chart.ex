@@ -1,20 +1,36 @@
 defmodule Contex.PieChart do
   alias __MODULE__
-  alias Contex.Dataset
+  alias Contex.{Dataset, Mapping}
 
   defstruct [
     :dataset,
+    :mapping,
     :options
   ]
 
   @type t() :: %__MODULE__{}
 
+  @required_mappings [
+    category_col: nil,
+    value_col: nil,
+  ]
+
+  @default_options [
+    width: 300,
+    height: 300,
+    colour_palette: :default
+  ]
+
   @doc """
   Create a new PieChart struct from Dataset.
   """
   def new(%Dataset{data: data} = dataset, options \\ []) when is_list(options) do
+    options = Keyword.merge(@default_options, options)
+    mapping = Mapping.new(@required_mappings, Keyword.get(options, :mapping), dataset)
+
     %PieChart{
       dataset: dataset,
+      mapping: mapping,
       options: options
       #scaled_values: scale_values(data),
       #fill_colours: Contex.CategoryColourScale.new(headers)
@@ -53,23 +69,26 @@ defmodule Contex.PieChart do
     %{plot | options: options}
   end
 
+  defp get_option(%PieChart{options: options}, key) do
+    Keyword.get(options, key)
+  end
+
   defp generate_slices(%PieChart{
-         dataset: dataset,
-         options: %{height: height}
+         dataset: dataset
          #scaled_values: scaled_values,
          #height: height,
          #fill_colours: fill_colours
        } = chart) do
+    height = get_option(chart, :height)
     r = height / 2
     stroke_circumference = 2 * :math.pi() * r / 2
 
     scale_values(chart)
-    |> Enum.zip(Contex.Dataset.column_names(dataset))
     |> Enum.map_reduce({0, 0}, fn {value, category}, {idx, offset} ->
       text_rotation = rotate_for(value, offset)
 
-    fill_colours = Contex.Dataset.column_names(dataset)
-    |> Contex.CategoryColourScale.new()
+      fill_colours = Contex.Dataset.column_names(dataset)
+      |> Contex.CategoryColourScale.new()
 
       {
         ~s"""
@@ -116,9 +135,15 @@ defmodule Contex.PieChart do
       else: number
   end
 
-  defp scale_values(%PieChart{dataset: dataset}) do
+  @spec scale_values(PieChart.t()) :: [{value :: number(), label :: any()}]
+  defp scale_values(%PieChart{dataset: dataset, mapping: mapping}) do
+    val_accessor = dataset |> Dataset.value_fn(mapping.column_map[:value_col])
+    cat_accessor = dataset |> Dataset.value_fn(mapping.column_map[:category_col])
+
+    sum = dataset.data |> Enum.reduce(0, fn col, acc -> val_accessor.(col) + acc end)
+
     dataset.data
-    |> Enum.map_reduce(Enum.sum(dataset.data), &{&1 / &2 * 100, &2})
+    |> Enum.map_reduce(sum, &{{val_accessor.(&1) / &2 * 100, cat_accessor.(&1)}, &2})
     |> elem(0)
   end
 end
