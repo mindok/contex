@@ -12,7 +12,7 @@ defmodule Contex.PieChart do
 
   @required_mappings [
     category_col: :zero_or_one,
-    value_col: :zero_or_one,
+    value_col: :zero_or_one
   ]
 
   @default_options [
@@ -53,11 +53,11 @@ defmodule Contex.PieChart do
   Renders the PieChart to svg, including the svg wrapper, as a string or improper string list that
   is marked safe.
   """
-  def to_svg( %PieChart{} = chart) do
+  def to_svg(%PieChart{} = chart) do
     [
       "<g>",
-        generate_slices(chart),
-      "</g>",
+      generate_slices(chart),
+      "</g>"
     ]
   end
 
@@ -78,7 +78,11 @@ defmodule Contex.PieChart do
     Keyword.get(options, key)
   end
 
-  defp get_colour_palette(%PieChart{} = chart), do: get_categories(chart) |> CategoryColourScale.new() |> CategoryColourScale.set_palette(get_option(chart, :colour_palette))
+  defp get_colour_palette(%PieChart{} = chart),
+    do:
+      get_categories(chart)
+      |> CategoryColourScale.new()
+      |> CategoryColourScale.set_palette(get_option(chart, :colour_palette))
 
   defp generate_slices(%PieChart{} = chart) do
     height = get_option(chart, :height)
@@ -92,23 +96,24 @@ defmodule Contex.PieChart do
     |> Enum.map_reduce({0, 0}, fn {value, category}, {idx, offset} ->
       text_rotation = rotate_for(value, offset)
 
-      label = if with_labels? do
-        ~s"""
-          <text x="#{negate_if_flipped(r, text_rotation)}"
-                y="#{negate_if_flipped(r, text_rotation)}"
-            text-anchor="middle"
-            fill="white"
-            stroke-width="1"
-            transform="rotate(#{text_rotation},#{r},#{r})
-                       translate(#{r / 2}, #{negate_if_flipped(5, text_rotation)})
-                       #{if need_flip?(text_rotation), do: "scale(-1,-1)"}"
-          >
-            #{Float.round(value, 2)}%
-          </text>
-        """
-      else
-        ""
-      end
+      label =
+        if with_labels? do
+          ~s"""
+            <text x="#{negate_if_flipped(r, text_rotation)}"
+                  y="#{negate_if_flipped(r, text_rotation)}"
+              text-anchor="middle"
+              fill="white"
+              stroke-width="1"
+              transform="rotate(#{text_rotation},#{r},#{r})
+                         translate(#{r / 2}, #{negate_if_flipped(5, text_rotation)})
+                         #{if need_flip?(text_rotation), do: "scale(-1,-1)"}"
+            >
+              #{Float.round(value, 2)}%
+            </text>
+          """
+        else
+          ""
+        end
 
       {
         ~s"""
