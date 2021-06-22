@@ -1,6 +1,6 @@
 defmodule Contex.PieChart do
   alias __MODULE__
-  alias Contex.{Dataset, Mapping}
+  alias Contex.{Dataset, Mapping, CategoryColourScale}
 
   defstruct [
     :dataset,
@@ -11,8 +11,8 @@ defmodule Contex.PieChart do
   @type t() :: %__MODULE__{}
 
   @required_mappings [
-    category_col: nil,
-    value_col: nil,
+    category_col: :zero_or_one,
+    value_col: :zero_or_one,
   ]
 
   @default_options [
@@ -25,7 +25,7 @@ defmodule Contex.PieChart do
   @doc """
   Create a new PieChart struct from Dataset.
   """
-  def new(%Dataset{data: data} = dataset, options \\ []) when is_list(options) do
+  def new(%Dataset{} = dataset, options \\ []) when is_list(options) do
     options = Keyword.merge(@default_options, options)
     mapping = Mapping.new(@required_mappings, Keyword.get(options, :mapping), dataset)
 
@@ -44,9 +44,8 @@ defmodule Contex.PieChart do
   end
 
   @doc false
-  def get_svg_legend(%PieChart{dataset: dataset, mapping: mapping} = chart) do
-    get_categories(chart)
-    |> Contex.CategoryColourScale.new()
+  def get_svg_legend(%PieChart{} = chart) do
+    get_colour_palette(chart)
     |> Contex.Legend.to_svg()
   end
 
@@ -62,7 +61,7 @@ defmodule Contex.PieChart do
     ]
   end
 
-  def get_categories(%PieChart{dataset: dataset, mapping: mapping} = plot) do
+  def get_categories(%PieChart{dataset: dataset, mapping: mapping}) do
     cat_accessor = dataset |> Dataset.value_fn(mapping.column_map[:category_col])
 
     dataset.data
@@ -79,9 +78,13 @@ defmodule Contex.PieChart do
     Keyword.get(options, key)
   end
 
-  defp generate_slices(%PieChart{dataset: dataset} = chart) do
+  defp get_colour_palette(%PieChart{} = chart), do: get_categories(chart) |> CategoryColourScale.new() |> CategoryColourScale.set_palette(get_option(chart, :colour_palette))
+
+  defp generate_slices(%PieChart{} = chart) do
     height = get_option(chart, :height)
     with_labels? = get_option(chart, :label_slices)
+    colour_palette = get_colour_palette(chart)
+
     r = height / 2
     stroke_circumference = 2 * :math.pi() * r / 2
 
@@ -89,7 +92,6 @@ defmodule Contex.PieChart do
     |> Enum.map_reduce({0, 0}, fn {value, category}, {idx, offset} ->
       text_rotation = rotate_for(value, offset)
 
-      fill_colours = get_categories(chart) |> Contex.CategoryColourScale.new()
       label = if with_labels? do
         ~s"""
           <text x="#{negate_if_flipped(r, text_rotation)}"
@@ -111,7 +113,7 @@ defmodule Contex.PieChart do
       {
         ~s"""
           <circle r="#{r / 2}" cx="#{r}" cy="#{r}" fill="transparent"
-            stroke="##{Contex.CategoryColourScale.colour_for_value(fill_colours, category)}"
+            stroke="##{CategoryColourScale.colour_for_value(colour_palette, category)}"
             stroke-width="#{r}"
             stroke-dasharray="#{slice_value(value, stroke_circumference)} #{stroke_circumference}"
             stroke-dashoffset="-#{slice_value(offset, stroke_circumference)}">
