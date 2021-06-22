@@ -18,7 +18,8 @@ defmodule Contex.PieChart do
   @default_options [
     width: 300,
     height: 300,
-    colour_palette: :default
+    colour_palette: :default,
+    label_slices: true
   ]
 
   @doc """
@@ -32,8 +33,6 @@ defmodule Contex.PieChart do
       dataset: dataset,
       mapping: mapping,
       options: options
-      #scaled_values: scale_values(data),
-      #fill_colours: Contex.CategoryColourScale.new(headers)
     }
   end
 
@@ -80,13 +79,9 @@ defmodule Contex.PieChart do
     Keyword.get(options, key)
   end
 
-  defp generate_slices(%PieChart{
-         dataset: dataset
-         #scaled_values: scaled_values,
-         #height: height,
-         #fill_colours: fill_colours
-       } = chart) do
+  defp generate_slices(%PieChart{dataset: dataset} = chart) do
     height = get_option(chart, :height)
+    with_labels? = get_option(chart, :label_slices)
     r = height / 2
     stroke_circumference = 2 * :math.pi() * r / 2
 
@@ -95,15 +90,8 @@ defmodule Contex.PieChart do
       text_rotation = rotate_for(value, offset)
 
       fill_colours = get_categories(chart) |> Contex.CategoryColourScale.new()
-
-      {
+      label = if with_labels? do
         ~s"""
-          <circle r="#{r / 2}" cx="#{r}" cy="#{r}" fill="transparent"
-            stroke="##{Contex.CategoryColourScale.colour_for_value(fill_colours, category)}"
-            stroke-width="#{r}"
-            stroke-dasharray="#{slice_value(value, stroke_circumference)} #{stroke_circumference}"
-            stroke-dashoffset="-#{slice_value(offset, stroke_circumference)}">
-          </circle>
           <text x="#{negate_if_flipped(r, text_rotation)}"
                 y="#{negate_if_flipped(r, text_rotation)}"
             text-anchor="middle"
@@ -115,6 +103,20 @@ defmodule Contex.PieChart do
           >
             #{Float.round(value, 2)}%
           </text>
+        """
+      else
+        ""
+      end
+
+      {
+        ~s"""
+          <circle r="#{r / 2}" cx="#{r}" cy="#{r}" fill="transparent"
+            stroke="##{Contex.CategoryColourScale.colour_for_value(fill_colours, category)}"
+            stroke-width="#{r}"
+            stroke-dasharray="#{slice_value(value, stroke_circumference)} #{stroke_circumference}"
+            stroke-dashoffset="-#{slice_value(offset, stroke_circumference)}">
+          </circle>
+          #{label}
         """,
         {idx + 1, offset + value}
       }
