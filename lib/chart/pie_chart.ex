@@ -1,4 +1,14 @@
 defmodule Contex.PieChart do
+  @moduledoc """
+  A Pie Chart that displays data in a circular graph.
+
+  The pieces of the graph are proportional to the fraction of the whole in each category.
+  Each slice of the pie is relative to the size of that category in the group as a whole.
+  The entire “pie” represents 100 percent of a whole, while the pie “slices” represent portions of the whole.
+
+  Fill colours for each slice can be specified with `colour_palette` parameter in chart options.
+  """
+
   alias __MODULE__
   alias Contex.{Dataset, Mapping, CategoryColourScale}
 
@@ -16,14 +26,38 @@ defmodule Contex.PieChart do
   ]
 
   @default_options [
-    width: 300,
-    height: 300,
+    width: 600,
+    height: 400,
     colour_palette: :default,
-    label_slices: true
+    data_labels: true
   ]
 
   @doc """
   Create a new PieChart struct from Dataset.
+
+  Options may be passed to control the settings for the barchart. Options available are:
+
+    - `:data_labels` : `true` (default) or false - display labels for each slice value
+    - `:colour_palette` : `:default` (default) or colour palette - see `colours/2`
+
+  An example:
+        data = [
+          ["Cat", 10.0],
+          ["Dog", 20.0],
+          ["Hamster", 5.0]
+        ]
+
+        dataset = DataSet.new(data, ["Pet", "Preference"])
+
+        opts = [
+          mapping: %{category_col: "Pet", value_col: "Preference"},
+          colour_palette: ["fbb4ae", "b3cde3", "ccebc5"],
+          legend_setting: :legend_right,
+          data_labels: false,
+          title: "Why dogs are better than cats"
+        ]
+
+        Contex.Plot.new(dataset, Contex.PieChart, 600, 400, opts)
   """
   def new(%Dataset{} = dataset, options \\ []) when is_list(options) do
     options = Keyword.merge(@default_options, options)
@@ -50,14 +84,41 @@ defmodule Contex.PieChart do
   end
 
   @doc """
+  Overrides the default colours.
+
+  Colours can either be a named palette defined in `Contex.CategoryColourScale` or a list of strings representing hex code
+  of the colour as per CSS colour hex codes, but without the #. For example:
+
+    ```
+    barchart = BarChart.colours(barchart, ["fbb4ae", "b3cde3", "ccebc5"])
+    ```
+
+    The colours will be applied to the data series in the same order as the columns are specified in `set_val_col_names/2`
+  """
+  @deprecated "Set in new/2 options"
+  @spec colours(PieChart.t(), Contex.CategoryColourScale.colour_palette()) ::
+          Contex.BarChart.t()
+  def colours(%PieChart{} = plot, colour_palette) when is_list(colour_palette) do
+    set_option(plot, :colour_palette, colour_palette)
+  end
+
+  def colours(%PieChart{} = plot, colour_palette) when is_atom(colour_palette) do
+    set_option(plot, :colour_palette, colour_palette)
+  end
+
+  def colours(%PieChart{} = plot, _) do
+    set_option(plot, :colour_palette, :default)
+  end
+
+  @doc """
   Renders the PieChart to svg, including the svg wrapper, as a string or improper string list that
   is marked safe.
   """
-  def to_svg(%PieChart{} = chart) do
+  def to_svg( %PieChart{} = chart) do
     [
       "<g>",
-      generate_slices(chart),
-      "</g>"
+        generate_slices(chart),
+      "</g>",
     ]
   end
 
@@ -78,15 +139,11 @@ defmodule Contex.PieChart do
     Keyword.get(options, key)
   end
 
-  defp get_colour_palette(%PieChart{} = chart),
-    do:
-      get_categories(chart)
-      |> CategoryColourScale.new()
-      |> CategoryColourScale.set_palette(get_option(chart, :colour_palette))
+  defp get_colour_palette(%PieChart{} = chart), do: get_categories(chart) |> CategoryColourScale.new() |> CategoryColourScale.set_palette(get_option(chart, :colour_palette))
 
   defp generate_slices(%PieChart{} = chart) do
     height = get_option(chart, :height)
-    with_labels? = get_option(chart, :label_slices)
+    with_labels? = get_option(chart, :data_labels)
     colour_palette = get_colour_palette(chart)
 
     r = height / 2
@@ -96,24 +153,23 @@ defmodule Contex.PieChart do
     |> Enum.map_reduce({0, 0}, fn {value, category}, {idx, offset} ->
       text_rotation = rotate_for(value, offset)
 
-      label =
-        if with_labels? do
-          ~s"""
-            <text x="#{negate_if_flipped(r, text_rotation)}"
-                  y="#{negate_if_flipped(r, text_rotation)}"
-              text-anchor="middle"
-              fill="white"
-              stroke-width="1"
-              transform="rotate(#{text_rotation},#{r},#{r})
-                         translate(#{r / 2}, #{negate_if_flipped(5, text_rotation)})
-                         #{if need_flip?(text_rotation), do: "scale(-1,-1)"}"
-            >
-              #{Float.round(value, 2)}%
-            </text>
-          """
-        else
-          ""
-        end
+      label = if with_labels? do
+        ~s"""
+          <text x="#{negate_if_flipped(r, text_rotation)}"
+                y="#{negate_if_flipped(r, text_rotation)}"
+            text-anchor="middle"
+            fill="white"
+            stroke-width="1"
+            transform="rotate(#{text_rotation},#{r},#{r})
+                       translate(#{r / 2}, #{negate_if_flipped(5, text_rotation)})
+                       #{if need_flip?(text_rotation), do: "scale(-1,-1)"}"
+          >
+            #{Float.round(value, 2)}%
+          </text>
+        """
+      else
+        ""
+      end
 
       {
         ~s"""
