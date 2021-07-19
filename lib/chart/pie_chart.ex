@@ -97,17 +97,17 @@ defmodule Contex.PieChart do
   """
   @deprecated "Set in new/2 options"
   @spec colours(PieChart.t(), Contex.CategoryColourScale.colour_palette()) ::
-          Contex.BarChart.t()
-  def colours(%PieChart{} = plot, colour_palette) when is_list(colour_palette) do
-    set_option(plot, :colour_palette, colour_palette)
+          PieChart.t()
+  def colours(%PieChart{} = chart, colour_palette) when is_list(colour_palette) do
+    set_option(chart, :colour_palette, colour_palette)
   end
 
-  def colours(%PieChart{} = plot, colour_palette) when is_atom(colour_palette) do
-    set_option(plot, :colour_palette, colour_palette)
+  def colours(%PieChart{} = chart, colour_palette) when is_atom(colour_palette) do
+    set_option(chart, :colour_palette, colour_palette)
   end
 
-  def colours(%PieChart{} = plot, _) do
-    set_option(plot, :colour_palette, :default)
+  def colours(%PieChart{} = chart, _) do
+    set_option(chart, :colour_palette, :default)
   end
 
   @doc """
