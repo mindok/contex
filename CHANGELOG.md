@@ -3,6 +3,7 @@
 ## v0.4.0 : In progress
 
 - Add `SimplePie` - a sparkline-like Pie Chart. Thanks @zdenal.
+- Add `PieChart` - a Pie Chart with more control over labels, colour palette, legend generation etc. Thanks @zdenal
 - Add target option when setting `BarChart` event handler.
 - Refactor `BarChart` to honour all options passed in `new`.
 - Refactor `PointPlot` to honour all options passed in `new`.
@@ -16,6 +17,7 @@
 - Make stroke width for `LinePlot` adjustable through options. Thanks @littleStudent.
 - Handle nil values in `LinePlot` by creating gaps in line.
 - Stop crash on timescales when interval clashes with days in month resulting in invalid date. Thanks @imsoulfly. 
+- Fix colour palette option in `GanttChart`.
 
 ### Deprecated
 - Most of the options set via functions, e.g. `BarChart.colours/2`. Use the options in the relevant `new` functions instead.

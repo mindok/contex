@@ -103,6 +103,7 @@ There are quite a few things to tidy up to make this ready for the real world, a
 - [ ] Plot overlays (e.g. line chart on bar chart)
 - [x] SVG generation is poorly structured - lots of string interpolation. 
 - [ ] Benchmarks - particularly for the situation where large datasets are getting updated frequently and served via LiveViews.
+- [x] Pie Charts 
 
 
 ## Installation
@@ -113,7 +114,7 @@ by adding `contex` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:contex, "~> 0.3.0"}
+    {:contex, "~> 0.4.0"}
   ]
 end
 ```
