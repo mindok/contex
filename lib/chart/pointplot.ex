@@ -304,17 +304,29 @@ defmodule Contex.PointPlot do
   def get_svg_legend(_), do: ""
 
   @doc false
-  def to_svg(%PointPlot{} = plot) do
+  def to_svg(%PointPlot{} = plot, plot_options) do
     plot = prepare_scales(plot)
     x_scale = plot.x_scale
     y_scale = plot.y_scale
 
-    axis_x = get_x_axis(x_scale, plot)
-    axis_y = Axis.new_left_axis(y_scale) |> Axis.set_offset(get_option(plot, :width))
+    x_axis_svg =
+      if plot_options.show_x_axis,
+        do:
+          get_x_axis(x_scale, plot)
+          |> Axis.to_svg(),
+        else: ""
+
+    axis_y_svg =
+      if plot_options.show_y_axis,
+        do:
+          Axis.new_left_axis(y_scale)
+          |> Axis.set_offset(get_option(plot, :width))
+          |> Axis.to_svg(),
+      else: ""
 
     [
-      Axis.to_svg(axis_x),
-      Axis.to_svg(axis_y),
+      x_axis_svg,
+      axis_y_svg,
       "<g>",
       get_svg_points(plot),
       "</g>"
