@@ -110,8 +110,10 @@ defmodule ContexPointPlotTest do
     # Axis svg not tested as it is for practical purposes handled
     # by Contex.Axis, which is tested by ContexAxisTest
     test "returns properly constructed chart", %{plot: plot} do
+      opts = %{show_x_axis: true, show_y_axis: true}
+
       points_map =
-        PointPlot.to_svg(plot)
+        PointPlot.to_svg(plot, opts)
         |> plot_iodata_to_map()
 
       assert ["fill:#1f77b4;"] ==
@@ -136,15 +138,22 @@ defmodule ContexPointPlotTest do
           %{"aa" => 4, "bb" => 5, "cccc" => 6, "dd" => 4},
           %{"aa" => -3, "bb" => -2, "cccc" => -1, "dd" => 0}
         ])
-        |> PointPlot.new(mapping: %{x_col: "aa", y_cols: ["bb"]})
+        |> Plot.new(PointPlot, 200, 200, mapping: %{x_col: "aa", y_cols: ["bb"]})
+        |> Plot.to_svg()
 
-      assert PointPlot.to_svg(plot) == PointPlot.to_svg(other_plot)
+      assert other_plot ==
+               plot.dataset
+               |> Plot.new(PointPlot, 200, 200)
+               |> Plot.to_svg()
     end
 
     test "renders custom fill colors properly", %{plot: plot} do
+      plot = PointPlot.set_colour_col_name(plot, "d")
+
       points_map =
-        PointPlot.set_colour_col_name(plot, "d")
-        |> PointPlot.to_svg()
+        Plot.new(200, 200, plot)
+        |> Plot.to_svg()
+        |> elem(1)
         |> plot_iodata_to_map()
 
       assert 2 ==
