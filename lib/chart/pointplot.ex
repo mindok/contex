@@ -52,6 +52,12 @@ defmodule Contex.PointPlot do
     colour_palette: :default
   ]
 
+  @default_plot_options %{
+    show_x_axis: true,
+    show_y_axis: true,
+    legend_setting: :legend_none
+  }
+
   @type t() :: %__MODULE__{}
 
   @doc ~S"""
@@ -309,6 +315,8 @@ defmodule Contex.PointPlot do
     x_scale = plot.x_scale
     y_scale = plot.y_scale
 
+    plot_options = Map.merge(@default_plot_options, plot_options)
+
     x_axis_svg =
       if plot_options.show_x_axis,
         do:
@@ -316,17 +324,17 @@ defmodule Contex.PointPlot do
           |> Axis.to_svg(),
         else: ""
 
-    axis_y_svg =
+    y_axis_svg =
       if plot_options.show_y_axis,
         do:
           Axis.new_left_axis(y_scale)
           |> Axis.set_offset(get_option(plot, :width))
           |> Axis.to_svg(),
-      else: ""
+        else: ""
 
     [
       x_axis_svg,
-      axis_y_svg,
+      y_axis_svg,
       "<g>",
       get_svg_points(plot),
       "</g>"
