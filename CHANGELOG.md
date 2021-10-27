@@ -1,6 +1,10 @@
 # ContEx Change Log
 
-## v0.4.0 : In progress
+## v0.5.0 : In Progress
+
+- Enable plot_options (show x axis, y axis) in `LinePlot` and `PointPlot`. Thanks @shadowRR
+
+## v0.4.0 : 2021-08-13
 
 - Add `SimplePie` - a sparkline-like Pie Chart. Thanks @zdenal.
 - Add `PieChart` - a Pie Chart with more control over labels, colour palette, legend generation etc. Thanks @zdenal
