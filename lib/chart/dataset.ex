@@ -66,7 +66,7 @@ defmodule Contex.Dataset do
   alias __MODULE__
   alias Contex.Utils
 
-  defstruct [:headers, :data, :title]
+  defstruct [:headers, :data, :title, :meta]
 
   @type column_name() :: String.t() | integer() | atom()
   @type column_type() :: :datetime | :number | :string | :unknown | nil
@@ -104,6 +104,17 @@ defmodule Contex.Dataset do
   @spec title(Contex.Dataset.t(), String.t()) :: Contex.Dataset.t()
   def title(%Dataset{} = dataset, title) do
     %{dataset | title: title}
+  end
+
+  @doc """
+  Optionally sets some metadata.
+
+  Allows you to attach whatever you want to the dataset for later retrieval - e.g. information about where the
+  data came from.
+  """
+  @spec meta(Contex.Dataset.t(), String.t()) :: Contex.Dataset.t()
+  def meta(%Dataset{} = dataset, meta) do
+    %{dataset | meta: meta}
   end
 
   @doc """

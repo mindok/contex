@@ -3,6 +3,7 @@
 ## v0.5.0 : In Progress
 
 - Enable plot_options (show x axis, y axis) in `LinePlot` and `PointPlot`. Thanks @shadowRR
+- Added `meta` to `Dataset` to allow carrying of handy information with the dataset.
 
 ## v0.4.0 : 2021-08-13
 
