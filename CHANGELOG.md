@@ -2,8 +2,11 @@
 
 ## v0.5.0 : In Progress
 
+- NOTE: behaviour change. If a `Dataset` is made up of rows of maps, `column_names` now returns headers if it is supplied, otherwise returns
+map keys from the first row. Previously, it just returned the map keys from the first row.
 - Enable plot_options (show x axis, y axis) in `LinePlot` and `PointPlot`. Thanks @shadowRR
 - Added `meta` to `Dataset` to allow carrying of handy information with the dataset.
+
 
 ## v0.4.0 : 2021-08-13
 

@@ -145,18 +145,18 @@ defmodule Contex.Dataset do
   whether the column names are mapped to plot elements).
   """
   @spec column_names(Contex.Dataset.t()) :: list(column_name())
+  def column_names(%Dataset{headers: headers}) when not is_nil(headers), do: headers
+
   def column_names(%Dataset{data: [first_row | _]}) when is_map(first_row) do
     Map.keys(first_row)
   end
 
-  def column_names(%Dataset{data: [first_row | _], headers: headers})
-      when is_nil(headers) and is_tuple(first_row) do
+  def column_names(%Dataset{data: [first_row | _]}) when is_tuple(first_row) do
     max = tuple_size(first_row) - 1
     0..max |> Enum.into([])
   end
 
-  def column_names(%Dataset{data: [first_row | _], headers: headers})
-      when is_nil(headers) and is_list(first_row) do
+  def column_names(%Dataset{data: [first_row | _]}) when is_list(first_row) do
     max = length(first_row) - 1
     0..max |> Enum.into([])
   end
