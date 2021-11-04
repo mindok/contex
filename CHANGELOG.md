@@ -4,6 +4,7 @@
 
 - NOTE: behaviour change. If a `Dataset` is made up of rows of maps, `column_names` now returns headers if it is supplied, otherwise returns
 map keys from the first row. Previously, it just returned the map keys from the first row.
+- Change smoothed line to round coordinates to 2 decimal places (reducing SVG size for large plots).
 - Enable plot_options (show x axis, y axis) in `LinePlot` and `PointPlot`. Thanks @shadowRR
 - Added `meta` to `Dataset` to allow carrying of handy information with the dataset.
 

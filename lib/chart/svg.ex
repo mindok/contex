@@ -146,6 +146,9 @@ defmodule Contex.SVG do
   end
 
   defp coord({x, y}) do
+    x = if is_float(x), do: :erlang.float_to_binary(x, decimals: 2), else: x
+    y = if is_float(y), do: :erlang.float_to_binary(y, decimals: 2), else: y
+
     ~s| #{x} #{y}|
   end
 
