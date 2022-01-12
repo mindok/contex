@@ -6,8 +6,8 @@ defmodule Contex.SimplePie do
 
   ```
     SimplePie.new([{"Cat", 10.0}, {"Dog", 20.0}, {"Hamster", 5.0}])
-    |> QuickPie.colours(["aa0000", "00aa00", "0000aa"]) # Optional - only if you don't like the defaults
-    |> QuickPipe.draw() # Emits svg pie chart
+    |> SimplePie.colours(["aa0000", "00aa00", "0000aa"]) # Optional - only if you don't like the defaults
+    |> SimplePie.draw() # Emits svg pie chart
   ```
 
   The colours are using default from `Contex.CategoryColourScale.new/1` by names in tuples.

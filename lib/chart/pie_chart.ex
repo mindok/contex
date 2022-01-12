@@ -6,7 +6,9 @@ defmodule Contex.PieChart do
   Each slice of the pie is relative to the size of that category in the group as a whole.
   The entire “pie” represents 100 percent of a whole, while the pie “slices” represent portions of the whole.
 
-  Fill colours for each slice can be specified with `colour_palette` parameter in chart options.
+  Fill colours for each slice can be specified with `colour_palette` parameter in chart options, or can be
+  applied from a `CategoryColourScale` suppled in the `colour_scale` parameter. If neither option is supplied
+  a default colour palette is used.
   """
 
   alias __MODULE__
@@ -15,7 +17,8 @@ defmodule Contex.PieChart do
   defstruct [
     :dataset,
     :mapping,
-    :options
+    :options,
+    :colour_scale
   ]
 
   @type t() :: %__MODULE__{}
@@ -29,6 +32,7 @@ defmodule Contex.PieChart do
     width: 600,
     height: 400,
     colour_palette: :default,
+    colour_scale: nil,
     data_labels: true
   ]
 
@@ -47,7 +51,7 @@ defmodule Contex.PieChart do
           ["Hamster", 5.0]
         ]
 
-        dataset = DataSet.new(data, ["Pet", "Preference"])
+        dataset = Dataset.new(data, ["Pet", "Preference"])
 
         opts = [
           mapping: %{category_col: "Pet", value_col: "Preference"},
@@ -60,15 +64,25 @@ defmodule Contex.PieChart do
         Contex.Plot.new(dataset, Contex.PieChart, 600, 400, opts)
   """
   def new(%Dataset{} = dataset, options \\ []) when is_list(options) do
+    options = check_options(options)
     options = Keyword.merge(@default_options, options)
     mapping = Mapping.new(@required_mappings, Keyword.get(options, :mapping), dataset)
 
     %PieChart{
       dataset: dataset,
       mapping: mapping,
-      options: options
+      options: options,
+      colour_scale: Keyword.get(options, :colour_scale)
     }
   end
+
+  defp check_options(options) do
+    colour_scale = check_colour_scale(Keyword.get(options, :colour_scale))
+    Keyword.put(options, :colour_scale, colour_scale)
+  end
+
+  defp check_colour_scale(%CategoryColourScale{} = scale), do: scale
+  defp check_colour_scale(_), do: nil
 
   @doc false
   def set_size(%PieChart{} = chart, width, height) do
@@ -139,11 +153,15 @@ defmodule Contex.PieChart do
     Keyword.get(options, key)
   end
 
-  defp get_colour_palette(%PieChart{} = chart),
-    do:
-      get_categories(chart)
-      |> CategoryColourScale.new()
-      |> CategoryColourScale.set_palette(get_option(chart, :colour_palette))
+  defp get_colour_palette(%PieChart{colour_scale: colour_scale}) when not is_nil(colour_scale) do
+    colour_scale
+  end
+
+  defp get_colour_palette(%PieChart{} = chart) do
+    get_categories(chart)
+    |> CategoryColourScale.new()
+    |> CategoryColourScale.set_palette(get_option(chart, :colour_palette))
+  end
 
   defp generate_slices(%PieChart{} = chart) do
     height = get_option(chart, :height)
