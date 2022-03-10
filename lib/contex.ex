@@ -17,7 +17,7 @@ defmodule Contex do
       data
       |> Contex.Dataset.new()
       |> Contex.Plot.new(Contex.BarChart, 600, 400)
-      |> Contex.Plot.to_svg(plot)
+      |> Contex.Plot.to_svg()
   ```
 
   ## CSS Styling
