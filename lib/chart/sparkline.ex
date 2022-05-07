@@ -183,6 +183,20 @@ defmodule Contex.Sparkline do
     |> Sparkline.draw()
   ```
   """
+  @spec style(Contex.Sparkline.t(),
+          height: :integer,
+          width: :integer,
+          extra_svg: String.t() | nil,
+          line_stroke: :integer,
+          line_class: String.t() | nil,
+          line_stroke_width: :integer,
+          line_stroke_linecap: String.t() | nil,
+          line_stroke_linejoin: String.t() | nil,
+          line_fill: String.t() | nil,
+          area_stroke: String.t() | nil,
+          area_fill: String.t() | nil,
+          area_class: String.t() | nil
+        ) :: Contex.Sparkline.t()
   def style(%Sparkline{} = sparkline, options \\ []) do
     props =
       @default_style
