@@ -203,15 +203,19 @@ defmodule Contex.Sparkline do
     scale =
       ContinuousLinearScale.new()
       |> ContinuousLinearScale.domain(chart.data)
-      |> Scale.set_range(vb_height, 0)
+      |> Scale.set_range(0, vb_height)
 
     chart = %{chart | y_transform: Scale.domain_to_range_fn(scale)}
 
     output = ~s"""
        <svg height="#{chart.height}" width="#{chart.width}" viewBox="0 0 #{vb_width} #{vb_height}" preserveAspectRatio="none" role="img">
         #{chart.extra_svg}
-        <path d="#{get_area_path(chart, vb_height)}" #{get_area_style(chart)}></path>
-        <path d="#{get_line_path(chart)}" #{get_line_style(chart)}></path>
+        <g transform="translate(0,#{vb_height})">
+          <g transform="scale(1,-1)">
+            <path d="#{get_area_path(chart)}" #{get_area_style(chart)}></path>
+            <path d="#{get_line_path(chart)}" #{get_line_style(chart)}></path>
+          </g>
+        </g>
       </svg>
     """
 
@@ -237,10 +241,10 @@ defmodule Contex.Sparkline do
     ~s|stroke="#{area_stroke}" fill="#{area_fill}" class="#{area_class}"|
   end
 
-  defp get_area_path(%Sparkline{} = sparkline, vb_height) do
+  defp get_area_path(%Sparkline{} = sparkline) do
     # Same as the open path, except we drop down, run back to height,height (aka 0,0) and close it...
     open_path = get_line_path(sparkline)
-    [open_path, "V #{vb_height} L 0 #{vb_height} Z"]
+    [open_path, "V 0 L 0 0 Z"]
   end
 
   # This is the IO List approach
