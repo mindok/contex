@@ -13,17 +13,49 @@ defmodule Contex.Sparkline do
     Sparkline.new(data) |> Sparkline.draw() # Emits svg sparkline
   ```
 
-  The colour defaults to a green line with a faded green fill, but can be overridden
-  with `colours/3`. Unlike other colours in Contex, these colours are how you would
-  specify them in CSS - e.g.
+  You can modify various rendering properties through `style/2`. These properties
+  map directly to the underlying elements (line & area), giving you great flexibility to
+  style them in various ways -e.g.
+
+  Use color values & dimensions:
+
   ```
     Sparkline.new(data)
-    |> Sparkline.colours("#fad48e", "#ff9838")
+    |> Sparkline.style(line_stroke: "#fad48e", area_fill: "#ff9838", height: 50, width: 300)
     |> Sparkline.draw()
   ```
 
-  The size defaults to 20 pixels high and 100 wide. You can override by updating
-  `:height` and `:width` directly in the `Sparkline` struct before call `draw/1`.
+  Use classes:
+
+  ```
+    Sparkline.new(data)
+    |> Sparkline.style(
+        line_stroke: nil,
+        area_fill: nil,
+        line_class: "stroke-blue-500",
+        area_class: "fill-blue-50"
+    )
+    |> Sparkline.draw()
+  ```
+
+  Injecting extra_elements:
+
+  ```
+    extra_svg = \"""
+    <defs>
+      <linearGradient id="pretty-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" style="stop-color:#b794f4;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#f56565;stop-opacity:1" />
+      </linearGradient>
+    </defs>
+    \"""
+
+    Sparkline.new(data)
+    |> Sparkline.style(line_stroke: "url(#pretty-gradient)", extra_svg: extra_svg)
+    |> Sparkline.draw()
+  ```
+
+
   """
   alias __MODULE__
   alias Contex.{ContinuousLinearScale, Scale}
@@ -32,17 +64,37 @@ defmodule Contex.Sparkline do
     :data,
     :extents,
     :length,
-    :spot_radius,
-    :spot_colour,
-    :line_width,
-    :line_colour,
-    :fill_colour,
     :y_transform,
     :height,
-    :width
+    :width,
+    :extra_svg,
+    :line_stroke,
+    :line_class,
+    :line_stroke_width,
+    :line_stroke_linecap,
+    :line_stroke_linejoin,
+    :line_fill,
+    :area_stroke,
+    :area_fill,
+    :area_class
   ]
 
   @type t() :: %__MODULE__{}
+
+  @default_style [
+    height: 20,
+    width: 100,
+    extra_svg: nil,
+    line_stroke: "rgba(0, 200, 50, 0.7)",
+    line_class: nil,
+    line_stroke_width: 1,
+    line_stroke_linecap: "round",
+    line_stroke_linejoin: "round",
+    line_fill: "none",
+    area_stroke: "none",
+    area_fill: "rgba(0, 200, 50, 0.2)",
+    area_class: nil
+  ]
 
   @doc """
   Create a new sparkline struct from some data.
@@ -50,7 +102,7 @@ defmodule Contex.Sparkline do
   @spec new([number()]) :: Contex.Sparkline.t()
   def new(data) when is_list(data) do
     %Sparkline{data: data, extents: ContinuousLinearScale.extents(data), length: length(data)}
-    |> set_default_style
+    |> style()
   end
 
   @doc """
@@ -65,77 +117,143 @@ defmodule Contex.Sparkline do
     |> Sparkline.draw()
   ```
   """
+  @deprecated "Use style/2 instead"
+  @since "0.5.0"
   @spec colours(Contex.Sparkline.t(), String.t(), String.t()) :: Contex.Sparkline.t()
-  def colours(%Sparkline{} = sparkline, fill, line) do
+  def colours(%Sparkline{} = sparkline, area_fill, line_stroke) do
     # TODO: Really need some validation...
-    %{sparkline | fill_colour: fill, line_colour: line}
+    style(sparkline, area_fill: area_fill, line_stroke: line_stroke)
   end
 
-  defp set_default_style(%Sparkline{} = sparkline) do
-    %{
-      sparkline
-      | spot_radius: 2,
-        spot_colour: "red",
-        line_width: 1,
-        line_colour: "rgba(0, 200, 50, 0.7)",
-        fill_colour: "rgba(0, 200, 50, 0.2)",
-        height: 20,
-        width: 100
-    }
+  @doc """
+  Override any of the style settings for the sparkline.
+
+  There are 3 elements in a sparkline, wrapping svg, a line and an area.
+  To control how they are rendered, you can pass ony of the following
+  parameters:
+
+  * height: 20
+  * width: 100
+  * extra_svg: nil
+  * line_stroke: "rgba(0, 200, 50, 0.7)"
+  * line_class: nil
+  * line_stroke_width: 1
+  * line_stroke_linecap: "round"
+  * line_stroke_linejoin: "round"
+  * line_fill: "none"
+  * area_stroke: "none"
+  * area_fill: "rgba(0, 200, 50, 0.2)"
+  * area_class: nil
+
+  Example 1: Set color values & dimensions:
+
+  ```
+    Sparkline.new(data)
+    |> Sparkline.style(line_stroke: "#fad48e", area_fill: "#ff9838", height: 50, width: 300)
+    |> Sparkline.draw()
+  ```
+
+  Example 2: Set classes
+
+  ```
+    Sparkline.new(data)
+    |> Sparkline.style(
+        line_stroke: nil,
+        area_fill: nil,
+        line_class: "stroke-blue-500",
+        area_class: "fill-blue-50"
+    )
+    |> Sparkline.draw()
+  ```
+
+  Example 3: Add a gradient
+
+  ```
+    extra_svg = \"""
+    <defs>
+      <linearGradient id="pretty-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" style="stop-color:#b794f4;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#f56565;stop-opacity:1" />
+      </linearGradient>
+    </defs>
+    \"""
+
+    Sparkline.new(data)
+    |> Sparkline.style(line_stroke: "url(#pretty-gradient)", extra_svg: extra_svg)
+    |> Sparkline.draw()
+  ```
+  """
+  def style(%Sparkline{} = sparkline, options \\ []) do
+    props =
+      @default_style
+      |> Keyword.merge(options)
+      |> Enum.into(%{})
+
+    Map.merge(sparkline, props)
   end
 
   @doc """
   Renders the sparkline to svg, including the svg wrapper, as a string or improper string list that
   is marked safe.
   """
-  def draw(%Sparkline{height: height, width: width, line_width: line_width} = sparkline) do
-    vb_width = sparkline.length + 1
-    vb_height = height - 2 * line_width
+  def draw(%Sparkline{} = chart) do
+    vb_width = chart.length + 1
+    vb_height = chart.height - 2 * chart.line_stroke_width
 
     scale =
       ContinuousLinearScale.new()
-      |> ContinuousLinearScale.domain(sparkline.data)
+      |> ContinuousLinearScale.domain(chart.data)
       |> Scale.set_range(vb_height, 0)
 
-    sparkline = %{sparkline | y_transform: Scale.domain_to_range_fn(scale)}
+    chart = %{chart | y_transform: Scale.domain_to_range_fn(scale)}
 
     output = ~s"""
-       <svg height="#{height}" width="#{width}" viewBox="0 0 #{vb_width} #{vb_height}" preserveAspectRatio="none" role="img">
-        <path d="#{get_closed_path(sparkline, vb_height)}" #{get_fill_style(sparkline)}></path>
-        <path d="#{get_path(sparkline)}" #{get_line_style(sparkline)}></path>
+       <svg height="#{chart.height}" width="#{chart.width}" viewBox="0 0 #{vb_width} #{vb_height}" preserveAspectRatio="none" role="img">
+        #{chart.extra_svg}
+        <path d="#{get_area_path(chart, vb_height)}" #{get_area_style(chart)}></path>
+        <path d="#{get_line_path(chart)}" #{get_line_style(chart)}></path>
       </svg>
     """
 
     {:safe, [output]}
   end
 
-  defp get_line_style(%Sparkline{line_colour: line_colour, line_width: line_width}) do
-    ~s|stroke="#{line_colour}" stroke-width="#{line_width}" fill="none" vector-effect="non-scaling-stroke"|
+  defp get_line_style(%Sparkline{
+         line_stroke: line_stroke,
+         line_stroke_width: line_stroke_width,
+         line_class: line_class,
+         line_fill: line_fill,
+         line_stroke_linecap: line_stroke_linecap,
+         line_stroke_linejoin: line_stroke_linejoin
+       }) do
+    ~s|stroke="#{line_stroke}" class="#{line_class}" stroke-width="#{line_stroke_width}" fill="#{line_fill}" stroke-linecap="#{line_stroke_linecap}" stroke-linejoin="#{line_stroke_linejoin}" vector-effect="non-scaling-stroke" |
   end
 
-  defp get_fill_style(%Sparkline{fill_colour: fill_colour}) do
-    ~s|stroke="none" fill="#{fill_colour}"|
+  defp get_area_style(%Sparkline{
+         area_fill: area_fill,
+         area_stroke: area_stroke,
+         area_class: area_class
+       }) do
+    ~s|stroke="#{area_stroke}" fill="#{area_fill}" class="#{area_class}"|
   end
 
-  defp get_closed_path(%Sparkline{} = sparkline, vb_height) do
+  defp get_area_path(%Sparkline{} = sparkline, vb_height) do
     # Same as the open path, except we drop down, run back to height,height (aka 0,0) and close it...
-    open_path = get_path(sparkline)
+    open_path = get_line_path(sparkline)
     [open_path, "V #{vb_height} L 0 #{vb_height} Z"]
   end
 
   # This is the IO List approach
-  defp get_path(%Sparkline{y_transform: transform_func} = sparkline) do
-    last_item = Enum.count(sparkline.data) - 1
+  defp get_line_path(%Sparkline{y_transform: transform_func} = sparkline) do
+    last_item_index = Enum.count(sparkline.data) - 1
 
     [
       "M",
       sparkline.data
-      |> Enum.map(transform_func)
-      |> Enum.with_index()
-      |> Enum.map(fn {value, i} ->
-        case i < last_item do
-          true -> "#{i} #{value} L "
-          _ -> "#{i} #{value}"
+      |> Enum.with_index(fn value, index ->
+        case index < last_item_index do
+          true -> "#{index} #{transform_func.(value)} L "
+          _ -> "#{index} #{transform_func.(value)} "
         end
       end)
     ]
