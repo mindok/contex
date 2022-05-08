@@ -211,7 +211,7 @@ defmodule Contex.Sparkline do
   is marked safe.
   """
   def draw(%Sparkline{} = chart) do
-    vb_width = chart.length + 1
+    vb_width = chart.length - 1
     vb_height = chart.height - 2 * chart.line_stroke_width
 
     scale =
