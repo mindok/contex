@@ -217,7 +217,7 @@ defmodule Contex.Sparkline do
     scale =
       ContinuousLinearScale.new()
       |> ContinuousLinearScale.domain(chart.data)
-      |> Scale.set_range(0, vb_height)
+      |> Scale.set_range(chart.line_stroke_width / 2, vb_height)
 
     chart = %{chart | y_transform: Scale.domain_to_range_fn(scale)}
 
