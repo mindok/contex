@@ -159,7 +159,7 @@ defmodule Contex.ContinuousLinearScale do
 
   @axis_interval_breaks [0.05, 0.1, 0.2, 0.25, 0.4, 0.5, 1.0, 2.0, 2.5, 4.0, 5.0, 10.0, 20.0]
   defp lookup_axis_interval(raw_interval) when is_float(raw_interval) do
-    Enum.find(@axis_interval_breaks, fn x -> x >= raw_interval end)
+    Enum.find(@axis_interval_breaks, 10.0, fn x -> x >= raw_interval end)
   end
 
   defp guess_display_decimals(power_of_ten) when power_of_ten > 0 do
