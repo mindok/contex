@@ -1,8 +1,7 @@
-defmodule ContexPointPlotTest do
+defmodule ContexLineChartTest do
   use ExUnit.Case
 
-  alias Contex.{CategoryColourScale, Dataset, LinePlot, Plot}
-  import SweetXml
+  alias Contex.{Dataset, LinePlot}
 
   setup do
     plot =
@@ -28,7 +27,7 @@ defmodule ContexPointPlotTest do
         {404, 20}
       ]
 
-      expected_output = """
+      _expected_output = """
       d=M20,380
       C26.333333333333332,373.6666666666667 44.666666666666664,348.3333333333333 58,342
       C71.33333333333333,335.6666666666667 93,349 100,342
