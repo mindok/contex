@@ -1,4 +1,4 @@
-defmodule ContexAxisTest do
+defmodule ContexLinearScaleTest do
   use ExUnit.Case
 
   alias Contex.ContinuousLinearScale
