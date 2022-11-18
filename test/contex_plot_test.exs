@@ -306,7 +306,7 @@ defmodule ContexPlotTest do
 
     test "does not render styles if default turned off", %{plot: plot} do
       refute plot
-             |> struct(default_style: false)
+             |> Plot.attributes(default_style: false)
              |> Plot.to_svg()
              |> elem(1)
              |> IO.chardata_to_string()
