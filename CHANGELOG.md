@@ -10,7 +10,7 @@ be resized based on the number of entries in the legend.
 - Change smoothed line to round coordinates to 2 decimal places (reducing SVG size for large plots).
 - Enable plot_options (show x axis, y axis) in `LinePlot` and `PointPlot`. Thanks @shadowRR
 - Added `meta` to `Dataset` to allow carrying of handy information with the dataset.
-- Added `:legend_top` option to `:legend_settings` - note that if you have too many legend entries it
+- Added `:legend_top` and `:legend_bottom` options to `:legend_settings` - note that if you have too many legend entries it
 may push the plot content beyond the bottom of the plot.
 
 

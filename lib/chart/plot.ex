@@ -205,12 +205,21 @@ defmodule Contex.Plot do
     content_height = height - (top + bottom)
     content_width = width - (left + right)
 
+    x_tick_label_space = if plot.plot_options.show_x_axis, do: @x_axis_tick_labels, else: 0
+
     legend_scales = PlotContent.get_legend_scales(plot_content)
+    legend_setting = plot.plot_options[:legend_setting]
 
-    legend_left = left + if right_legend?(plot), do: content_width + @default_padding, else: 0
+    legend_left = case legend_setting do
+      :legend_right -> left + content_width + @default_padding
+      _ -> left
+    end
 
-    legend_top =
-      top + if top_legend?(plot), do: -1 * legend_height(legend_scales), else: @default_padding
+    legend_top = case legend_setting do
+      :legend_top -> top - legend_height(legend_scales)
+      :legend_bottom -> top + content_height + @default_padding + x_tick_label_space
+      _ -> top + @default_padding
+    end
 
     plot_content = PlotContent.set_size(plot_content, content_width, content_height)
 
@@ -246,31 +255,14 @@ defmodule Contex.Plot do
     if plot.default_style, do: @default_style, else: ""
   end
 
-  defp right_legend?(%Plot{plot_options: plot_options}) do
-    case plot_options do
-      %{legend_setting: :legend_right} -> true
-      _ -> false
-    end
-  end
-
-  defp top_legend?(%Plot{plot_options: plot_options}) do
-    case plot_options do
-      %{legend_setting: :legend_top} -> true
-      _ -> false
-    end
-  end
-
   defp legend_height(scales) do
     Enum.reduce(scales, 0, fn scale, acc ->
       acc + Contex.Legend.height(scale)
     end)
   end
 
-  defp get_svg_legends(scales, legend_left, legend_top, %{legend_setting: :legend_right}) do
-    draw_legends(scales, legend_left, legend_top)
-  end
-
-  defp get_svg_legends(scales, legend_left, legend_top, %{legend_setting: :legend_top}) do
+  defp get_svg_legends(scales, legend_left, legend_top, %{legend_setting: legend_setting})
+       when legend_setting in [:legend_right, :legend_top, :legend_bottom] do
     draw_legends(scales, legend_left, legend_top)
   end
 
@@ -392,7 +384,13 @@ defmodule Contex.Plot do
       )
 
     right = Map.get(plot.plot_options, :right_margin, calculate_right_margin(plot))
-    bottom = Map.get(plot.plot_options, :bottom_margin, calculate_bottom_margin(plot))
+
+    bottom =
+      Map.get(
+        plot.plot_options,
+        :bottom_margin,
+        calculate_bottom_margin(plot, legend_height(legend_scales))
+      )
 
     margins = %{left: left, top: top, right: right, bottom: bottom}
 
@@ -416,10 +414,13 @@ defmodule Contex.Plot do
     margin
   end
 
-  defp calculate_bottom_margin(%Plot{} = plot) do
+  defp calculate_bottom_margin(%Plot{} = plot, legend_height) do
     margin = 0
     margin = margin + if plot.plot_options.show_x_axis, do: @x_axis_tick_labels, else: 0
     margin = margin + if is_non_empty_string(plot.x_label), do: @x_axis_margin, else: 0
+
+    margin =
+      margin + if plot.plot_options.legend_setting == :legend_bottom, do: legend_height, else: 0
 
     margin
   end
