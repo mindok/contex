@@ -302,12 +302,12 @@ defmodule Contex.PointPlot do
   end
 
   @doc false
-  def get_svg_legend(%PointPlot{} = plot) do
+  def get_legend_scales(%PointPlot{} = plot) do
     plot = prepare_scales(plot)
-    Contex.Legend.to_svg(plot.legend_scale)
+    [plot.legend_scale]
   end
 
-  def get_svg_legend(_), do: ""
+  def get_legend_scales(_), do: []
 
   @doc false
   def to_svg(%PointPlot{} = plot, plot_options) do

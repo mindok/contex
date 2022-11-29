@@ -177,12 +177,12 @@ defmodule Contex.LinePlot do
   end
 
   @doc false
-  def get_svg_legend(%LinePlot{} = plot) do
+  def get_legend_scales(%LinePlot{} = plot) do
     plot = prepare_scales(plot)
-    Contex.Legend.to_svg(plot.legend_scale)
+   [plot.legend_scale]
   end
 
-  def get_svg_legend(_), do: ""
+  def get_legend_scales(_), do: []
 
   @doc false
   def to_svg(%LinePlot{} = plot, plot_options) do

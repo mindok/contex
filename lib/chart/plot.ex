@@ -11,7 +11,7 @@ defprotocol Contex.PlotContent do
   @doc """
   Generates svg content for a legend appropriate for the plot content.
   """
-  def get_svg_legend(plot)
+  def get_legend_scales(plot)
 
   @doc """
   Sets the size for the plot content. This is called after the main layout and margin calculations
@@ -205,9 +205,12 @@ defmodule Contex.Plot do
     content_height = height - (top + bottom)
     content_width = width - (left + right)
 
-    # TODO: Legend calcs need to be redone if it can be displayed at the top
-    legend_left = left + content_width + @default_padding
-    legend_top = top + @default_padding
+    legend_scales = PlotContent.get_legend_scales(plot_content)
+
+    legend_left = left + if right_legend?(plot), do: content_width + @default_padding, else: 0
+
+    legend_top =
+      top + if top_legend?(plot), do: -1 * legend_height(legend_scales), else: @default_padding
 
     plot_content = PlotContent.set_size(plot_content, content_width, content_height)
 
@@ -221,7 +224,7 @@ defmodule Contex.Plot do
       ~s|<g transform="translate(#{left},#{top})">|,
       PlotContent.to_svg(plot_content, plot.plot_options),
       "</g>",
-      get_svg_legend(plot_content, legend_left, legend_top, plot.plot_options),
+      get_svg_legends(legend_scales, legend_left, legend_top, plot.plot_options),
       "</svg>"
     ]
 
@@ -243,15 +246,50 @@ defmodule Contex.Plot do
     if plot.default_style, do: @default_style, else: ""
   end
 
-  defp get_svg_legend(plot_content, legend_left, legend_top, %{legend_setting: :legend_right}) do
-    [
-      ~s|<g transform="translate(#{legend_left}, #{legend_top})">|,
-      PlotContent.get_svg_legend(plot_content),
-      "</g>"
-    ]
+  defp right_legend?(%Plot{plot_options: plot_options}) do
+    case plot_options do
+      %{legend_setting: :legend_right} -> true
+      _ -> false
+    end
   end
 
-  defp get_svg_legend(_plot_content, _legend_left, _legend_top, _opts), do: ""
+  defp top_legend?(%Plot{plot_options: plot_options}) do
+    case plot_options do
+      %{legend_setting: :legend_top} -> true
+      _ -> false
+    end
+  end
+
+  defp legend_height(scales) do
+    Enum.reduce(scales, 0, fn scale, acc ->
+      acc + Contex.Legend.height(scale)
+    end)
+  end
+
+  defp get_svg_legends(scales, legend_left, legend_top, %{legend_setting: :legend_right}) do
+    draw_legends(scales, legend_left, legend_top)
+  end
+
+  defp get_svg_legends(scales, legend_left, legend_top, %{legend_setting: :legend_top}) do
+    draw_legends(scales, legend_left, legend_top)
+  end
+
+  defp get_svg_legends(_scales, _legend_left, _legend_top, _opts), do: ""
+
+  defp draw_legends(scales, legend_left, legend_top) do
+    {result, _top} =
+      Enum.reduce(scales, {[], legend_top}, fn scale, {acc, top} ->
+        legend = [
+          ~s|<g transform="translate(#{legend_left}, #{top})">|,
+          Contex.Legend.to_svg(scale),
+          "</g>"
+        ]
+
+        {[legend | acc], top + Contex.Legend.height(scale)}
+      end)
+
+    result
+  end
 
   defp get_titles_svg(
          %Plot{title: title, subtitle: subtitle, margins: margins} = _plot,
@@ -342,8 +380,17 @@ defmodule Contex.Plot do
   end
 
   defp calculate_margins(%Plot{} = plot) do
+    legend_scales = PlotContent.get_legend_scales(plot.plot_content)
+
     left = Map.get(plot.plot_options, :left_margin, calculate_left_margin(plot))
-    top = Map.get(plot.plot_options, :top_margin, calculate_top_margin(plot))
+
+    top =
+      Map.get(
+        plot.plot_options,
+        :top_margin,
+        calculate_top_margin(plot, legend_height(legend_scales))
+      )
+
     right = Map.get(plot.plot_options, :right_margin, calculate_right_margin(plot))
     bottom = Map.get(plot.plot_options, :bottom_margin, calculate_bottom_margin(plot))
 
@@ -377,7 +424,7 @@ defmodule Contex.Plot do
     margin
   end
 
-  defp calculate_top_margin(%Plot{} = plot) do
+  defp calculate_top_margin(%Plot{} = plot, legend_height) do
     margin = @default_padding
 
     margin =
@@ -385,6 +432,9 @@ defmodule Contex.Plot do
         if is_non_empty_string(plot.title), do: @top_title_margin + @default_padding, else: 0
 
     margin = margin + if is_non_empty_string(plot.subtitle), do: @top_subtitle_margin, else: 0
+
+    margin =
+      margin + if plot.plot_options.legend_setting == :legend_top, do: legend_height, else: 0
 
     margin
   end
@@ -398,31 +448,31 @@ end
 # TODO: Probably move to appropriate module files...
 defimpl Contex.PlotContent, for: Contex.BarChart do
   def to_svg(plot, options), do: Contex.BarChart.to_svg(plot, options)
-  def get_svg_legend(plot), do: Contex.BarChart.get_svg_legend(plot)
+  def get_legend_scales(plot), do: Contex.BarChart.get_legend_scales(plot)
   def set_size(plot, width, height), do: Contex.BarChart.set_size(plot, width, height)
 end
 
 defimpl Contex.PlotContent, for: Contex.PointPlot do
   def to_svg(plot, options), do: Contex.PointPlot.to_svg(plot, options)
-  def get_svg_legend(plot), do: Contex.PointPlot.get_svg_legend(plot)
+  def get_legend_scales(plot), do: Contex.PointPlot.get_legend_scales(plot)
   def set_size(plot, width, height), do: Contex.PointPlot.set_size(plot, width, height)
 end
 
 defimpl Contex.PlotContent, for: Contex.LinePlot do
   def to_svg(plot, options), do: Contex.LinePlot.to_svg(plot, options)
-  def get_svg_legend(plot), do: Contex.LinePlot.get_svg_legend(plot)
+  def get_legend_scales(plot), do: Contex.LinePlot.get_legend_scales(plot)
   def set_size(plot, width, height), do: Contex.LinePlot.set_size(plot, width, height)
 end
 
 defimpl Contex.PlotContent, for: Contex.GanttChart do
   def to_svg(plot, options), do: Contex.GanttChart.to_svg(plot, options)
   # Contex.PointPlot.get_legend_svg(plot)
-  def get_svg_legend(_plot), do: ""
+  def get_legend_scales(_plot), do: []
   def set_size(plot, width, height), do: Contex.GanttChart.set_size(plot, width, height)
 end
 
 defimpl Contex.PlotContent, for: Contex.PieChart do
   def to_svg(plot, _options), do: Contex.PieChart.to_svg(plot)
-  def get_svg_legend(plot), do: Contex.PieChart.get_svg_legend(plot)
+  def get_legend_scales(plot), do: Contex.PieChart.get_legend_scales(plot)
   def set_size(plot, width, height), do: Contex.PieChart.set_size(plot, width, height)
 end

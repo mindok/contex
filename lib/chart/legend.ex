@@ -4,7 +4,8 @@ defprotocol Contex.Legend do
 
   Implemented by specific scale modules
   """
-  def to_svg(scale, invert \\ false)
+  def to_svg(scale)
+  def height(scale)
 end
 
 defimpl Contex.Legend, for: Contex.CategoryColourScale do
@@ -12,25 +13,29 @@ defimpl Contex.Legend, for: Contex.CategoryColourScale do
 
   alias Contex.CategoryColourScale
 
-  def to_svg(scale, invert \\ false) do
-    values =
-      case invert do
-        true -> Enum.reverse(scale.values)
-        _ -> scale.values
-      end
+  @item_spacing 21
+  @item_height 18
+  def to_svg(scale) do
+    values = scale.values
 
     legend_items =
       Enum.with_index(values)
       |> Enum.map(fn {val, index} ->
         fill = CategoryColourScale.colour_for_value(scale, val)
-        y = index * 21
+        y = index * @item_spacing
 
         [
-          rect({0, 18}, {y, y + 18}, "", fill: fill),
-          text(23, y + 9, val, text_anchor: "start", dominant_baseline: "central")
+          rect({0, 18}, {y, y + @item_height}, "", fill: fill),
+          text(23, y + @item_height / 2, val, text_anchor: "start", dominant_baseline: "central")
         ]
       end)
 
     [~s|<g class="exc-legend">|, legend_items, "</g>"]
+  end
+
+  def height(scale) do
+    value_count = length(scale.values)
+
+    (value_count * @item_spacing) + @item_height
   end
 end

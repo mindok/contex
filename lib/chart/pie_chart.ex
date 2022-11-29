@@ -92,9 +92,8 @@ defmodule Contex.PieChart do
   end
 
   @doc false
-  def get_svg_legend(%PieChart{} = chart) do
-    get_colour_palette(chart)
-    |> Contex.Legend.to_svg()
+  def get_legend_scales(%PieChart{} = chart) do
+    [get_colour_palette(chart)]
   end
 
   @doc """

@@ -4,9 +4,14 @@
 
 - NOTE: behaviour change. If a `Dataset` is made up of rows of maps, `column_names` now returns headers if it is supplied, otherwise returns
 map keys from the first row. Previously, it just returned the map keys from the first row.
+- NOTE: `PlotContent.get_svg_legend` has been replaced with `PlotContent.get_legend_scales`. This moves the responsibility for legend
+rendering to `Plot`, which allows multiple scales to be combined in future. This change was needed to allow plot content to
+be resized based on the number of entries in the legend.
 - Change smoothed line to round coordinates to 2 decimal places (reducing SVG size for large plots).
 - Enable plot_options (show x axis, y axis) in `LinePlot` and `PointPlot`. Thanks @shadowRR
 - Added `meta` to `Dataset` to allow carrying of handy information with the dataset.
+- Added `:legend_top` option to `:legend_settings` - note that if you have too many legend entries it
+may push the plot content beyond the bottom of the plot.
 
 
 ## v0.4.0 : 2021-08-13

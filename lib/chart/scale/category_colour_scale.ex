@@ -93,6 +93,17 @@ defmodule Contex.CategoryColourScale do
   end
 
   @doc """
+  Inverts the order of values. Note, the palette is generated from the existing
+  colour map so reapplying a palette will result in reversed colours
+  """
+  def invert(%CategoryColourScale{values: values}=scale) do
+    values = Enum.reverse(values)
+    palette = Enum.map(values, fn val -> colour_for_value(scale, val) end)
+
+    new(values, palette)
+  end
+
+  @doc """
   Look up a colour for a value from the palette.
   """
   @spec colour_for_value(Contex.CategoryColourScale.t() | nil, any()) :: String.t()

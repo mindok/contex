@@ -319,7 +319,7 @@ defmodule Contex.BarChart do
   end
 
   @doc false
-  def get_svg_legend(%BarChart{options: options} = plot) do
+  def get_legend_scales(%BarChart{options: options} = plot) do
     plot = prepare_scales(plot)
     scale = plot.series_fill_colours
 
@@ -328,7 +328,13 @@ defmodule Contex.BarChart do
 
     invert = orientation == :vertical and type == :stacked
 
-    Contex.Legend.to_svg(scale, invert)
+    scale = if invert do
+      CategoryColourScale.invert(scale)
+    else
+      scale
+    end
+
+    [scale]
   end
 
   @doc false
