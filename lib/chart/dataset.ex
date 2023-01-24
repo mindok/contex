@@ -181,7 +181,7 @@ defmodule Contex.Dataset do
   def column_name(_, column_index), do: column_index
 
   @doc """
-  Returns a function that retrives the value for a given column in given row, accessed by
+  Returns a function that retrieves the value for a given column in given row, accessed by
   the column name.
 
   ## Examples

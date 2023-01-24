@@ -15,7 +15,7 @@ defmodule Contex.Utils do
     do: NaiveDateTime.diff(a, b, unit)
 
   @doc """
-  Adds intervals to dates. Note that only sytem time units (nanosecond, microsecond, millisecond, second) are
+  Adds intervals to dates. Note that only system time units (nanosecond, microsecond, millisecond, second) are
   supported by default by DateTime and NaiveDateTime. Minutes, Hours, Days & Weeks need to be converted to one
   of the supported units. Special cases have been introduced for :months & :years due to variable days in month
   and leap year behaviour. This has been copied from Timex.

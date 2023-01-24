@@ -1,6 +1,6 @@
 defprotocol Contex.Legend do
   @moduledoc """
-  Protocal for generating a legend.
+  Protocol for generating a legend.
 
   Implemented by specific scale modules
   """

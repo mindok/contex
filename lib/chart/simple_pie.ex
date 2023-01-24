@@ -14,7 +14,7 @@ defmodule Contex.SimplePie do
 
   The size defaults to 50 pixels high and wide. You can override by updating
   `:height` directly in the `SimplePie` struct before call `draw/1`.
-  The height and width of pie chart is always same, therefor set only height is enough.
+  The height and width of pie chart is always same, therefore set only height is enough.
   """
   alias __MODULE__
   alias Contex.CategoryColourScale

@@ -11,7 +11,7 @@ defmodule Contex.BarChart do
   but if you accept the defaults and then add another value column you will see stacked bars rather than grouped. You
   can override this with `type/2`
   - By default the chart will be annotated with data labels (i.e. the value of a bar will be printed on a bar). This
-  can be overriden with `data_labels/2`. This override has no effect when there are 4 or more value columns specified.
+  can be overridden with `data_labels/2`. This override has no effect when there are 4 or more value columns specified.
   - By default, the padding between the data series is 2 (how this translates into pixels depends on the plot size you specify
   when adding the barchart to a `Contex.Plot`)
 
