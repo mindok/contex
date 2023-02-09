@@ -1,6 +1,6 @@
 defmodule Contex.ContinuousLinearScale do
   @moduledoc """
-  A linear scale to map continuous numberic data to a plotting coordinate system.
+  A linear scale to map continuous numeric data to a plotting coordinate system.
 
   Implements the general aspects of scale setup and use defined in the `Contex.Scale` protocol
 
