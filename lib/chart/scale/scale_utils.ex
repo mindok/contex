@@ -1,4 +1,9 @@
 defmodule Contex.ScaleUtils do
+  @moduledoc """
+  Here are common functions that can be shared between multiple scales.
+  """
+  alias Contex.Utils
+
   @doc """
   Makes sure that a range of numerics is
   a tuple of floats, in the right order.
@@ -60,6 +65,19 @@ defmodule Contex.ScaleUtils do
   end
 
   @doc """
+  Finds the area where a data-set is defined,
+  as to properly place minimums and maximums.
+
+  Returns a domain, e.g. {-3, 22}
+
+  """
+  def extents(data) do
+    Enum.reduce(data, {nil, nil}, fn x, {min, max} ->
+      {Utils.safe_min(x, min), Utils.safe_max(x, max)}
+    end)
+  end
+
+  @doc """
   Formats ticks.
 
   (can be refactored in Lin)
@@ -93,6 +111,7 @@ defmodule Contex.ScaleUtils do
   def compute_nice_settings(
         min_d,
         max_d,
+        explicit_ticks,
         interval_count
       )
       when is_number(min_d) and is_number(max_d) and is_number(interval_count) and
@@ -112,10 +131,21 @@ defmodule Contex.ScaleUtils do
 
     display_decimals = guess_display_decimals(order_of_magnitude)
 
+    # If I have a list of explicit ticks
+    computed_ticks =
+      case explicit_ticks do
+        ei when is_list(ei) ->
+          ei
+          |> Enum.filter(fn v -> v >= min_d && v <= max_d end)
+
+        _ ->
+          0..adjusted_interval_count
+          |> Enum.map(fn i -> min_d + i * rounded_interval_size end)
+      end
+
     %{
       nice_domain: {min_nice, max_nice},
-      interval_size: rounded_interval_size,
-      interval_count: adjusted_interval_count,
+      ticks: computed_ticks,
       display_decimals: display_decimals
     }
   end
