@@ -9,6 +9,13 @@ defmodule ContexTimeScaleTest do
     |> TimeScale.domain(d_min, d_max)
   end
 
+  defp asset_datetimelists_equal(list1, list2) do
+    Enum.zip(list1, list2)
+    |> Enum.each(fn {dt1, dt2} ->
+      assert NaiveDateTime.compare(dt1, dt2) == :eq
+    end)
+  end
+
   describe "validity tests" do
     test "Create with non-date domain" do
       assert_raise FunctionClauseError, fn ->
@@ -54,7 +61,7 @@ defmodule ContexTimeScaleTest do
         ~U[2015-01-13 13:00:05Z]
       ]
 
-      assert expected_ticks == Scale.ticks_domain(scale)
+      asset_datetimelists_equal(expected_ticks, Scale.ticks_domain(scale))
     end
 
     test "for 5sec timescale - NaiveDateTime" do
@@ -70,7 +77,7 @@ defmodule ContexTimeScaleTest do
         ~N[2015-01-13 13:00:05]
       ]
 
-      assert expected_ticks == Scale.ticks_domain(scale)
+      asset_datetimelists_equal(expected_ticks, Scale.ticks_domain(scale))
     end
 
     test "for 10 day timescale" do
@@ -94,7 +101,7 @@ defmodule ContexTimeScaleTest do
         ~U[2015-01-11 00:00:00Z]
       ]
 
-      assert expected_ticks == Scale.ticks_domain(scale)
+      asset_datetimelists_equal(expected_ticks, Scale.ticks_domain(scale))
     end
 
     test "for 10 day timescale (end of month start)" do
@@ -115,7 +122,7 @@ defmodule ContexTimeScaleTest do
         ~U[2015-12-14 00:00:00Z]
       ]
 
-      assert expected_ticks == Scale.ticks_domain(scale)
+      asset_datetimelists_equal(expected_ticks, Scale.ticks_domain(scale))
     end
 
     test "for 10 day timescale - 8 intervals" do
@@ -136,7 +143,7 @@ defmodule ContexTimeScaleTest do
         ~U[2015-01-11 00:00:00Z]
       ]
 
-      assert expected_ticks == Scale.ticks_domain(scale)
+      asset_datetimelists_equal(expected_ticks, Scale.ticks_domain(scale))
     end
 
     test "for 10 month timescale" do
