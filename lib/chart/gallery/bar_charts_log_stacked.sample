@@ -1,0 +1,49 @@
+palette = ["fff", "eee", "ff9838", "fdae53", "ddd", "fff"]
+  series_cols = ["b0", "b1", "b2", "b3", "b4"]
+  data = [
+    %{
+      "b0" => 10.4333,
+      "b1" => 1.4834000000000014,
+      "b2" => 2.0332999999999988,
+      "b3" => 16.7833,
+      "b4" => 265.40000000000003,
+      "lbl" => "2023-03-09"
+    },
+    %{
+      "b0" => 9.8667,
+      "b1" => 1.5665999999999993,
+      "b2" => 4.58340000000000,
+      "b3" => 83.0333,
+      "b4" => 359.15,
+      "lbl" => "2023-03-08"
+    },
+    %{
+      "b0" => 7.8333,
+      "b1" => 2.9166999999999996,
+      "b2" => 1.4666999999999994,
+      "b3" => 9.600000000000001,
+      "b4" => 379.2833,
+      "lbl" => "2023-03-07"
+    }
+  ]
+  test_data = Dataset.new(data, ["lbl" | series_cols])
+  
+  options = [
+    mapping: %{category_col: "lbl", value_cols: series_cols},
+    type: :stacked,
+    data_labels: true,
+    orientation: :horizontal,
+    custom_value_scale:
+      ContinuousLogScale.new(
+        domain: {0, 1000},
+        log_base: :base_10,
+        negative_numbers: :mask,
+        linear_range: 1
+      ),
+    colour_palette: palette
+  ]
+  
+  Plot.new(test_data, BarChart, 500, 400, options)
+  |> Plot.titles("Stacked bars", "Log axis")
+  |> Plot.axis_labels("", "")
+  

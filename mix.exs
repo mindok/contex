@@ -33,6 +33,7 @@ defmodule Contex.MixProject do
       {:nimble_strftime, "~> 0.1.0"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:sweet_xml, "~> 0.7.3", only: :test},
+      {:floki, "~> 0.34.2", only: :test},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false}
     ]
   end

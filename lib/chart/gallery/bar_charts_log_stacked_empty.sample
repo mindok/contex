@@ -1,0 +1,17 @@
+
+  data = [{"a", 10, 5}, {"b", 20, 10}, {"c", 3, 7}]
+  ds = Dataset.new(data, ["x", "y1", "y2"])
+  
+  options = [
+    mapping: %{category_col: "x", value_cols: ["y1", "y2"]},
+    data_labels: true,
+    orientation: :horizontal,
+    custom_value_scale: ContinuousLogScale.new(negative_numbers: :mask, linear_range: 1),
+    colour_palette: ["ff9838", "fdae53", "fbc26f", "fad48e", "fbe5af", "fff5d1"]
+  ]
+  
+  
+  Plot.new(ds, BarChart, 500, 400, options)
+    |> Plot.titles("zeb", "ra")
+    |> Plot.axis_labels("x", "y")
+  
