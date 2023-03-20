@@ -1,0 +1,19 @@
+data = [
+  ["Blog (400)", 400],
+  ["Instagram (399)", 399],
+  ["Twitter (348)", 348],
+  ["YouTube (200)", 200],
+  ["Tiktok (72)", 72]
+]
+
+dataset = Contex.Dataset.new(data, ["Channel", "Count"])
+
+opts = [
+  mapping: %{category_col: "Channel", value_col: "Count"},
+  colour_palette: ["16a34a", "c13584", "499be4", "FF0000", "00f2ea"],
+  legend_setting: :legend_right,
+  data_labels: true,
+  title: "Social Media Accounts"
+]
+
+Contex.Plot.new(dataset, Contex.PieChart, 600, 400, opts)

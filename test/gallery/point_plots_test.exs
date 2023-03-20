@@ -4,9 +4,6 @@ defmodule ContexGalleryPointPlotTest do
 
   describe "Assert validity of generated SVG" do
     test "All of them" do
-      # ./lib/chart/gallery/bar_charts_log_stacked.sample
-      # ./lib/chart/gallery/bar_charts_log_stacked_auto_domain.sample
-      # ./lib/chart/gallery/bar_charts_log_stacked_empty.sample
       files = [
         "point_plots_log_masked.sample",
         "point_plots_log_masked_autorange.sample",
@@ -14,17 +11,7 @@ defmodule ContexGalleryPointPlotTest do
         "point_plots_log_symmetric.sample"
       ]
 
-      path = "lib/chart/gallery"
-      aliases = "00_aliases.sample"
-
-      files
-      |> Enum.map(fn f ->
-        assert {:ok, _source_code, svg, _time} =
-                 safely_evaluate_svg(["#{path}/#{aliases}", "#{path}/#{f}"])
-
-        assert {:ok, document} = Floki.parse_document(svg)
-        # IO.puts(inspect(document))
-      end)
+      Commons.test_svg_is_well_formed(files)
     end
   end
 end

@@ -4,6 +4,8 @@ defmodule Contex.Gallery.BarCharts do
   @moduledoc """
   Some examples of bar charts
 
+  - `plain/0` - An introductory example
+
   """
 
   @doc """
@@ -36,17 +38,31 @@ defmodule Contex.Gallery.BarCharts do
   def with_log_scale(), do: 0
 
   @doc """
-  Broken graphs.
+  Some plain charts.
 
-  #{graph(title: "A broken graph",
-  file: "bar_charts_log_stacked_empty.sample",
+
+  #{graph(title: "A simple vertical bar chart",
+  file: "bar_charts_plain.sample",
   info: """
-  Not sure what this was.
+  Originally taken from https://github.com/mindok/contex/issues/74
   """)}
 
 
 
-  """
+  #{graph(title: "A simple horizontal bar chart",
+  file: "bar_charts_plain_horizontal.sample",
+  info: """
+  Originally taken from https://github.com/mindok/contex/issues/74
+  """)}
 
-  def broken(), do: 0
+
+  #{graph(title: "A simple stacked bar chart",
+  file: "bar_charts_plain_stacked.sample",
+  info: """
+  Originally taken from https://github.com/mindok/contex/issues/74
+  """)}
+
+
+  """
+  def plain(), do: 0
 end

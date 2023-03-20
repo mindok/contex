@@ -1,0 +1,44 @@
+data = [
+  ["Writing", 248],
+  ["Adventure", 166],
+  ["Food", 145],
+  ["Travel Guide", 109],
+  ["Photography", 94],
+  ["Lifestyle", 78],
+  ["Family", 75],
+  ["Video", 71],
+  ["Sustainability", 55],
+  ["Luxury", 55],
+  ["Womens Travel", 48],
+  ["Vanlife", 46],
+  ["Journalist", 39],
+  ["Solo Travel", 29],
+  ["Podcast", 25],
+  ["Accommodation", 24],
+  ["Outdoors", 24],
+  ["Nomad", 20],
+  ["Fashion", 20],
+  ["Hiking", 18],
+  ["Flying", 17],
+  ["Cruise", 16],
+  ["Points", 13],
+  ["Wellness", 12],
+  ["Slow Travel", 11],
+] |> Enum.reverse()
+
+series_cols = ["Series 1"]
+test_data = Contex.Dataset.new(data, ["Category" | series_cols])
+
+options = [
+  mapping: %{category_col: "Category", value_cols: ["Series 1"]},
+  type: :stacked,
+  data_labels: true,
+  orientation: :horizontal,
+  colour_palette: ["1e293b"],
+  series_columns: series_cols
+]
+
+Contex.Plot.new(test_data, Contex.BarChart, 500, 400, options)
+  |> Contex.Plot.titles("", "")
+  |> Contex.Plot.axis_labels("", "")
+  |> Contex.Plot.plot_options(%{})
