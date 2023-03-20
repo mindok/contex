@@ -2,9 +2,14 @@ defmodule Contex.Gallery.PointPlots do
   import Contex.Gallery.Sample, only: [graph: 1]
 
   @moduledoc """
-  Line charts.
+  A gallery of Line Charts.
 
-
+  > #### Have one to share? {: .warning}
+  >
+  > Do you have an interesting plot you want to
+  > share? Something you learned the hard way that
+  > should be here, or that's just great to see?
+  > Just open a ticket on GitHub and we'll post it here.
 
 
   """

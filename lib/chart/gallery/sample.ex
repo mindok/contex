@@ -44,14 +44,13 @@ defmodule Contex.Gallery.Sample do
 
         #{extra_info_text}
 
+        #{encode_svg(svg, bgcolor)}
         __Rendering took #{time} ms - Size: #{String.length(svg) / 1000} Kb__
 
 
         ```
         #{source_code}
         ```
-
-        #{encode_svg(svg, bgcolor)}
 
 
         """
