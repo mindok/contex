@@ -41,9 +41,19 @@ defmodule Contex.MixProject do
   defp docs do
     [
       main: "Contex",
-      logo: "assets/logo.png"
+      logo: "assets/logo.png",
+      assets: "assets",
+      before_closing_head_tag: &docs_before_closing_head_tag/1
     ]
   end
+
+  # Injects reference to contex.css into documentation output
+  # See https://medium.com/@takanori.ishikawa/customize-how-your-exdoc-documentation-looks-a10234dbb4c9
+  defp docs_before_closing_head_tag(:html) do
+    ~s{<link rel="stylesheet" href="assets/contex.css">}
+  end
+
+  defp docs_before_closing_head_tag(_), do: ""
 
   defp package() do
     [
