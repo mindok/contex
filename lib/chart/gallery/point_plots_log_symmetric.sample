@@ -1,0 +1,18 @@
+    data =
+      -200..200
+      |> Enum.map(fn v -> {v / 10.0, v / 10.0} end)
+  
+    ds = Dataset.new(data, ["x", "y"])
+  
+    options = [
+      mapping: %{x_col: "x", y_cols: ["y"]},
+      data_labels: true,
+      orientation: :vertical,
+      custom_y_scale:
+        ContinuousLogScale.new(domain: {-20, 20}, negative_numbers: :sym),
+      colour_palette: ["ff9838", "fdae53", "fbc26f", "fad48e", "fbe5af", "fff5d1"]
+    ]
+  
+    Plot.new(ds, PointPlot, 500, 400, options)
+      |> Plot.titles("A symmetric log scale", "")
+      |> Plot.axis_labels("x", "y (log)")

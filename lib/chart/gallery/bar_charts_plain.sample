@@ -1,0 +1,26 @@
+
+data = [
+  ["Tiktok", 7.7],
+  ["Twitter", 8.7],
+  ["YouTube", 10.2],
+  ["Blog/Website", 17],
+  ["Instagram", 17.5]
+]
+
+series_cols = ["Series 1"]
+test_data = Contex.Dataset.new(data, ["Category" | series_cols])
+
+options = [
+  mapping: %{category_col: "Category", value_cols: ["Series 1"]},
+  type: :stacked,
+  data_labels: true,
+  orientation: :vertical,
+  colour_palette: ["4c4bdc"],
+  series_columns: series_cols
+]
+
+Contex.Plot.new(test_data, Contex.BarChart, 500, 400, options)
+  |> Contex.Plot.titles("Combined Reach (M)", "")
+  |> Contex.Plot.axis_labels("", "")
+  |> Contex.Plot.plot_options(%{})
+  

@@ -1,0 +1,65 @@
+/* Styling for tick line */
+.exc-tick line {
+  stroke: rgb(207, 207, 207);
+  ;
+}
+
+/* Styling for tick text */
+.exc-tick text {
+  fill: grey;
+  stroke: none;
+  font-size: 0.5rem;
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+/* Styling for axis line */
+.exc-domain {
+  stroke: rgb(207, 207, 207);
+}
+
+/* Styling for grid line */
+.exc-grid {
+  stroke: lightgrey;
+}
+
+/* Styling for outline of colours in legend */
+.exc-legend {
+  stroke: black;
+}
+
+/* Styling for text of colours in legend */
+.exc-legend text {
+  fill: grey;
+  font-size: 0.8rem;
+  stroke: none;
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+/* Styling for title & subtitle of any plot */
+.exc-title {
+  fill: darkslategray;
+  font-size: 1.3rem;
+  stroke: none;
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+.exc-subtitle {
+  fill: darkgrey;
+  font-size: 0.7rem;
+  stroke: none;
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+/* Styling for label printed inside a bar on a barchart */
+.exc-barlabel-in {
+  fill: white;
+  font-size: 0.8rem;
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+/* Styling for label printed outside of a bar (e.g. if bar is too small) */
+.exc-barlabel-out {
+  fill: grey;
+  font-size: 0.7rem;
+  font-family: Helvetica, Arial, sans-serif;
+}
