@@ -12,6 +12,11 @@ be resized based on the number of entries in the legend.
 - Added `meta` to `Dataset` to allow carrying of handy information with the dataset.
 - Added `:legend_top` and `:legend_bottom` options to `:legend_settings` - note that if you have too many legend entries it
 may push the plot content beyond the bottom of the plot.
+- Added `ContinuousLogScale`. Thanks @l3nz
+- Added a gallery into the documentation. Thanks @l3nz
+- Added additional examples into the gallery provided by @travelmassive. Thanks @l3nz & @travelmassive
+- Fixes to tests & documentation. Thanks @kianmeng, @axelson
+- Fix to `ContinuousLinearScale`. Thanks @ruimfernanded
 
 
 ## v0.4.0 : 2021-08-13
