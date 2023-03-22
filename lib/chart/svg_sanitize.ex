@@ -24,7 +24,7 @@ defmodule Contex.SVG.Sanitize do
   """
   @dialyzer [
     {:no_improper_lists, to_iodata: 4},
-    {:no_improper_lists, to_iodata: 5},
+    {:no_improper_lists, to_iodata: 5}
   ]
 
   @spec basic_sanitize(any()) :: any()
