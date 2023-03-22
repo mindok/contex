@@ -5,27 +5,40 @@ jobs:
    name: mix test (Elixir ${{ matrix.elixir }} OTP ${{ matrix.otp }})
    strategy:
      matrix:
+       elixir:
+         - "1.12"
+         - "1.13"
+         - "1.14"
+       otp:
+         - "23"
+         - "24"
        include:
-         - elixir: '1.13.4'
-           otp: '25.3'
-         - elixir: '1.14.3'
-           otp: '25.3'
+         - elixir: "1.14"
+           otp: "24"
+           format: true
+
    runs-on: ubuntu-20.04
    steps:
      - uses: actions/checkout@v2
+     
      - name: Set up Elixir
        uses: erlef/setup-beam@v1
        with:
           elixir-version: ${{ matrix.elixir }}
           otp-version: ${{ matrix.otp }}
+          
      - name: Install Dependencies
        run: |
           mix local.rebar --force
           mix local.hex --force
           mix deps.get
+          
      - name: Run Tests
        run: mix test
+       
      - name: Format
        run: mix format --check-formatted
+       if: ${{ matrix.format }}
+       
      - name: Dialyzer
        run: mix dialyzer
