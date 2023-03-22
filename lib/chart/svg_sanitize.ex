@@ -22,6 +22,11 @@ defmodule Contex.SVG.Sanitize do
   Very basic approach to sanitizing strings for titles etc - it is effectively run
   through Plug.HTML.html_escape
   """
+  @dialyzer [
+    {:no_improper_lists, to_iodata: 4},
+    {:no_improper_lists, to_iodata: 5},
+  ]
+
   @spec basic_sanitize(any()) :: any()
   def basic_sanitize(data) when is_binary(data), do: html_escape(data)
   def basic_sanitize(data) when is_number(data), do: data

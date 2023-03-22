@@ -1,6 +1,5 @@
 defmodule ContexGalleryPointPlotTest do
   use ExUnit.Case
-  import Contex.Gallery.Sample, only: [safely_evaluate_svg: 1]
 
   describe "Assert validity of generated SVG" do
     test "All of them" do

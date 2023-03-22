@@ -16,7 +16,7 @@ defmodule Commons do
       {:ok, _source_code, svg, _time} =
         safely_evaluate_svg(["#{path}/#{aliases}", "#{path}/#{f}"])
 
-      {:ok, document} = Floki.parse_document(svg)
+      {:ok, _document} = Floki.parse_document(svg)
       # IO.puts(inspect(document))
     end)
   end

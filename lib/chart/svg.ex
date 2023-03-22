@@ -91,7 +91,7 @@ defmodule Contex.SVG do
 
       case acc do
         :first -> ["M ", coord]
-        _ -> [acc, " L " | coord]
+        _ -> [acc, [" L ", coord]]
       end
     end)
   end
