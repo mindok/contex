@@ -13,10 +13,11 @@ jobs:
    runs-on: ubuntu-20.04
    steps:
      - uses: actions/checkout@v2
-     - uses: actions/setup-elixir@v1
+     - name: Set up Elixir
+       uses: erlef/setup-beam@v1
        with:
-         otp-version: ${{ matrix.otp }}
-         elixir-version: ${{ matrix.elixir }}
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
      - name: Install Dependencies
        run: |
           mix local.rebar --force
