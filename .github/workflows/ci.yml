@@ -6,15 +6,14 @@ jobs:
    strategy:
      matrix:
        elixir:
-         - "1.12"
          - "1.13"
          - "1.14"
        otp:
-         - "23"
          - "24"
+         - "25"
        include:
          - elixir: "1.14"
-           otp: "24"
+           otp: "25"
            format: true
 
    runs-on: ubuntu-20.04
@@ -42,3 +41,4 @@ jobs:
        
      - name: Dialyzer
        run: mix dialyzer
+       if: ${{ matrix.format }}
