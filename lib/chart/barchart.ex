@@ -328,11 +328,12 @@ defmodule Contex.BarChart do
 
     invert = orientation == :vertical and type == :stacked
 
-    scale = if invert do
-      CategoryColourScale.invert(scale)
-    else
-      scale
-    end
+    scale =
+      if invert do
+        CategoryColourScale.invert(scale)
+      else
+        scale
+      end
 
     [scale]
   end

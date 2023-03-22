@@ -9,3 +9,4 @@ erl_crash.dump
 /config/*.secret.exs
 .elixir_ls/
 .tool-versions
+.DS_Store

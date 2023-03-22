@@ -38,7 +38,7 @@ defmodule Contex.Gallery.PointPlots do
   As numbers below zero are negative as logarithms,
   and may get really big fast, you may want to
   "linearize" them.
-  
+
   This works in masked mode (as shown) but also in
   symmetric mode.
   """)}

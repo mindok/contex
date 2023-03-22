@@ -28,11 +28,11 @@ defmodule Contex.Gallery.BarCharts do
   info: """
   This graph represents a distribution of values,
   rendered as a stacked sample.
-  
+
   Notice how the large value difference (data is in minutes)
   makes a log scale mandatory, but the axis is not
   really readable on the far end.
-  
+
   """)}
 
   #{graph(title: "A stacked sample with automatic domain and custom ticks",

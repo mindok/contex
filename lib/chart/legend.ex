@@ -36,6 +36,6 @@ defimpl Contex.Legend, for: Contex.CategoryColourScale do
   def height(scale) do
     value_count = length(scale.values)
 
-    (value_count * @item_spacing) + @item_height
+    value_count * @item_spacing + @item_height
   end
 end

@@ -179,7 +179,7 @@ defmodule Contex.LinePlot do
   @doc false
   def get_legend_scales(%LinePlot{} = plot) do
     plot = prepare_scales(plot)
-   [plot.legend_scale]
+    [plot.legend_scale]
   end
 
   def get_legend_scales(_), do: []

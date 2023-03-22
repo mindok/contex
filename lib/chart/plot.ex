@@ -210,16 +210,18 @@ defmodule Contex.Plot do
     legend_scales = PlotContent.get_legend_scales(plot_content)
     legend_setting = plot.plot_options[:legend_setting]
 
-    legend_left = case legend_setting do
-      :legend_right -> left + content_width + @default_padding
-      _ -> left
-    end
+    legend_left =
+      case legend_setting do
+        :legend_right -> left + content_width + @default_padding
+        _ -> left
+      end
 
-    legend_top = case legend_setting do
-      :legend_top -> top - legend_height(legend_scales)
-      :legend_bottom -> top + content_height + @default_padding + x_tick_label_space
-      _ -> top + @default_padding
-    end
+    legend_top =
+      case legend_setting do
+        :legend_top -> top - legend_height(legend_scales)
+        :legend_bottom -> top + content_height + @default_padding + x_tick_label_space
+        _ -> top + @default_padding
+      end
 
     plot_content = PlotContent.set_size(plot_content, content_width, content_height)
 
