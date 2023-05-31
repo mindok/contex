@@ -1,6 +1,6 @@
 # ContEx Change Log
 
-## v0.5.0 : In Progress
+## v0.5.0 : 2023-05-31
 
 - NOTE: behaviour change. If a `Dataset` is made up of rows of maps, `column_names` now returns headers if it is supplied, otherwise returns
 map keys from the first row. Previously, it just returned the map keys from the first row.
@@ -35,7 +35,7 @@ may push the plot content beyond the bottom of the plot.
 - Added `LinePlot` (finally)
 - Make stroke width for `LinePlot` adjustable through options. Thanks @littleStudent.
 - Handle nil values in `LinePlot` by creating gaps in line.
-- Stop crash on timescales when interval clashes with days in month resulting in invalid date. Thanks @imsoulfly. 
+- Stop crash on timescales when interval clashes with days in month resulting in invalid date. Thanks @imsoulfly.
 - Fix colour palette option in `GanttChart`.
 
 ### Deprecated
@@ -43,7 +43,7 @@ may push the plot content beyond the bottom of the plot.
 
 ## v0.3.0 : 2020-06-08
 - Allow Dataset to be created from a list of Maps (previously lists of lists and list of tuples were supported)
-- Implement a data mapping mechanism to provide a consistent way of mapping data into required plot elements. Thanks 
+- Implement a data mapping mechanism to provide a consistent way of mapping data into required plot elements. Thanks
 @srowley for breaking the back of this.
 - Added simplified chart creation API. Thanks @srowley. The existing API remains as-is
 - Added test coverage for some components. Thanks @srowley

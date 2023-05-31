@@ -12,7 +12,7 @@ ContEx is a simple server side charting package for elixir. See these demos on t
 
 ## Core concepts
 
-### Dataset 
+### Dataset
 ContEx uses a simple `Dataset` structure - a list of lists or a list of tuples together with a list of column names.
 
 For example:
@@ -32,8 +32,8 @@ Will make a new point plot with the first column used for the x-axis, the second
 
 Each module has different option. For example, `BarChart` allows you to set the `:padding` between the bar groups, specify whether you want `:type` to be `:grouped` or `:stacked`. The options are described in each module's documentation and are set in `new/2`.
 
-`DataSet` columns are mapped to the attributes each different chart type expects. For example, a `PointPlot` expects an x column and at 
-least one y column. These are set up by passing a `:mapping` option in the options when creating a new chart. For example, 
+`DataSet` columns are mapped to the attributes each different chart type expects. For example, a `PointPlot` expects an x column and at
+least one y column. These are set up by passing a `:mapping` option in the options when creating a new chart. For example,
 
 ```elixir
    chart = PointPlot.new(
@@ -41,7 +41,7 @@ least one y column. These are set up by passing a `:mapping` option in the optio
        mapping: %{x_col: :column_a, y_cols: [:column_b, column_c]}
      )
 ```
-It isn't necessary to supply a mapping unless the `DataSet` is a list of maps. If no mapping is provided, columns will be allocated  
+It isn't necessary to supply a mapping unless the `DataSet` is a list of maps. If no mapping is provided, columns will be allocated
 automatically. For a `PointPlot`, the first column will be used for x, and the second for y.
 
 Each chart type implements the `PlotContent` protocol which requires it to scale to a defined height and width, emit SVG and optionally emit SVG for a legend. Generally, you won't directly access this protocol however, because...
@@ -56,7 +56,7 @@ plot = Plot.new(600, 400, point_plot)
  |> Plot.plot_options(%{legend_setting: :legend_right})
  |> Plot.titles("My first plot", "With a fancy subtitle")
 
-Plot.to_svg(plot) 
+Plot.to_svg(plot)
 #^ This generates something like {:safe, "<svg> fancy SVG chart rendering stuff representing your plot</svg>"}
 ```
 
@@ -101,9 +101,9 @@ There are quite a few things to tidy up to make this ready for the real world, a
   - [ ] Plot options
 - [ ] Colour handling
 - [ ] Plot overlays (e.g. line chart on bar chart)
-- [x] SVG generation is poorly structured - lots of string interpolation. 
+- [x] SVG generation is poorly structured - lots of string interpolation.
 - [ ] Benchmarks - particularly for the situation where large datasets are getting updated frequently and served via LiveViews.
-- [x] Pie Charts 
+- [x] Pie Charts
 
 
 ## Installation
@@ -114,7 +114,7 @@ by adding `contex` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:contex, "~> 0.4.0"}
+    {:contex, "~> 0.5.0"}
   ]
 end
 ```
@@ -128,12 +128,4 @@ _Pure Elixir Alternatives_
 
 - [GGity](https://github.com/srowley/ggity) - modelled on [ggplot2](https://ggplot2.tidyverse.org/
 - [PlotEx](https://github.com/elcritch/plotex) - has good line & time-series support and more optimised for certain situations.
-- [Sasa Juric Homebrew](https://github.com/sasa1977/demo_system/) - graph.html.leex has examples of injecting data into SVGs for very specific use cases. 
-
-
-
-
-
-
-
-
+- [Sasa Juric Homebrew](https://github.com/sasa1977/demo_system/) - graph.html.leex has examples of injecting data into SVGs for very specific use cases.
