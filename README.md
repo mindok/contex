@@ -1,6 +1,6 @@
 # ContEx
 
-ContEx is a simple server side charting package for elixir. See these demos on the live site: https://contex-charts.org/
+ContEx is a simple server side charting package for elixir. See these demos on the live site: <https://contex-charts.org/>
 
 ![Example Charts](./samples/mashup.png "Example Charts")
 
@@ -8,20 +8,23 @@ ContEx is a simple server side charting package for elixir. See these demos on t
 
 ![Animated Barchart](./samples/rolling.gif "Animated Barchart")
 
-![](https://github.com/mindok/contex/workflows/CI/badge.svg)
+![CI badge](https://github.com/mindok/contex/workflows/CI/badge.svg)
 
 ## Core concepts
 
 ### Dataset
+
 ContEx uses a simple `Dataset` structure - a list of lists or a list of tuples together with a list of column names.
 
 For example:
+
 ```elixir
  data = [{1, 1}, {2, 2}]
  ds = Dataset.new(data, ["x", "y"])
 ```
 
 ### Charts
+
 Data can be represented within different chart types. Currently supported charts are `BarChart`, `PointPlot`, `LinePlot`, `GanttChart` and `Sparkline`. Generally speaking, you can create a chart structure by calling `new(<DataSet>)` on the relevant module and Contex will take a reasonable guess at what you want. For example:
 
 ```elixir
@@ -41,12 +44,14 @@ least one y column. These are set up by passing a `:mapping` option in the optio
        mapping: %{x_col: :column_a, y_cols: [:column_b, column_c]}
      )
 ```
+
 It isn't necessary to supply a mapping unless the `DataSet` is a list of maps. If no mapping is provided, columns will be allocated
 automatically. For a `PointPlot`, the first column will be used for x, and the second for y.
 
 Each chart type implements the `PlotContent` protocol which requires it to scale to a defined height and width, emit SVG and optionally emit SVG for a legend. Generally, you won't directly access this protocol however, because...
 
 ### Plots
+
 ... Charts live within a `Plot`. `Plot`s manage things like titles, margins, axis titles, legend placement etc.
 
 So to generate SVG ready for your web-page you would do something like:
@@ -71,6 +76,7 @@ Plot.to_svg(plot)
 ```
 
 ### Scales
+
 Scales are all about mapping attributes to plotting geometry. They handle transformation of data to screen coordinates (and other plotting attributes). They also handle calculation of tick intervals and the like where appropriate. Scales currently implemented are:
 
 - `ContinuousLinearScale` : A linear continuous scale
@@ -80,13 +86,15 @@ Scales are all about mapping attributes to plotting geometry. They handle transf
 - `TimeScale` : A continuous timescale for `DateTime` and `NaiveDateTime` data types
 
 Others under consideration:
- - `ContinuousColourScale` : Generate colour gradients
 
+- `ContinuousColourScale` : Generate colour gradients
 
 ### Legends
+
 `Legend`s are generated for scales. Currently legend generation is only supported for a `CategoryColourScale`
 
 ### WARNING
+
 There are quite a few things to tidy up to make this ready for the real world, and the API is likely to be unstable for a little while yet...
 
 - [x] Reasonable docs - the best resource currently is the accompanying [demo project](https://github.com/mindok/contex-samples)
@@ -105,7 +113,6 @@ There are quite a few things to tidy up to make this ready for the real world, a
 - [ ] Benchmarks - particularly for the situation where large datasets are getting updated frequently and served via LiveViews.
 - [x] Pie Charts
 
-
 ## Installation
 
 The package can be installed
@@ -120,11 +127,12 @@ end
 ```
 
 ## Prior Art, Related Material & Alternatives
+
 Various details relating to scales, axes and SVG layout have been learnt from the excellent [D3](https://d3js.org/) library by [Mike Bostock](https://github.com/mbostock).
 
 The theory of translating data into graphics is also very well handled by [ggplot2](https://ggplot2.tidyverse.org/) and various papers by Hadley Wickham, such as [A Layered Grammar of Graphics](http://vita.had.co.nz/papers/layered-grammar.pdf)
 
-_Pure Elixir Alternatives_
+### Pure Elixir Alternatives
 
 - [GGity](https://github.com/srowley/ggity) - modelled on [ggplot2](https://ggplot2.tidyverse.org/)
 - [PlotEx](https://github.com/elcritch/plotex) - has good line & time-series support and more optimised for certain situations.
