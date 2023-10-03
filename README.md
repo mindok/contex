@@ -126,6 +126,6 @@ The theory of translating data into graphics is also very well handled by [ggplo
 
 _Pure Elixir Alternatives_
 
-- [GGity](https://github.com/srowley/ggity) - modelled on [ggplot2](https://ggplot2.tidyverse.org/
+- [GGity](https://github.com/srowley/ggity) - modelled on [ggplot2](https://ggplot2.tidyverse.org/)
 - [PlotEx](https://github.com/elcritch/plotex) - has good line & time-series support and more optimised for certain situations.
 - [Sasa Juric Homebrew](https://github.com/sasa1977/demo_system/) - graph.html.leex has examples of injecting data into SVGs for very specific use cases.
