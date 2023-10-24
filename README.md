@@ -70,7 +70,7 @@ There is a short-cut API which creates the `PlotContent` and plot in a single pa
 For example:
 
 ```elixir
-plot = Plot.new(dataset, Contex.PointPlot, 600, 400, mapping: %{x_col: :column_a, y_cols: [:column_b, column_c]})
+plot = Plot.new(dataset, Contex.PointPlot, 600, 400, mapping: %{x_col: :column_a, y_cols: [:column_b, :column_c]})
 
 Plot.to_svg(plot)
 ```
