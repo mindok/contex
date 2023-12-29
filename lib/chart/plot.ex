@@ -479,3 +479,9 @@ defimpl Contex.PlotContent, for: Contex.PieChart do
   def get_legend_scales(plot), do: Contex.PieChart.get_legend_scales(plot)
   def set_size(plot, width, height), do: Contex.PieChart.set_size(plot, width, height)
 end
+
+defimpl Contex.PlotContent, for: Contex.OHLC do
+  def to_svg(plot, options), do: Contex.OHLC.to_svg(plot, options)
+  def get_legend_scales(plot), do: Contex.OHLC.get_legend_scales(plot)
+  def set_size(plot, width, height), do: Contex.OHLC.set_size(plot, width, height)
+end

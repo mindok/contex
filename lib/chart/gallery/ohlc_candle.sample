@@ -1,0 +1,23 @@
+data = [
+  [~N[2023-12-28 00:00:00], "AAPL", 34049900, 193.58, 194.14, 194.66, 193.17],
+  [~N[2023-12-27 00:00:00], "AAPL", 48087680, 193.15, 192.49, 193.50, 191.09],
+  [~N[2023-12-26 00:00:00], "AAPL", 28919310, 193.05, 193.61, 193.89, 192.83],
+  [~N[2023-12-25 00:00:00], "AAPL", 37149570, 193.60, 195.18, 195.41, 192.97],
+  [~N[2023-12-24 00:00:00], "AAPL", 46482550, 194.68, 196.10, 197.08, 193.50],
+  [~N[2023-12-23 00:00:00], "AAPL", 52242820, 194.83, 196.90, 197.68, 194.83],
+  [~N[2023-12-22 00:00:00], "AAPL", 40714050, 196.94, 196.16, 196.95, 195.89],
+  [~N[2023-12-21 00:00:00], "AAPL", 55751860, 195.89, 196.09, 196.63, 194.39]
+]
+
+test_data = Dataset.new(data, ["Date", "Ticker", "Volume", "Close", "Open", "High", "Low"])
+
+options = [
+  mapping: %{datetime: "Date", open: "Open", high: "High", low: "Low", close: "Close"},
+  style: :candle,
+  title: "AAPL"
+]
+
+Contex.Plot.new(test_data, Contex.OHLC, 500, 400, options)
+  |> Contex.Plot.titles("Apple Stock Price", "")
+  |> Contex.Plot.axis_labels("", "")
+  |> Contex.Plot.plot_options(%{})
