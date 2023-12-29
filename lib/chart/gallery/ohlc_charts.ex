@@ -19,12 +19,10 @@ defmodule Contex.Gallery.OHLCCharts do
 
 
   #{graph(title: "A simple candle OHLC chart",
-  file: "ohlc_candle.sample"
-  )}
+  file: "ohlc_candle.sample")}
 
   #{graph(title: "A simple tick OHLC chart",
-  file: "ohlc_tick.sample"
-  )}
+  file: "ohlc_tick.sample")}
 
 
   """
