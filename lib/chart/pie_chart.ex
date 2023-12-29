@@ -39,7 +39,7 @@ defmodule Contex.PieChart do
   @doc """
   Create a new PieChart struct from Dataset.
 
-  Options may be passed to control the settings for the barchart. Options available are:
+  Options may be passed to control the settings for the chart. Options available are:
 
     - `:data_labels` : `true` (default) or false - display labels for each slice value
     - `:colour_palette` : `:default` (default) or colour palette - see `colours/2`
