@@ -41,7 +41,7 @@ defmodule Contex.OHLC do
     :options,
     :x_scale,
     :y_scale,
-    transforms: %{},
+    transforms: %{}
   ]
 
   @required_mappings [
@@ -70,7 +70,6 @@ defmodule Contex.OHLC do
   }
 
   @type t() :: %__MODULE__{}
-
 
   @doc """
   Create a new `OHLC` struct from Dataset.
@@ -133,7 +132,7 @@ defmodule Contex.OHLC do
     Keyword.get(options, key)
   end
 
-    @doc false
+  @doc false
   def to_svg(%__MODULE__{} = plot, plot_options) do
     plot = prepare_scales(plot)
     x_scale = plot.x_scale
@@ -288,12 +287,18 @@ defmodule Contex.OHLC do
     {min, max} = Dataset.column_extents(dataset, column)
 
     TimeScale.new()
-      |> TimeScale.domain(min, max)
-      |> Scale.set_range(r_min, r_max)
+    |> TimeScale.domain(min, max)
+    |> Scale.set_range(r_min, r_max)
   end
 
   defp prepare_y_scale(%__MODULE__{dataset: dataset, mapping: mapping} = plot) do
-    y_col_names = [mapping.column_map[:open], mapping.column_map[:high], mapping.column_map[:low], mapping.column_map[:close]]
+    y_col_names = [
+      mapping.column_map[:open],
+      mapping.column_map[:high],
+      mapping.column_map[:low],
+      mapping.column_map[:close]
+    ]
+
     height = get_option(plot, :height)
     custom_y_scale = get_option(plot, :custom_y_scale)
 
@@ -330,5 +335,4 @@ defmodule Contex.OHLC do
       combiner.(acc_extents, inner_extents)
     end)
   end
-
 end
