@@ -124,7 +124,7 @@ defmodule Contex.PointPlot do
     ```
     The colours will be applied to the data series in the same order as the columns are specified in `set_val_col_names/2`
 
-    - `:mapping` : Maps attributes required to generate the barchart to columns in the dataset.
+    - `:mapping` : Maps attributes required to generate the chart to columns in the dataset.
 
   If the data in the dataset is stored as a map, the `:mapping` option is required. If the dataset
   is not stored as a map, `:mapping` may be left out, in which case the first column will be used
