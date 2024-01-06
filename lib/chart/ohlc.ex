@@ -64,7 +64,7 @@ defmodule Contex.OHLC do
 
   @green "00AA00"
   @red "AA0000"
-  @grey "444444"
+  @black "000000"
 
   @required_mappings [
     datetime: :exactly_one,
@@ -86,7 +86,7 @@ defmodule Contex.OHLC do
     zoom: 3,
     bull_color: @green,
     bear_color: @red,
-    shadow_color: @grey
+    shadow_color: @black
   ]
 
   @default_plot_options %{
@@ -176,18 +176,18 @@ defmodule Contex.OHLC do
 
     x_axis_svg =
       if plot_options.show_x_axis,
-         do:
-           get_x_axis(x_scale, plot)
-           |> Axis.to_svg(),
-         else: ""
+        do:
+          get_x_axis(x_scale, plot)
+          |> Axis.to_svg(),
+        else: ""
 
     y_axis_svg =
       if plot_options.show_y_axis,
-         do:
-           Axis.new_left_axis(y_scale)
-           |> Axis.set_offset(get_option(plot, :width))
-           |> Axis.to_svg(),
-         else: ""
+        do:
+          Axis.new_left_axis(y_scale)
+          |> Axis.set_offset(get_option(plot, :width))
+          |> Axis.to_svg(),
+        else: ""
 
     [
       x_axis_svg,
@@ -223,28 +223,47 @@ defmodule Contex.OHLC do
   # Draws a grey line from low to high, and tick from left for open
   # and to right for close if `:tick` style.
   @spec draw_row(map(), number(), y_vals(), color()) :: rendered_row()
-  defp draw_row(options, x, y_map, colour)
+  defp draw_row(options, x, y_map, body_color)
 
-  defp draw_row(%{style: :candle} = options, x, y_map, colour) do
-    [zoom] <~ options
+  defp draw_row(%{style: :candle} = options, x, y_map, body_color) do
+    [zoom, shadow_color, crisp_edges(false), body_border(false)] <~ options
     [body_width] <~ @zoom_levels[zoom]
     [open, high, low, close] <~ y_map
 
     bar_x = {x - body_width, x + body_width}
-    bar_opts = [fill: colour]
+
+    body_opts =
+      [
+        fill: body_color,
+        stroke: body_border && shadow_color,
+        shape_rendering: crisp_edges && "crispEdges"
+      ]
+      |> Enum.filter(&elem(&1, 1))
+
+    style =
+      [
+        ~s|style="stroke: ##{shadow_color}"|,
+        (crisp_edges && ~s| shape-rendering="crispEdges"|) || ""
+      ]
+      |> Enum.join()
 
     [
-      ~s|<line x1="#{x}" x2="#{x}" y1="#{low}" y2="#{high}" stroke="#{colour}" />|,
-      rect(bar_x, {open, close}, "", bar_opts)
+      ~s|<line x1="#{x}" x2="#{x}" y1="#{low}" y2="#{high}" #{style} />|,
+      rect(bar_x, {open, close}, "", body_opts)
     ]
   end
 
-  defp draw_row(%{style: :tick} = options, x, y_map, colour) do
-    [zoom] <~ options
+  defp draw_row(%{style: :tick} = options, x, y_map, body_color) do
+    [zoom, shadow_color, crisp_edges(false), colorized_bars(false)] <~ options
     [body_width] <~ @zoom_levels[zoom]
     [open, high, low, close] <~ y_map
 
-    style = ~s|style="stroke: ##{colour}"|
+    style =
+      [
+        ~s|style="stroke: ##{colorized_bars && body_color || shadow_color}"|,
+        (crisp_edges && ~s| shape-rendering="crispEdges"|) || ""
+      ]
+      |> Enum.join()
 
     [
       ~s|<line x1="#{x}" x2="#{x}" y1="#{low}" y2="#{high}" #{style} />|,
