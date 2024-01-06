@@ -27,7 +27,12 @@ defmodule Contex.OHLC do
   generated to handle the extents of the data.
   """
 
+  # todo:
+  # - invert row order and update docs to reflect it (i.e. from past to present not the other way around)
+  # - refactor :tick into :bar
+
   import Contex.SVG
+  import Extructure
 
   alias __MODULE__
   alias Contex.{Scale, ContinuousLinearScale, TimeScale}
@@ -43,6 +48,23 @@ defmodule Contex.OHLC do
     :y_scale,
     transforms: %{}
   ]
+
+  @type t() :: %__MODULE__{}
+  @typep row() :: list()
+  @typep rendered_row() :: list()
+  @typep color() :: <<_::24>>
+
+  @typep y_vals() ::
+           %{
+             open: number(),
+             high: number(),
+             low: number(),
+             close: number()
+           }
+
+  @green "00AA00"
+  @red "AA0000"
+  @grey "444444"
 
   @required_mappings [
     datetime: :exactly_one,
@@ -60,7 +82,11 @@ defmodule Contex.OHLC do
     custom_x_formatter: nil,
     custom_y_formatter: nil,
     width: 100,
-    height: 100
+    height: 100,
+    zoom: 3,
+    bull_color: @green,
+    bear_color: @red,
+    shadow_color: @grey
   ]
 
   @default_plot_options %{
@@ -69,7 +95,16 @@ defmodule Contex.OHLC do
     legend_setting: :legend_none
   }
 
-  @type t() :: %__MODULE__{}
+  @zoom_levels [
+                 [body_width: 0, spacing: 0],
+                 [body_width: 0, spacing: 1],
+                 [body_width: 1, spacing: 1],
+                 [body_width: 3, spacing: 3],
+                 [body_width: 9, spacing: 5],
+                 [body_width: 23, spacing: 7]
+               ]
+               |> Stream.with_index()
+               |> Map.new(fn {k, v} -> {v, Map.new(k)} end)
 
   @doc """
   Create a new `OHLC` struct from Dataset.
@@ -82,17 +117,17 @@ defmodule Contex.OHLC do
 
   An example:
         data = [
-          [~N[2023-12-28 00:00:00], "AAPL", 34049900, 193.58, 194.14, 194.66, 193.17],
-          [~N[2023-12-27 00:00:00], "AAPL", 48087680, 193.15, 192.49, 193.50, 191.09],
-          [~N[2023-12-26 00:00:00], "AAPL", 28919310, 193.05, 193.61, 193.89, 192.83],
-          [~N[2023-12-25 00:00:00], "AAPL", 37149570, 193.60, 195.18, 195.41, 192.97],
-          [~N[2023-12-24 00:00:00], "AAPL", 46482550, 194.68, 196.10, 197.08, 193.50],
-          [~N[2023-12-23 00:00:00], "AAPL", 52242820, 194.83, 196.90, 197.68, 194.83],
-          [~N[2023-12-22 00:00:00], "AAPL", 40714050, 196.94, 196.16, 196.95, 195.89],
-          [~N[2023-12-21 00:00:00], "AAPL", 55751860, 195.89, 196.09, 196.63, 194.39],
+          [~N[2023-12-28 00:00:00], "AAPL", 34049900, 194.14, 194.66, 193.17, 193.58],
+          [~N[2023-12-27 00:00:00], "AAPL", 48087680, 192.49, 193.50, 191.09, 193.15],
+          [~N[2023-12-26 00:00:00], "AAPL", 28919310, 193.61, 193.89, 192.83, 193.05],
+          [~N[2023-12-25 00:00:00], "AAPL", 37149570, 195.18, 195.41, 192.97, 193.60],
+          [~N[2023-12-24 00:00:00], "AAPL", 46482550, 196.10, 197.08, 193.50, 194.68],
+          [~N[2023-12-23 00:00:00], "AAPL", 52242820, 196.90, 197.68, 194.83, 194.83],
+          [~N[2023-12-22 00:00:00], "AAPL", 40714050, 196.16, 196.95, 195.89, 196.94],
+          [~N[2023-12-21 00:00:00], "AAPL", 55751860, 196.09, 196.63, 194.39, 195.89],
         ]
 
-        dataset = Dataset.new(data, ["Date", "Ticker", "Volume", "Close", "Open", "High", "Low"])
+        dataset = Dataset.new(data, ["Date", "Ticker", "Volume", "Open", "High", "Low", "Close"])
 
         opts = [
           mapping: %{datetime: "Date", open: "Open", high: "High", low: "Low", close: "Close"},
@@ -122,38 +157,37 @@ defmodule Contex.OHLC do
     []
   end
 
-  defp set_option(%__MODULE__{options: options} = plot, key, value) do
-    options = Keyword.put(options, key, value)
-
-    %{plot | options: options}
+  @spec set_option(t(), atom(), any()) :: t()
+  defp set_option(plot, key, value) do
+    update(plot, :options, &Keyword.put(&1, key, value))
   end
 
-  defp get_option(%__MODULE__{options: options}, key) do
-    Keyword.get(options, key)
+  @spec get_option(t(), atom()) :: term()
+  defp get_option(plot, key) do
+    Keyword.get(plot.options, key)
   end
 
   @doc false
   def to_svg(%__MODULE__{} = plot, plot_options) do
     plot = prepare_scales(plot)
-    x_scale = plot.x_scale
-    y_scale = plot.y_scale
+    [x_scale, y_scale] <~ plot
 
     plot_options = Map.merge(@default_plot_options, plot_options)
 
     x_axis_svg =
       if plot_options.show_x_axis,
-        do:
-          get_x_axis(x_scale, plot)
-          |> Axis.to_svg(),
-        else: ""
+         do:
+           get_x_axis(x_scale, plot)
+           |> Axis.to_svg(),
+         else: ""
 
     y_axis_svg =
       if plot_options.show_y_axis,
-        do:
-          Axis.new_left_axis(y_scale)
-          |> Axis.set_offset(get_option(plot, :width))
-          |> Axis.to_svg(),
-        else: ""
+         do:
+           Axis.new_left_axis(y_scale)
+           |> Axis.set_offset(get_option(plot, :width))
+           |> Axis.to_svg(),
+         else: ""
 
     [
       x_axis_svg,
@@ -164,41 +198,39 @@ defmodule Contex.OHLC do
     ]
   end
 
-  @green "00AA00"
-  @red "AA0000"
-  @grey "444444"
-  @bar_width 2
-
-  defp render_data(%__MODULE__{dataset: dataset} = plot) do
-    style = get_option(plot, :style)
+  @spec render_data(t()) :: [rendered_row()]
+  defp render_data(plot) do
+    [dataset] <~ plot
 
     dataset.data
-    |> Enum.map(fn row -> render_row(plot, row, style) end)
+    |> Enum.map(fn row -> render_row(plot, row) end)
   end
 
-  defp render_row(%__MODULE__{mapping: mapping, transforms: transforms}, row, style) do
-    accessors = mapping.accessors
+  @spec render_row(t(), row()) :: rendered_row()
+  defp render_row(plot, row) do
+    [transforms, mapping: [accessors], options: options = %{}] <~ plot
 
     x =
       accessors.datetime.(row)
       |> transforms.x.()
 
-    y_map = get_scaled_y_vals(row, accessors, transforms)
-
-    colour = get_colour(y_map)
-
-    draw_row(x, y_map, colour, style)
+    color = get_colour(get_y_vals(row, accessors), plot)
+    draw_row(options, x, get_y_vals(row, accessors, transforms.y), color)
   end
 
-  defp draw_row(x, y_map, colour, :candle) do
-    # We'll draw a grey line from low to high, then overlay a coloured rect
-    # for open / close
-    open = y_map.open
-    low = y_map.low
-    high = y_map.high
-    close = y_map.close
+  # Draws a grey line from low to high, then overlay a coloured rect
+  # for open / close if `:candle` style.
+  # Draws a grey line from low to high, and tick from left for open
+  # and to right for close if `:tick` style.
+  @spec draw_row(map(), number(), y_vals(), color()) :: rendered_row()
+  defp draw_row(options, x, y_map, colour)
 
-    bar_x = {x - @bar_width, x + @bar_width}
+  defp draw_row(%{style: :candle} = options, x, y_map, colour) do
+    [zoom] <~ options
+    [body_width] <~ @zoom_levels[zoom]
+    [open, high, low, close] <~ y_map
+
+    bar_x = {x - body_width, x + body_width}
     bar_opts = [fill: colour]
 
     [
@@ -207,41 +239,49 @@ defmodule Contex.OHLC do
     ]
   end
 
-  defp draw_row(x, y_map, colour, :tick) do
-    # We'll draw a grey line from low to high, and tick from left for open
-    # and to right for close
-    open = y_map.open
-    low = y_map.low
-    high = y_map.high
-    close = y_map.close
+  defp draw_row(%{style: :tick} = options, x, y_map, colour) do
+    [zoom] <~ options
+    [body_width] <~ @zoom_levels[zoom]
+    [open, high, low, close] <~ y_map
 
     style = ~s|style="stroke: ##{colour}"|
 
     [
       ~s|<line x1="#{x}" x2="#{x}" y1="#{low}" y2="#{high}" #{style} />|,
-      ~s|<line x1="#{x - @bar_width}" x2="#{x}" y1="#{open}" y2="#{open}"  #{style}" />|,
-      ~s|<line x1="#{x}" x2="#{x + @bar_width}" y1="#{close}" y2="#{close}"  #{style}" />|
+      ~s|<line x1="#{x - body_width}" x2="#{x}" y1="#{open}" y2="#{open}"  #{style}" />|,
+      ~s|<line x1="#{x}" x2="#{x + body_width}" y1="#{close}" y2="#{close}"  #{style}" />|
     ]
   end
 
-  defp get_scaled_y_vals(row, accessors, transforms) do
+  @spec get_y_vals(row(), accessors, transforms_y) :: y_vals()
+        when accessors: %{atom() => (row() -> number())},
+             transforms_y: (number() -> number())
+  defp get_y_vals(row, accessors, transforms_y \\ & &1) do
     [:open, :high, :low, :close]
     |> Enum.map(fn col ->
-      y = accessors[col].(row) |> transforms.y.()
+      y =
+        accessors[col].(row)
+        |> transforms_y.()
 
       {col, y}
     end)
     |> Enum.into(%{})
   end
 
-  defp get_colour(%{open: open, close: close}) do
+  # todo: remove shadow color redundancy once body border is implemented
+  @spec get_colour(y_vals(), t()) :: color()
+  defp get_colour(y_map, plot) do
+    [bull_color, bear_color, shadow_color] <~ plot.options
+    [open, close] <~ y_map
+
     cond do
-      close > open -> @green
-      close < open -> @red
-      true -> @grey
+      close > open -> bull_color
+      close < open -> bear_color
+      true -> shadow_color
     end
   end
 
+  @spec get_x_axis(Contex.TimeScale.t(), t()) :: Contex.Axis.t()
   defp get_x_axis(x_scale, plot) do
     rotation =
       case get_option(plot, :axis_label_rotation) do
@@ -265,6 +305,7 @@ defmodule Contex.OHLC do
     |> prepare_y_scale()
   end
 
+  @spec prepare_x_scale(t()) :: t()
   defp prepare_x_scale(%__MODULE__{dataset: dataset, mapping: mapping} = plot) do
     x_col_name = mapping.column_map[:datetime]
     width = get_option(plot, :width)
@@ -291,14 +332,11 @@ defmodule Contex.OHLC do
     |> Scale.set_range(r_min, r_max)
   end
 
-  defp prepare_y_scale(%__MODULE__{dataset: dataset, mapping: mapping} = plot) do
-    y_col_names = [
-      mapping.column_map[:open],
-      mapping.column_map[:high],
-      mapping.column_map[:low],
-      mapping.column_map[:close]
-    ]
+  @spec prepare_y_scale(t()) :: t()
+  defp prepare_y_scale(plot) do
+    [dataset, mapping: [column_map]] <~ plot
 
+    y_col_names = Enum.map([:open, :high, :low, :close], &column_map[&1])
     height = get_option(plot, :height)
     custom_y_scale = get_option(plot, :custom_y_scale)
 
@@ -334,5 +372,10 @@ defmodule Contex.OHLC do
       inner_extents = Dataset.column_extents(dataset, col)
       combiner.(acc_extents, inner_extents)
     end)
+  end
+
+  @spec update(t(), atom(), (term() -> term())) :: t()
+  defp update(plot, field, updater) do
+    struct!(plot, %{field => updater.(Map.fetch!(plot, field))})
   end
 end
