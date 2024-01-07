@@ -28,7 +28,6 @@ defmodule Contex.OHLC do
   """
 
   # todo:
-  # - invert row order and update docs to reflect it (i.e. from past to present not the other way around)
   # - refactor :tick into :bar
 
   import Contex.SVG
@@ -214,8 +213,14 @@ defmodule Contex.OHLC do
       accessors.datetime.(row)
       |> transforms.x.()
 
-    color = get_colour(get_y_vals(row, accessors), plot)
-    draw_row(options, x, get_y_vals(row, accessors, transforms.y), color)
+    y_vals = get_y_vals(row, accessors)
+
+    scaled_y_vals = Map.new( y_vals, fn { k, v} ->
+      { k, transforms.y.( v)}
+    end)
+
+    color = get_colour(y_vals, plot)
+    draw_row(options, x, scaled_y_vals, color)
   end
 
   # Draws a grey line from low to high, then overlay a coloured rect
@@ -272,22 +277,17 @@ defmodule Contex.OHLC do
     ]
   end
 
-  @spec get_y_vals(row(), accessors, transforms_y) :: y_vals()
-        when accessors: %{atom() => (row() -> number())},
-             transforms_y: (number() -> number())
-  defp get_y_vals(row, accessors, transforms_y \\ & &1) do
+  @spec get_y_vals(row(), %{atom() => (row() -> number())}) :: y_vals()
+  defp get_y_vals(row, accessors) do
     [:open, :high, :low, :close]
     |> Enum.map(fn col ->
-      y =
-        accessors[col].(row)
-        |> transforms_y.()
+      y = accessors[col].(row)
 
       {col, y}
     end)
     |> Enum.into(%{})
   end
 
-  # todo: remove shadow color redundancy once body border is implemented
   @spec get_colour(y_vals(), t()) :: color()
   defp get_colour(y_map, plot) do
     [bull_color, bear_color, shadow_color] <~ plot.options
