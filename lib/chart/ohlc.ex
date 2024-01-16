@@ -215,9 +215,10 @@ defmodule Contex.OHLC do
 
     y_vals = get_y_vals(row, accessors)
 
-    scaled_y_vals = Map.new( y_vals, fn { k, v} ->
-      { k, transforms.y.( v)}
-    end)
+    scaled_y_vals =
+      Map.new(y_vals, fn {k, v} ->
+        {k, transforms.y.(v)}
+      end)
 
     color = get_colour(y_vals, plot)
     draw_row(options, x, scaled_y_vals, color)
@@ -265,7 +266,7 @@ defmodule Contex.OHLC do
 
     style =
       [
-        ~s|style="stroke: ##{colorized_bars && body_color || shadow_color}"|,
+        ~s|style="stroke: ##{(colorized_bars && body_color) || shadow_color}"|,
         (crisp_edges && ~s| shape-rendering="crispEdges"|) || ""
       ]
       |> Enum.join()
