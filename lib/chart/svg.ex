@@ -221,6 +221,9 @@ defmodule Contex.SVG do
   defp opts_to_attrs([{:marker_end, val} | t], attrs),
     do: opts_to_attrs(t, [[" marker-end=\"", val, "\""] | attrs])
 
+  defp opts_to_attrs([{:shape_rendering, val} | t], attrs),
+    do: opts_to_attrs(t, [[" shape-rendering=\"", val, "\""] | attrs])
+
   defp opts_to_attrs([{key, val} | t], attrs) when is_atom(key),
     do: opts_to_attrs(t, [[" ", Atom.to_string(key), "=\"", clean(val), "\""] | attrs])
 
