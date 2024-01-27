@@ -236,6 +236,7 @@ defmodule Contex.OHLC do
     [body_width] <~ @zoom_levels[zoom]
     [open, high, low, close] <~ y_map
 
+    body_width = ceil( body_width / 2)
     bar_x = {x - body_width, x + body_width}
 
     body_opts =
