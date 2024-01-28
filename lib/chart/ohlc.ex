@@ -83,6 +83,7 @@ defmodule Contex.OHLC do
     width: 100,
     height: 100,
     zoom: 3,
+    fixed_spacing: false,
     bull_color: @green,
     bear_color: @red,
     shadow_color: @black
@@ -236,7 +237,7 @@ defmodule Contex.OHLC do
     [body_width] <~ @zoom_levels[zoom]
     [open, high, low, close] <~ y_map
 
-    body_width = ceil( body_width / 2)
+    body_width = ceil(body_width / 2)
     bar_x = {x - body_width, x + body_width}
 
     body_opts =
@@ -319,15 +320,20 @@ defmodule Contex.OHLC do
     |> Kernel.struct(rotation: rotation)
   end
 
-  @doc false
-  def prepare_scales(%__MODULE__{} = plot) do
-    plot
-    |> prepare_x_scale()
+  @spec prepare_scales(t()) :: t()
+  defp prepare_scales(plot) do
+    if fixed_x_plot = maybe_add_padding(plot) do
+      fixed_x_plot
+    else
+      prepare_x_scale(plot)
+    end
     |> prepare_y_scale()
   end
 
   @spec prepare_x_scale(t()) :: t()
-  defp prepare_x_scale(%__MODULE__{dataset: dataset, mapping: mapping} = plot) do
+  defp prepare_x_scale(plot) do
+    [dataset, mapping] <~ plot
+
     x_col_name = mapping.column_map[:datetime]
     width = get_option(plot, :width)
     custom_x_scale = get_option(plot, :custom_x_scale)
@@ -338,11 +344,7 @@ defmodule Contex.OHLC do
         _ -> custom_x_scale |> Scale.set_range(0, width)
       end
 
-    x_scale = %{x_scale | custom_tick_formatter: get_option(plot, :custom_x_formatter)}
-    x_transform = Scale.domain_to_range_fn(x_scale)
-    transforms = Map.merge(plot.transforms, %{x: x_transform})
-
-    %{plot | x_scale: x_scale, transforms: transforms}
+    apply_x_scale(plot, x_scale)
   end
 
   defp create_timescale_for_column(dataset, column, {r_min, r_max}) do
@@ -351,6 +353,87 @@ defmodule Contex.OHLC do
     TimeScale.new()
     |> TimeScale.domain(min, max)
     |> Scale.set_range(r_min, r_max)
+  end
+
+  # todo: prior to considering padding take only the data that fits in and trim the rest
+  # todo: introduce timescale step for time tick display
+
+  @spec maybe_add_padding(t()) :: t() | nil
+  defp maybe_add_padding(plot) do
+    if get_option(plot, :fixed_spacing) && !get_option(plot, :custom_x_scale) do
+      add_padding(plot)
+    end
+  end
+
+  @spec add_padding(t()) :: t() | nil
+  defp add_padding(plot) do
+    [
+      datetime: dt_column,
+      open: open_column,
+      high: high_column,
+      low: low_column,
+      close: close_column
+    ]
+    <~ plot.mapping.column_map
+
+    {min, max} = Dataset.column_extents(plot.dataset, dt_column)
+    [zoom, body_border(false)] <~ plot.options
+    [body_width, spacing] <~ @zoom_levels[zoom]
+    width = get_option(plot, :width)
+    interval_width = body_width + spacing + ((body_border && 2) || 0)
+    interval_count = floor(width / interval_width)
+
+    if max_row = Dataset.max_row(plot.dataset, dt_column) do
+      max_dt = Dataset.value_fn(plot.dataset, dt_column).(max_row)
+      close = Dataset.value_fn(plot.dataset, close_column).(max_row)
+      replace_with_close = &Dataset.put_value_fn(plot.dataset, &2).(&1, close)
+      replace_dt = Dataset.put_value_fn(plot.dataset, dt_column)
+
+      template =
+        max_row
+        |> replace_with_close.(open_column)
+        |> replace_with_close.(high_column)
+        |> replace_with_close.(low_column)
+
+      should_pad? =
+        case max_dt do
+          %DateTime{} -> &(DateTime.compare(&1, max_dt) == :gt)
+          %NaiveDateTime{} -> &(NaiveDateTime.compare(&1, max_dt) == :gt)
+          _ -> fn _ -> false end
+        end
+
+      x_scale =
+        TimeScale.new()
+        |> TimeScale.domain(min, max)
+        |> Scale.set_range(0, width)
+        |> struct(interval_count: interval_count)
+
+      {last_dt, padding} =
+        x_scale
+        |> Scale.ticks_domain()
+        |> Enum.reduce({max_dt, []}, fn dt, {last_dt, padding} = acc ->
+          if should_pad?.(dt) do
+            {Utils.safe_max(dt, last_dt), [replace_dt.(template, dt) | padding]}
+          else
+            acc
+          end
+        end)
+
+      x_scale = TimeScale.domain(x_scale, min, last_dt)
+      data = plot.dataset.data ++ Enum.reverse(padding)
+
+      plot
+      |> struct!(dataset: struct!(plot.dataset, data: data))
+      |> apply_x_scale(x_scale)
+    end
+  end
+
+  defp apply_x_scale(plot, x_scale) do
+    x_scale = %{x_scale | custom_tick_formatter: get_option(plot, :custom_x_formatter)}
+    x_transform = Scale.domain_to_range_fn(x_scale)
+    transforms = Map.merge(plot.transforms, %{x: x_transform})
+
+    %{plot | x_scale: x_scale, transforms: transforms}
   end
 
   @spec prepare_y_scale(t()) :: t()

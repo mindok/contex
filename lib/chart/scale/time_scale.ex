@@ -66,7 +66,7 @@ defmodule Contex.TimeScale do
   @doc """
   Creates a new TimeScale struct with basic defaults set
   """
-  @spec new :: Contex.TimeScale.t()
+  @spec new :: t()
   def new() do
     %TimeScale{range: {0.0, 1.0}, interval_count: 11}
   end
@@ -76,7 +76,7 @@ defmodule Contex.TimeScale do
 
   Default is 10.
   """
-  @spec interval_count(Contex.TimeScale.t(), integer()) :: Contex.TimeScale.t()
+  @spec interval_count(t(), integer()) :: t()
   def interval_count(%TimeScale{} = scale, interval_count)
       when is_integer(interval_count) and interval_count > 1 do
     scale
@@ -88,8 +88,10 @@ defmodule Contex.TimeScale do
 
   @doc """
   Define the data domain for the scale
+
+  If `tick_interval` is already defined in the structure, it will not be recomputed.
   """
-  @spec domain(Contex.TimeScale.t(), datetimes(), datetimes()) :: Contex.TimeScale.t()
+  @spec domain(t(), datetimes(), datetimes()) :: t()
   def domain(%TimeScale{} = scale, min, max) do
     # We can be flexible with the range start > end, but the domain needs to start from the min
     {d_min, d_max} =
@@ -105,10 +107,11 @@ defmodule Contex.TimeScale do
 
   @doc """
   Define the data domain for the scale from a list of data.
+  If `tick_interval` is already defined in the structure, it will not be recomputed.
 
   Extents will be calculated by the scale.
   """
-  @spec domain(Contex.TimeScale.t(), list(datetimes())) :: Contex.TimeScale.t()
+  @spec domain(t(), list(datetimes())) :: t()
   def domain(%TimeScale{} = scale, data) when is_list(data) do
     {min, max} = extents(data)
     domain(scale, min, max)
@@ -116,11 +119,19 @@ defmodule Contex.TimeScale do
 
   # NOTE: interval count will likely get adjusted down here to keep things looking nice
   # TODO: no type checks on the domain
+  @spec nice(t()) :: t()
+  defp nice(scale)
+
   defp nice(%TimeScale{domain: {min_d, max_d}, interval_count: interval_count} = scale)
        when is_number(interval_count) and interval_count > 1 do
-    width = Utils.date_diff(max_d, min_d, :millisecond)
-    unrounded_interval_size = width / (interval_count - 1)
-    tick_interval = lookup_tick_interval(unrounded_interval_size)
+    tick_interval =
+      if tick_interval = scale.tick_interval do
+        tick_interval
+      else
+        width = Utils.date_diff(max_d, min_d, :millisecond)
+        unrounded_interval_size = width / (interval_count - 1)
+        lookup_tick_interval(unrounded_interval_size)
+      end
 
     min_nice = round_down_to(min_d, tick_interval)
 

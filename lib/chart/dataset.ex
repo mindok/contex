@@ -79,7 +79,7 @@ defmodule Contex.Dataset do
   Data is expected to be a list of tuples of the same size, a list of lists of same size, or a list of maps with the same keys.
   Columns in map data are accessed by key. For lists of lists or tuples, if no headers are specified, columns are access by index.
   """
-  @spec new(list(row())) :: Contex.Dataset.t()
+  @spec new(list(row())) :: t()
   def new(data) when is_list(data) do
     %Dataset{headers: nil, data: data}
   end
@@ -90,7 +90,7 @@ defmodule Contex.Dataset do
   Data is expected to be a list of tuples of the same size or list of lists of same size. Headers provided with a list of maps
   are ignored; column names from map data are inferred from the maps' keys.
   """
-  @spec new(list(row()), list(String.t())) :: Contex.Dataset.t()
+  @spec new(list(row()), list(String.t())) :: t()
   def new(data, headers) when is_list(data) and is_list(headers) do
     %Dataset{headers: headers, data: data}
   end
@@ -101,7 +101,7 @@ defmodule Contex.Dataset do
   Not really used at the moment to be honest, but seemed like a good
   idea at the time. Might come in handy when overlaying plots.
   """
-  @spec title(Contex.Dataset.t(), String.t()) :: Contex.Dataset.t()
+  @spec title(t(), String.t()) :: t()
   def title(%Dataset{} = dataset, title) do
     %{dataset | title: title}
   end
@@ -112,7 +112,7 @@ defmodule Contex.Dataset do
   Allows you to attach whatever you want to the dataset for later retrieval - e.g. information about where the
   data came from.
   """
-  @spec meta(Contex.Dataset.t(), String.t()) :: Contex.Dataset.t()
+  @spec meta(t(), String.t()) :: t()
   def meta(%Dataset{} = dataset, meta) do
     %{dataset | meta: meta}
   end
@@ -120,7 +120,7 @@ defmodule Contex.Dataset do
   @doc """
   Looks up the index for a given column name. Returns nil if not found.
   """
-  @spec column_index(Contex.Dataset.t(), column_name()) :: nil | column_name()
+  @spec column_index(t(), column_name()) :: nil | column_name()
   def column_index(%Dataset{data: [first_row | _rest]}, column_name) when is_map(first_row) do
     if Map.has_key?(first_row, column_name) do
       column_name
@@ -144,7 +144,7 @@ defmodule Contex.Dataset do
   Returns a list of the names of all of the columns in the dataset data (irrespective of
   whether the column names are mapped to plot elements).
   """
-  @spec column_names(Contex.Dataset.t()) :: list(column_name())
+  @spec column_names(t()) :: list(column_name())
   def column_names(%Dataset{headers: headers}) when not is_nil(headers), do: headers
 
   def column_names(%Dataset{data: [first_row | _]}) when is_map(first_row) do
@@ -169,7 +169,7 @@ defmodule Contex.Dataset do
   If there are no headers, or the index is outside the range of the headers
   the requested index is returned.
   """
-  @spec column_name(Contex.Dataset.t(), integer() | any) :: column_name()
+  @spec column_name(t(), integer() | any) :: column_name()
   def column_name(%Dataset{headers: headers} = _dataset, column_index)
       when is_list(headers) and
              is_integer(column_index) and
@@ -195,14 +195,11 @@ defmodule Contex.Dataset do
     iex> category_accessor.(hd(data))
     "Hippo"
   """
-  @spec value_fn(Contex.Dataset.t(), column_name()) :: (row() -> any)
-  def value_fn(%Dataset{data: [first_row | _]}, column_name)
-      when is_map(first_row) and is_binary(column_name) do
-    fn row -> row[column_name] end
-  end
+  @spec value_fn(t(), column_name()) :: (row() -> any)
+  def value_fn(dataset, column_name)
 
   def value_fn(%Dataset{data: [first_row | _]}, column_name)
-      when is_map(first_row) and is_atom(column_name) do
+      when is_map(first_row) and (is_binary(column_name) or is_atom(column_name)) do
     fn row -> row[column_name] end
   end
 
@@ -224,9 +221,66 @@ defmodule Contex.Dataset do
   def value_fn(_dataset, _column_name), do: fn _ -> nil end
 
   @doc """
+  Returns a function that puts (replaces) the value for a given column in a given row,
+  accessed by the column name.
+  """
+  @spec put_value_fn(t(), column_name()) :: (row(), any() -> row())
+  def put_value_fn(dataset, column_name)
+
+  def put_value_fn(%Dataset{data: [first_row | _]}, column_name)
+      when is_map(first_row) and (is_binary(column_name) or is_atom(column_name)) do
+    if Map.has_key?(first_row, column_name) do
+      &Map.put(&1, column_name, &2)
+    else
+      put_value_fn(nil, nil)
+    end
+  end
+
+  def put_value_fn(%Dataset{data: [first_row | _]} = dataset, column_name)
+      when is_list(first_row) do
+    if column_index = column_index(dataset, column_name) do
+      &List.replace_at(&1, column_index, &2)
+    else
+      put_value_fn(nil, nil)
+    end
+  end
+
+  def put_value_fn(%Dataset{data: [first_row | _]} = dataset, column_name)
+      when is_tuple(first_row) do
+    if column_index = column_index(dataset, column_name) do
+      &put_elem(&1, column_index, &2)
+    else
+      put_value_fn(nil, nil)
+    end
+  end
+
+  def put_value_fn(_dataset, _column_name) do
+    fn row, _ -> row end
+  end
+
+  @doc """
+  Returns the row with max value in the column.
+  """
+  @spec max_row(t(), column_name()) :: row()
+  def max_row(%Dataset{} = dataset, column_name) do
+    accessor = value_fn(dataset, column_name)
+
+    Enum.reduce(dataset.data, {nil, nil}, fn row, {max, max_row} ->
+      val = accessor.(row)
+
+      if Utils.safe_max(val, max) == val do
+        {val, row}
+      else
+        {max, max_row}
+      end
+    end)
+    |> elem(1)
+  end
+
+  @doc """
   Calculates the min and max value in the specified column
   """
-  @spec column_extents(Contex.Dataset.t(), column_name()) :: {any, any}
+  @spec column_extents(t(), column_name()) :: {any, any}
   def column_extents(%Dataset{data: data} = dataset, column_name) do
     accessor = Dataset.value_fn(dataset, column_name)
 
@@ -241,7 +295,7 @@ defmodule Contex.Dataset do
 
   Looks through the rows and returns the first match it can find.
   """
-  @spec guess_column_type(Contex.Dataset.t(), column_name()) :: column_type()
+  @spec guess_column_type(t(), column_name()) :: column_type()
   def guess_column_type(%Dataset{data: data} = dataset, column_name) do
     accessor = Dataset.value_fn(dataset, column_name)
 
@@ -267,7 +321,7 @@ defmodule Contex.Dataset do
   It is the equivalent of evaluating the extents of a calculated row where the calculating
   is the sum of the values identified by column_names.
   """
-  @spec combined_column_extents(Contex.Dataset.t(), list(column_name())) :: {any(), any()}
+  @spec combined_column_extents(t(), list(column_name())) :: {any(), any()}
   def combined_column_extents(%Dataset{data: data} = dataset, column_names) do
     accessors =
       Enum.map(column_names, fn column_name -> Dataset.value_fn(dataset, column_name) end)
@@ -291,7 +345,7 @@ defmodule Contex.Dataset do
   Note that the unique values will maintain order of first detection
   in the data.
   """
-  @spec unique_values(Contex.Dataset.t(), String.t() | integer()) :: [any]
+  @spec unique_values(t(), String.t() | integer()) :: [any]
   def unique_values(%Dataset{data: data} = dataset, column_name) do
     accessor = Dataset.value_fn(dataset, column_name)
 
