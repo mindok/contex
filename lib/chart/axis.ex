@@ -113,7 +113,7 @@ defmodule Contex.Axis do
     [
       "<g ",
       get_svg_axis_location(axis),
-      ~s| fill="none" font-size="10" text-anchor="#{get_text_anchor(axis)}">|,
+      ~s| fill="none" text-anchor="#{get_text_anchor(axis)}">|,
       ~s|<path class="exc-domain" stroke="#000" d="#{get_svg_axis_line(axis, range0, range1)}"></path>|,
       get_svg_tickmarks(axis),
       "</g>"

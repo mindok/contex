@@ -151,12 +151,11 @@ defmodule Contex.Plot do
     plot_options =
       Map.merge(
         plot.plot_options,
-        Map.take(attributes_map, [:show_x_axis, :show_y_axis, :legend_setting])
+        Map.take(attributes_map, [:show_x_axis, :show_y_axis, :legend_setting, :default_style])
       )
-
     plot
     |> Map.merge(
-      Map.take(attributes_map, [:title, :subtitle, :x_label, :y_label, :width, :height])
+      Map.take(attributes_map, [:title, :subtitle, :x_label, :y_label, :width, :height, :default_style])
     )
     |> Map.put(:plot_options, plot_options)
     |> calculate_margins()
@@ -368,6 +367,7 @@ defmodule Contex.Plot do
       subtitle: Keyword.get(attrs, :subtitle),
       x_label: Keyword.get(attrs, :x_label),
       y_label: Keyword.get(attrs, :y_label),
+      default_style: Keyword.get(attrs, :default_style),
       plot_options:
         Enum.into(Keyword.take(attrs, [:show_x_axis, :show_y_axis, :legend_setting]), %{})
     }
