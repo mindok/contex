@@ -51,6 +51,8 @@ defmodule Contex.TimeScale do
     {:years, 1, @duration_year}
   ]
 
+  def timeframe_d1(), do: {:days, 1, @duration_day}
+
   defstruct [
     :domain,
     :nice_domain,
