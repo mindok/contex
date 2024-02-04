@@ -509,13 +509,7 @@ defmodule Contex.BarChart do
     results =
       Enum.reduce(series_values, [], fn data_val, points ->
         range_val = Scale.domain_to_range(scale, data_val)
-        cond do
-          data_val != 0 ->
-            [{scale_zero, range_val} | points]
-
-          :else ->
-            [{scale_zero, scale_zero} | points]
-        end
+        [{scale_zero, range_val} | points]
       end)
 
     Enum.reverse(results)
