@@ -96,12 +96,13 @@ defmodule Contex.OHLC do
   }
 
   @zoom_levels [
-                 [body_width: 0, spacing: 0],
-                 [body_width: 0, spacing: 1],
-                 [body_width: 1, spacing: 1],
-                 [body_width: 3, spacing: 3],
-                 [body_width: 9, spacing: 5],
-                 [body_width: 23, spacing: 7]
+                 [body_width: 0, spacing: 0, step: 64],
+                 [body_width: 0, spacing: 1, step: 32],
+                 [body_width: 1, spacing: 1, step: 16],
+                 [body_width: 3, spacing: 3, step: 8],
+                 [body_width: 9, spacing: 5, step: 4],
+                 [body_width: 23, spacing: 7, step: 2],
+                 [body_width: 53, spacing: 9, step: 1]
                ]
                |> Stream.with_index()
                |> Map.new(fn {k, v} -> {v, Map.new(k)} end)
@@ -305,16 +306,22 @@ defmodule Contex.OHLC do
 
   @spec get_x_axis(Contex.TimeScale.t(), t()) :: Contex.Axis.t()
   defp get_x_axis(x_scale, plot) do
-    rotation =
-      case get_option(plot, :axis_label_rotation) do
-        :auto ->
-          if length(Scale.ticks_range(x_scale)) > 8, do: 90, else: 0
+    degrees = get_option(plot, :axis_label_rotation)
 
-        degrees ->
-          degrees
+    { step, rotation} =
+      cond do
+        degrees != :auto ->
+          { 1, degrees}
+
+        !get_option(plot, :timeframe) and length(Scale.ticks_range(x_scale)) > 8 ->
+          { 1, 45}
+
+        true ->
+          { @zoom_levels[ get_option( plot, :zoom)].step, 0}
       end
 
     x_scale
+    |> TimeScale.set_step( step)
     |> Axis.new_bottom_axis()
     |> Axis.set_offset(get_option(plot, :height))
     |> Kernel.struct(rotation: rotation)
@@ -363,8 +370,9 @@ defmodule Contex.OHLC do
   end
 
   # todo: take only the data that fits in and trim the rest to match the x-axis ticks
-  # todo: introduce timescale step for time tick display
+  # todo: format timeframe timescale
   # todo: plot only the inner halves of first and last candle/bar
+  # todo: plot single border line if body_width == 0
 
   @spec fix_spacing(t()) :: t()
   defp fix_spacing(plot) do
@@ -374,7 +382,8 @@ defmodule Contex.OHLC do
     [zoom, body_border(false)] <~ plot.options
     [body_width, spacing] <~ @zoom_levels[zoom]
     width = get_option(plot, :width)
-    interval_width = body_width + spacing + ((body_border && 2) || 0)
+    border_width = body_width > 0 && (body_border && 2 || 0) || 1
+    interval_width = body_width + spacing + border_width
     interval_count = floor(width / interval_width)
     tick_interval = get_option(plot, :timeframe)
 
@@ -383,7 +392,7 @@ defmodule Contex.OHLC do
       |> TimeScale.domain(min, max)
       |> Scale.set_range(0, width)
 
-    {min_d, _} = x_scale.nice_domain
+    {min_d, _} = x_scale.domain
     last_dt = TimeScale.add_interval(min_d, tick_interval, interval_count)
 
     x_scale =

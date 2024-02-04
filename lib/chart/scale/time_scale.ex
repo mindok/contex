@@ -59,6 +59,7 @@ defmodule Contex.TimeScale do
     :range,
     :interval_count,
     :tick_interval,
+    :step,
     :custom_tick_formatter,
     :display_format
   ]
@@ -70,7 +71,19 @@ defmodule Contex.TimeScale do
   """
   @spec new :: t()
   def new() do
-    %TimeScale{range: {0.0, 1.0}, interval_count: 11}
+    %TimeScale{
+      range: {0.0, 1.0},
+      interval_count: 11,
+      step: 1
+    }
+  end
+
+  @doc """
+  Sets the timescale tick plotting step.
+  """
+  @spec set_step( t(), non_neg_integer()) :: t()
+  def set_step(%TimeScale{} = scale, step) do
+    %TimeScale{scale | step: step}
   end
 
   @doc """
@@ -298,16 +311,15 @@ defmodule Contex.TimeScale do
   defp round_down_multiple(value, multiple), do: div(value, multiple) * multiple
 
   defimpl Contex.Scale do
+    import Extructure
+
     def domain_to_range_fn(%TimeScale{} = scale),
       do: TimeScale.get_domain_to_range_function(scale)
 
-    def ticks_domain(%TimeScale{
-          nice_domain: {min_d, _},
-          interval_count: interval_count,
-          tick_interval: tick_interval
-        })
-        when is_number(interval_count) do
-      0..interval_count
+    def ticks_domain(%TimeScale{interval_count: interval_count} = scale) when is_number(interval_count) do
+      [ tick_interval, step, nice_domain: ^{ min_d, _}] <~ scale
+
+      0..interval_count//step
       |> Enum.map(fn i -> TimeScale.add_interval(min_d, tick_interval, i) end)
     end
 
