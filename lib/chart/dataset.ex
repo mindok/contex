@@ -221,44 +221,6 @@ defmodule Contex.Dataset do
   def value_fn(_dataset, _column_name), do: fn _ -> nil end
 
   @doc """
-  Returns a function that puts (replaces) the value for a given column in a given row,
-  accessed by the column name.
-  """
-  @spec put_value_fn(t(), column_name()) :: (row(), any() -> row())
-  def put_value_fn(dataset, column_name)
-
-  def put_value_fn(%Dataset{data: [first_row | _]}, column_name)
-      when is_map(first_row) and (is_binary(column_name) or is_atom(column_name)) do
-    if Map.has_key?(first_row, column_name) do
-      &Map.put(&1, column_name, &2)
-    else
-      put_value_fn(nil, nil)
-    end
-  end
-
-  def put_value_fn(%Dataset{data: [first_row | _]} = dataset, column_name)
-      when is_list(first_row) do
-    if column_index = column_index(dataset, column_name) do
-      &List.replace_at(&1, column_index, &2)
-    else
-      put_value_fn(nil, nil)
-    end
-  end
-
-  def put_value_fn(%Dataset{data: [first_row | _]} = dataset, column_name)
-      when is_tuple(first_row) do
-    if column_index = column_index(dataset, column_name) do
-      &put_elem(&1, column_index, &2)
-    else
-      put_value_fn(nil, nil)
-    end
-  end
-
-  def put_value_fn(_dataset, _column_name) do
-    fn row, _ -> row end
-  end
-
-  @doc """
   Returns the row with max value in the column.
   """
   @spec max_row(t(), column_name()) :: row()
