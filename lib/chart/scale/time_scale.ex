@@ -81,7 +81,7 @@ defmodule Contex.TimeScale do
   @doc """
   Sets the timescale tick plotting step.
   """
-  @spec set_step( t(), non_neg_integer()) :: t()
+  @spec set_step(t(), non_neg_integer()) :: t()
   def set_step(%TimeScale{} = scale, step) do
     %TimeScale{scale | step: step}
   end
@@ -316,8 +316,9 @@ defmodule Contex.TimeScale do
     def domain_to_range_fn(%TimeScale{} = scale),
       do: TimeScale.get_domain_to_range_function(scale)
 
-    def ticks_domain(%TimeScale{interval_count: interval_count} = scale) when is_number(interval_count) do
-      [ tick_interval, step, nice_domain: ^{ min_d, _}] <~ scale
+    def ticks_domain(%TimeScale{interval_count: interval_count} = scale)
+        when is_number(interval_count) do
+      [tick_interval, step, nice_domain: ^{min_d, _}] <~ scale
 
       0..interval_count//step
       |> Enum.map(fn i -> TimeScale.add_interval(min_d, tick_interval, i) end)

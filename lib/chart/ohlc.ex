@@ -308,20 +308,23 @@ defmodule Contex.OHLC do
   defp get_x_axis(x_scale, plot) do
     degrees = get_option(plot, :axis_label_rotation)
 
-    { step, rotation} =
+    {step, rotation} =
       cond do
         degrees != :auto ->
-          { 1, degrees}
+          {1, degrees}
 
-        !get_option(plot, :timeframe) and length(Scale.ticks_range(x_scale)) > 8 ->
-          { 1, 45}
+        get_option(plot, :timeframe) ->
+          {@zoom_levels[get_option(plot, :zoom)].step, 0}
+
+        length(Scale.ticks_range(x_scale)) > 8 ->
+          {1, 45}
 
         true ->
-          { @zoom_levels[ get_option( plot, :zoom)].step, 0}
+          {1, 0}
       end
 
     x_scale
-    |> TimeScale.set_step( step)
+    |> TimeScale.set_step(step)
     |> Axis.new_bottom_axis()
     |> Axis.set_offset(get_option(plot, :height))
     |> Kernel.struct(rotation: rotation)
@@ -382,7 +385,7 @@ defmodule Contex.OHLC do
     [zoom, body_border(false)] <~ plot.options
     [body_width, spacing] <~ @zoom_levels[zoom]
     width = get_option(plot, :width)
-    border_width = body_width > 0 && (body_border && 2 || 0) || 1
+    border_width = (body_width > 0 && ((body_border && 2) || 0)) || 1
     interval_width = body_width + spacing + border_width
     interval_count = floor(width / interval_width)
     tick_interval = get_option(plot, :timeframe)
