@@ -14,6 +14,16 @@ defmodule Contex.TimeScale do
 
   alias Contex.Utils
 
+  @type units() ::
+          :seconds |
+          :minutes |
+          :hours |
+          :days |
+          :weeks |
+          :months |
+          :years
+
+  @type timeframe() :: { units(), non_neg_integer(), non_neg_integer()}
   @type datetimes() :: NaiveDateTime.t() | DateTime.t()
 
   # Approximate durations in ms for calculating ideal tick intervals
@@ -39,6 +49,7 @@ defmodule Contex.TimeScale do
     {:minutes, 30, @duration_min * 30},
     {:hours, 1, @duration_hour},
     {:hours, 3, @duration_hour * 3},
+    {:hours, 4, @duration_hour * 4},
     {:hours, 6, @duration_hour * 6},
     {:hours, 12, @duration_hour * 12},
     {:days, 1, @duration_day},
@@ -51,7 +62,27 @@ defmodule Contex.TimeScale do
     {:years, 1, @duration_year}
   ]
 
+  def timeframe_m1(), do: {:minutes, 1, @duration_min}
+  def timeframe_m5(), do: {:minutes, 5, @duration_min * 5}
+  def timeframe_m15(), do: {:minutes, 15, @duration_min * 15}
+  def timeframe_m30(), do: {:minutes, 30, @duration_min * 30}
+  def timeframe_h1(), do: {:hours, 1, @duration_hour}
+  def timeframe_h4(), do: {:hours, 4, @duration_hour * 4}
   def timeframe_d1(), do: {:days, 1, @duration_day}
+#  def timeframe_w1(), do: {:days, 1, @duration_week}
+  def timeframe_mn(), do: {:months, 1, @duration_month}
+
+  @doc """
+  Compares two timeframes.
+  """
+  @spec compare_timeframe( timeframe(), timeframe()) :: :eq | :lt | :gt
+  def compare_timeframe( { _, _, millis1}, { _, _, millis2}) do
+    cond do
+      millis1 < millis2 -> :lt
+      millis1 > millis2 -> :gt
+      true -> :eq
+    end
+  end
 
   defstruct [
     :domain,
