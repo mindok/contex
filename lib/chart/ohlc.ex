@@ -415,7 +415,11 @@ defmodule Contex.OHLC do
 
     x_scale =
       x_scale
-      |> struct(interval_count: interval_count, tick_interval: tick_interval)
+      |> struct(
+        interval_count: interval_count,
+        tick_interval: tick_interval,
+        use_existing_tick_interval?: true
+      )
       |> TimeScale.domain(min, last_dt)
 
     apply_x_scale(plot, x_scale)

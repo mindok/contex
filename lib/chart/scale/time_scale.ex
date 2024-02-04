@@ -90,6 +90,7 @@ defmodule Contex.TimeScale do
     :range,
     :interval_count,
     :tick_interval,
+    :use_existing_tick_interval?,
     :step,
     :custom_tick_formatter,
     :display_format
@@ -105,6 +106,7 @@ defmodule Contex.TimeScale do
     %TimeScale{
       range: {0.0, 1.0},
       interval_count: 11,
+      use_existing_tick_interval?: false,
       step: 1
     }
   end
@@ -171,8 +173,8 @@ defmodule Contex.TimeScale do
   defp nice(%TimeScale{domain: {min_d, max_d}, interval_count: interval_count} = scale)
        when is_number(interval_count) and interval_count > 1 do
     tick_interval =
-      if tick_interval = scale.tick_interval do
-        tick_interval
+      if scale.use_existing_tick_interval? do
+        scale.tick_interval
       else
         width = Utils.date_diff(max_d, min_d, :millisecond)
         unrounded_interval_size = width / (interval_count - 1)
