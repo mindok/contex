@@ -142,7 +142,7 @@ defmodule Contex.OHLC do
   def new(%Dataset{} = dataset, options \\ []) do
     options =
       @default_options
-      |> Keyword.merge( options)
+      |> Keyword.merge(options)
       |> maybe_put_custom_x_formatter()
 
     mapping = Mapping.new(@required_mappings, Keyword.get(options, :mapping), dataset)
@@ -152,10 +152,10 @@ defmodule Contex.OHLC do
 
   @spec maybe_put_custom_x_formatter(keyword()) :: keyword()
   defp maybe_put_custom_x_formatter(options) do
-    if ( timeframe = options[ :timeframe]) && !options[ :custom_x_formatter] do
+    if (timeframe = options[:timeframe]) && !options[:custom_x_formatter] do
       intraday? = TimeScale.compare_timeframe(timeframe, TimeScale.timeframe_d1()) == :lt
-      custom_x_formatter = &NimbleStrftime.format( &1, intraday? && "%d %b %H:%M" || "%d %b %Y")
-      Keyword.put( options, :custom_x_formatter, custom_x_formatter)
+      custom_x_formatter = &NimbleStrftime.format(&1, (intraday? && "%d %b %H:%M") || "%d %b %Y")
+      Keyword.put(options, :custom_x_formatter, custom_x_formatter)
     else
       options
     end

@@ -15,15 +15,15 @@ defmodule Contex.TimeScale do
   alias Contex.Utils
 
   @type units() ::
-          :seconds |
-          :minutes |
-          :hours |
-          :days |
-          :weeks |
-          :months |
-          :years
+          :seconds
+          | :minutes
+          | :hours
+          | :days
+          | :weeks
+          | :months
+          | :years
 
-  @type timeframe() :: { units(), non_neg_integer(), non_neg_integer()}
+  @type timeframe() :: {units(), non_neg_integer(), non_neg_integer()}
   @type datetimes() :: NaiveDateTime.t() | DateTime.t()
 
   # Approximate durations in ms for calculating ideal tick intervals
@@ -69,14 +69,14 @@ defmodule Contex.TimeScale do
   def timeframe_h1(), do: {:hours, 1, @duration_hour}
   def timeframe_h4(), do: {:hours, 4, @duration_hour * 4}
   def timeframe_d1(), do: {:days, 1, @duration_day}
-#  def timeframe_w1(), do: {:days, 1, @duration_week}
+  #  def timeframe_w1(), do: {:days, 1, @duration_week}
   def timeframe_mn(), do: {:months, 1, @duration_month}
 
   @doc """
   Compares two timeframes.
   """
-  @spec compare_timeframe( timeframe(), timeframe()) :: :eq | :lt | :gt
-  def compare_timeframe( { _, _, millis1}, { _, _, millis2}) do
+  @spec compare_timeframe(timeframe(), timeframe()) :: :eq | :lt | :gt
+  def compare_timeframe({_, _, millis1}, {_, _, millis2}) do
     cond do
       millis1 < millis2 -> :lt
       millis1 > millis2 -> :gt
