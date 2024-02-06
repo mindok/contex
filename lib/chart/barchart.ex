@@ -357,9 +357,12 @@ defmodule Contex.BarChart do
 
     val_axis_svg = if plot_options.show_val_axis, do: Axis.to_svg(value_axis), else: ""
 
+    zero_line = Axis.get_zero_line_svg(category_axis)
+
     [
       cat_axis_svg,
       val_axis_svg,
+      zero_line,
       "<g>",
       get_svg_bars(plot),
       "</g>"
