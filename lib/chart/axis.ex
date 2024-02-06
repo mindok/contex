@@ -131,6 +131,17 @@ defmodule Contex.Axis do
     ]
   end
 
+  @doc """
+  Draw the zero line for ensuring it's drawn even when zero
+  isn't aligned to the base of the graph.
+  """
+  def get_zero_line_svg(%Axis{scale: scale} = axis) do
+    # Check that scale intersects zero by looking at domain
+    # If so...
+   domain_to_range_fn = Scale.domain_to_range_fn(scale)
+   get_svg_gridline(axis, domain_to_range_fn.(0.0))
+  end
+
   defp get_svg_gridlines(%Axis{scale: scale} = axis) do
     domain_ticks = Scale.ticks_domain(scale)
     domain_to_range_fn = Scale.domain_to_range_fn(scale)
