@@ -227,13 +227,13 @@ defmodule Contex.OHLC do
     [transforms, mapping: [accessors], options: options = %{}] <~ plot
 
     options =
-      if options[ :timeframe] do
-        { min, max} = plot.x_scale.domain
-        row_dt = datetime_fn( plot).( row)
+      if options[:timeframe] do
+        {min, max} = plot.x_scale.domain
+        row_dt = datetime_fn(plot).(row)
 
         options
-        |> put_in( [ :halve_first], Utils.date_compare( row_dt, min) != :gt)
-        |> put_in( [ :halve_last], Utils.date_compare( row_dt, max) != :lt)
+        |> put_in([:halve_first], Utils.date_compare(row_dt, min) != :gt)
+        |> put_in([:halve_last], Utils.date_compare(row_dt, max) != :lt)
       else
         options
       end
@@ -261,12 +261,21 @@ defmodule Contex.OHLC do
   defp draw_row(options, x, y_map, body_color)
 
   defp draw_row(%{style: :candle} = options, x, y_map, body_color) do
-    [zoom, shadow_color, crisp_edges(false), body_border(false), halve_first( false), halve_last( false)] <~ options
+    [
+      zoom,
+      shadow_color,
+      crisp_edges(false),
+      body_border(false),
+      halve_first(false),
+      halve_last(false)
+    ]
+    <~ options
+
     [body_width] <~ @zoom_levels[zoom]
     [open, high, low, close] <~ y_map
 
     body_width = ceil(body_width / 2)
-    bar_x = {x - ( !halve_first && body_width || 0), x + ( !halve_last && body_width || 0)}
+    bar_x = {x - ((!halve_first && body_width) || 0), x + ((!halve_last && body_width) || 0)}
 
     body_opts =
       [
@@ -284,19 +293,33 @@ defmodule Contex.OHLC do
       |> Enum.join()
 
     [
-      !halve_first and !halve_last && ~s|<line x1="#{x}" x2="#{x}" y1="#{low}" y2="#{high}" #{style} />|,
+      !halve_first and !halve_last &&
+        ~s|<line x1="#{x}" x2="#{x}" y1="#{low}" y2="#{high}" #{style} />|,
       body_width > 0 && rect(bar_x, {open, close}, "", body_opts)
     ]
     |> Enum.filter(& &1)
   end
 
   defp draw_row(%{style: :tick} = options, x, y_map, body_color) do
-    [zoom, shadow_color, crisp_edges(false), colorized_bars(false), halve_first( false), halve_last( false)] <~ options
+    [
+      zoom,
+      shadow_color,
+      crisp_edges(false),
+      colorized_bars(false),
+      halve_first(false),
+      halve_last(false)
+    ]
+    <~ options
+
     [body_width] <~ @zoom_levels[zoom]
     [open, high, low, close] <~ y_map
 
     body_width = ceil(body_width / 2)
-    bar_x = %{ l: x - ( !halve_first && body_width || 0), r: x + ( !halve_last && body_width || 0)}
+
+    bar_x = %{
+      l: x - ((!halve_first && body_width) || 0),
+      r: x + ((!halve_last && body_width) || 0)
+    }
 
     style =
       [
@@ -307,10 +330,12 @@ defmodule Contex.OHLC do
 
     [
       ~s|<line x1="#{x}" x2="#{x}" y1="#{low}" y2="#{high}" #{style} />|,
-      body_width > 0 and !halve_first && ~s|<line x1="#{bar_x.l}" x2="#{x}" y1="#{open}" y2="#{open}" #{style}" />|,
-      body_width > 0 and !halve_last && ~s|<line x1="#{x}" x2="#{bar_x.r + 1}" y1="#{close}" y2="#{close}" #{style}" />|
+      body_width > 0 and !halve_first &&
+        ~s|<line x1="#{bar_x.l}" x2="#{x}" y1="#{open}" y2="#{open}" #{style}" />|,
+      body_width > 0 and !halve_last &&
+        ~s|<line x1="#{x}" x2="#{bar_x.r + 1}" y1="#{close}" y2="#{close}" #{style}" />|
     ]
-    |> Enum.filter( & &1)
+    |> Enum.filter(& &1)
   end
 
   @spec get_y_vals(row(), %{atom() => (row() -> number())}) :: y_vals()
@@ -438,10 +463,10 @@ defmodule Contex.OHLC do
 
     plot
     |> apply_x_scale(x_scale)
-    |> trim_data_after( last_dt)
+    |> trim_data_after(last_dt)
   end
 
-  @spec apply_x_scale( t(), Contex.Scale.t()) :: t()
+  @spec apply_x_scale(t(), Contex.Scale.t()) :: t()
   defp apply_x_scale(plot, x_scale) do
     x_scale = %{x_scale | custom_tick_formatter: get_option(plot, :custom_x_formatter)}
     x_transform = Scale.domain_to_range_fn(x_scale)
@@ -451,21 +476,21 @@ defmodule Contex.OHLC do
   end
 
   # Keeps only the data before or at the last datetime.
-  @spec trim_data_after( t(), TimeScale.datetimes()) :: t()
-  defp trim_data_after( plot, last_dt) do
-    [ dataset] <~ plot
-    gets_datetime = datetime_fn( plot)
-    data = Enum.filter( dataset.data, &Utils.date_compare( gets_datetime.( &1), last_dt) != :gt)
+  @spec trim_data_after(t(), TimeScale.datetimes()) :: t()
+  defp trim_data_after(plot, last_dt) do
+    [dataset] <~ plot
+    gets_datetime = datetime_fn(plot)
+    data = Enum.filter(dataset.data, &(Utils.date_compare(gets_datetime.(&1), last_dt) != :gt))
 
-    %{ plot | dataset: Dataset.new( data, dataset.headers)}
+    %{plot | dataset: Dataset.new(data, dataset.headers)}
   end
 
   # Returns value accessor for the :datetime column
-  @spec datetime_fn( t()) :: ( Dataset.row() -> TimeScale.datetimes())
-  defp datetime_fn( plot) do
-    [ dataset, mapping] <~ plot
+  @spec datetime_fn(t()) :: (Dataset.row() -> TimeScale.datetimes())
+  defp datetime_fn(plot) do
+    [dataset, mapping] <~ plot
 
-    Dataset.value_fn( dataset, mapping.column_map[ :datetime])
+    Dataset.value_fn(dataset, mapping.column_map[:datetime])
   end
 
   @spec prepare_y_scale(t()) :: t()
