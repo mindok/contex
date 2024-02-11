@@ -387,8 +387,6 @@ defmodule Contex.OHLC do
     end
   end
 
-  # todo: take only the data that fits in and trim the rest to match the x-axis ticks
-  # todo: format timeframe timescale
   # todo: plot only the inner halves of first and last candle/bar
   # todo: plot single border line if body_width == 0
 
@@ -422,15 +420,28 @@ defmodule Contex.OHLC do
       )
       |> TimeScale.domain(min, last_dt)
 
-    apply_x_scale(plot, x_scale)
+    plot
+    |> apply_x_scale(x_scale)
+    |> trim_data_after( last_dt)
   end
 
+  @spec apply_x_scale( t(), Contex.Scale.t()) :: t()
   defp apply_x_scale(plot, x_scale) do
     x_scale = %{x_scale | custom_tick_formatter: get_option(plot, :custom_x_formatter)}
     x_transform = Scale.domain_to_range_fn(x_scale)
     transforms = Map.merge(plot.transforms, %{x: x_transform})
 
     %{plot | x_scale: x_scale, transforms: transforms}
+  end
+
+  # Keeps only the data before or at the last datetime.
+  @spec trim_data_after( t(), TimeScale.datetimes()) :: t()
+  defp trim_data_after( plot, last_dt) do
+    [ dataset, mapping] <~ plot
+    gets_datetime = Dataset.value_fn( dataset, mapping.column_map[ :datetime])
+    data = Enum.filter( dataset.data, &Utils.date_compare( gets_datetime.( &1), last_dt) != :gt)
+
+    %{ plot | dataset: Dataset.new( data, dataset.headers)}
   end
 
   @spec prepare_y_scale(t()) :: t()
