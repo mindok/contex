@@ -274,13 +274,16 @@ defmodule Contex.OHLC do
     [body_width] <~ @zoom_levels[zoom]
     [open, high, low, close] <~ y_map
 
-    body_width = ceil(body_width / 2)
-    bar_x = {x - ((!halve_first && body_width) || 0), x + ((!halve_last && body_width) || 0)}
+    right_width = div(body_width, 2)
+    left_width = right_width
+    left_width = body_width > 0 && left_width + ( body_border && 1 || 0) || left_width
+    body_width = left_width + right_width
+    bar_x = {x - ((!halve_first && left_width) || 0), x + ((!halve_last && right_width) || 0) + 1}
 
     body_opts =
       [
         fill: body_color,
-        stroke: body_border && shadow_color,
+        stroke: body_border && shadow_color || "transparent",
         shape_rendering: crisp_edges && "crispEdges"
       ]
       |> Enum.filter(&elem(&1, 1))
@@ -293,8 +296,7 @@ defmodule Contex.OHLC do
       |> Enum.join()
 
     [
-      !halve_first and !halve_last &&
-        ~s|<line x1="#{x}" x2="#{x}" y1="#{low}" y2="#{high}" #{style} />|,
+      ~s|<line x1="#{x}" x2="#{x}" y1="#{low}" y2="#{high}" #{style} />|,
       body_width > 0 && rect(bar_x, {open, close}, "", body_opts)
     ]
     |> Enum.filter(& &1)
@@ -429,17 +431,15 @@ defmodule Contex.OHLC do
     end
   end
 
-  # todo: if timeframe, always plot border just make it transparent if not requested, add it to style tick width
-
   @spec fix_spacing(t()) :: t()
   defp fix_spacing(plot) do
     [datetime: dt_column] <~ plot.mapping.column_map
     {min, max} = Dataset.column_extents(plot.dataset, dt_column)
 
-    [zoom, body_border(false)] <~ plot.options
+    [zoom] <~ plot.options
     [body_width, spacing] <~ @zoom_levels[zoom]
     width = get_option(plot, :width)
-    border_width = (body_width > 0 && ((body_border && 2) || 0)) || 1
+    border_width = body_width > 0 && 2 || 1
     interval_width = body_width + spacing + border_width
     interval_count = floor(width / interval_width)
     tick_interval = get_option(plot, :timeframe)
