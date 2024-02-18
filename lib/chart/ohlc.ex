@@ -260,6 +260,54 @@ defmodule Contex.OHLC do
   @spec draw_row(map(), number(), y_vals(), color()) :: rendered_row()
   defp draw_row(options, x, y_map, body_color)
 
+  defp draw_row(%{timeframe: nil, style: :candle} = options, x, y_map, body_color) do
+    [zoom, shadow_color, crisp_edges(false), body_border(false)] <~ options
+    [body_width] <~ @zoom_levels[zoom]
+    [open, high, low, close] <~ y_map
+
+    body_width = ceil(body_width / 2)
+    bar_x = {x - body_width, x + body_width}
+
+    body_opts =
+      [
+        fill: body_color,
+        stroke: body_border && shadow_color,
+        shape_rendering: crisp_edges && "crispEdges"
+      ]
+      |> Enum.filter(&elem(&1, 1))
+
+    style =
+      [
+        ~s|style="stroke: ##{shadow_color}"|,
+        (crisp_edges && ~s| shape-rendering="crispEdges"|) || ""
+      ]
+      |> Enum.join()
+
+    [
+      ~s|<line x1="#{x}" x2="#{x}" y1="#{low}" y2="#{high}" #{style} />|,
+      rect(bar_x, {open, close}, "", body_opts)
+    ]
+  end
+
+  defp draw_row(%{timeframe: nil, style: :tick} = options, x, y_map, body_color) do
+    [zoom, shadow_color, crisp_edges(false), colorized_bars(false)] <~ options
+    [body_width] <~ @zoom_levels[zoom]
+    [open, high, low, close] <~ y_map
+
+    style =
+      [
+        ~s|style="stroke: ##{(colorized_bars && body_color) || shadow_color}"|,
+        (crisp_edges && ~s| shape-rendering="crispEdges"|) || ""
+      ]
+      |> Enum.join()
+
+    [
+      ~s|<line x1="#{x}" x2="#{x}" y1="#{low}" y2="#{high}" #{style} />|,
+      ~s|<line x1="#{x - body_width}" x2="#{x}" y1="#{open}" y2="#{open}"  #{style}" />|,
+      ~s|<line x1="#{x}" x2="#{x + body_width}" y1="#{close}" y2="#{close}"  #{style}" />|
+    ]
+  end
+
   defp draw_row(%{style: :candle} = options, x, y_map, body_color) do
     [
       zoom,
@@ -276,14 +324,14 @@ defmodule Contex.OHLC do
 
     right_width = div(body_width, 2)
     left_width = right_width
-    left_width = body_width > 0 && left_width + ( body_border && 1 || 0) || left_width
+    left_width = (body_width > 0 && left_width + ((body_border && 1) || 0)) || left_width
     body_width = left_width + right_width
     bar_x = {x - ((!halve_first && left_width) || 0), x + ((!halve_last && right_width) || 0) + 1}
 
     body_opts =
       [
         fill: body_color,
-        stroke: body_border && shadow_color || "transparent",
+        stroke: (body_border && shadow_color) || "transparent",
         shape_rendering: crisp_edges && "crispEdges"
       ]
       |> Enum.filter(&elem(&1, 1))
@@ -439,7 +487,7 @@ defmodule Contex.OHLC do
     [zoom] <~ plot.options
     [body_width, spacing] <~ @zoom_levels[zoom]
     width = get_option(plot, :width)
-    border_width = body_width > 0 && 2 || 1
+    border_width = (body_width > 0 && 2) || 1
     interval_width = body_width + spacing + border_width
     interval_count = floor(width / interval_width)
     tick_interval = get_option(plot, :timeframe)
