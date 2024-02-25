@@ -17,8 +17,8 @@ defmodule Contex.OHLC do
   If they are equal, the candle will be plotted in dark grey.
 
   The datetime column must be of consist of DateTime or NaiveDateTime entries.
-  If a custom x scale option is not provided, a `Contex.TimeScale` scale will automatically be generated from the datetime extents
-  of the dataset and used for the x-axis.
+  If a custom x scale option is not provided, a `Contex.TimeScale` scale will automatically be generated from the
+  datetime extents of the dataset and used for the x-axis.
 
   The open / high / low / close columns must be of a numeric type (float or integer).
   Decimals are not currently supported.
@@ -40,7 +40,6 @@ defmodule Contex.OHLC do
   alias Contex.Utils
 
   defstruct [
-    :dataset,
     :mapping,
     :options,
     :x_scale,
@@ -147,7 +146,7 @@ defmodule Contex.OHLC do
 
     mapping = Mapping.new(@required_mappings, Keyword.get(options, :mapping), dataset)
 
-    %OHLC{dataset: dataset, mapping: mapping, options: options}
+    %OHLC{mapping: mapping, options: options}
   end
 
   @spec maybe_put_custom_x_formatter(keyword()) :: keyword()
@@ -216,7 +215,7 @@ defmodule Contex.OHLC do
 
   @spec render_data(t()) :: [rendered_row()]
   defp render_data(plot) do
-    [dataset] <~ plot
+    [dataset] <~ plot.mapping
 
     dataset.data
     |> Enum.map(fn row -> render_row(plot, row) end)
@@ -229,7 +228,7 @@ defmodule Contex.OHLC do
     options =
       if options[:timeframe] do
         {min, max} = plot.x_scale.domain
-        row_dt = datetime_fn(plot).(row)
+        row_dt = accessors.datetime.(row)
 
         options
         |> put_in([:halve_first], Utils.date_compare(row_dt, min) != :gt)
@@ -449,9 +448,9 @@ defmodule Contex.OHLC do
 
   @spec prepare_x_scale(t()) :: t()
   defp prepare_x_scale(plot) do
-    [dataset, mapping] <~ plot
+    [dataset, column_map] <~ plot.mapping
 
-    x_col_name = mapping.column_map[:datetime]
+    x_col_name = column_map[:datetime]
     width = get_option(plot, :width)
     custom_x_scale = get_option(plot, :custom_x_scale)
 
@@ -482,7 +481,7 @@ defmodule Contex.OHLC do
   @spec fix_spacing(t()) :: t()
   defp fix_spacing(plot) do
     [datetime: dt_column] <~ plot.mapping.column_map
-    {min, max} = Dataset.column_extents(plot.dataset, dt_column)
+    {min, max} = Dataset.column_extents(plot.mapping.dataset, dt_column)
 
     [zoom] <~ plot.options
     [body_width, spacing] <~ @zoom_levels[zoom]
@@ -526,24 +525,22 @@ defmodule Contex.OHLC do
   # Keeps only the data before or at the last datetime.
   @spec trim_data_after(t(), TimeScale.datetimes()) :: t()
   defp trim_data_after(plot, last_dt) do
-    [dataset] <~ plot
-    gets_datetime = datetime_fn(plot)
-    data = Enum.filter(dataset.data, &(Utils.date_compare(gets_datetime.(&1), last_dt) != :gt))
+    [accessors] <~ plot.mapping
 
-    %{plot | dataset: Dataset.new(data, dataset.headers)}
-  end
-
-  # Returns value accessor for the :datetime column
-  @spec datetime_fn(t()) :: (Dataset.row() -> TimeScale.datetimes())
-  defp datetime_fn(plot) do
-    [dataset, mapping] <~ plot
-
-    Dataset.value_fn(dataset, mapping.column_map[:datetime])
+    %{
+      plot
+      | mapping:
+          Mapping.update_dataset!(plot.mapping, fn dataset ->
+            dataset.data
+            |> Enum.filter(&(Utils.date_compare(accessors.datetime.(&1), last_dt) != :gt))
+            |> Dataset.new(dataset.headers)
+          end)
+    }
   end
 
   @spec prepare_y_scale(t()) :: t()
   defp prepare_y_scale(plot) do
-    [dataset, mapping: [column_map]] <~ plot
+    [dataset, column_map] <~ plot.mapping
 
     y_col_names = Enum.map([:open, :high, :low, :close], &column_map[&1])
     height = get_option(plot, :height)
