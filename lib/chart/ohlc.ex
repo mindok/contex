@@ -185,9 +185,8 @@ defmodule Contex.OHLC do
   @doc false
   def to_svg(%__MODULE__{} = plot, plot_options) do
     plot = prepare_scales(plot)
-    [x_scale, y_scale] <~ plot
-
     plot_options = Map.merge(@default_plot_options, plot_options)
+    [x_scale, y_scale] <~ plot
 
     x_axis_svg =
       if plot_options.show_x_axis,
@@ -217,39 +216,42 @@ defmodule Contex.OHLC do
   defp render_data(plot) do
     [dataset] <~ plot.mapping
 
-    dataset.data
-    |> Enum.map(fn row -> render_row(plot, row) end)
+    for row <- dataset.data,
+        rendered_row = maybe_render_row(plot, row),
+        into: [],
+        do: rendered_row
   end
 
-  @spec render_row(t(), row()) :: rendered_row()
-  defp render_row(plot, row) do
+  @spec maybe_render_row(t(), row()) :: rendered_row() | nil
+  defp maybe_render_row(plot, row) do
     [transforms, mapping: [accessors], options: options = %{}] <~ plot
 
     options =
-      if options[:timeframe] do
-        {min, max} = plot.x_scale.domain
-        row_dt = accessors.datetime.(row)
+      with true <- !!options[:timeframe] || options,
+           row_dt = accessors.datetime.(row),
+           true <- within_domain?(row_dt, plot.x_scale.nice_domain) do
+        {min, max} = plot.x_scale.nice_domain
 
         options
         |> put_in([:halve_first], Utils.date_compare(row_dt, min) != :gt)
         |> put_in([:halve_last], Utils.date_compare(row_dt, max) != :lt)
-      else
-        options
       end
 
-    x =
-      accessors.datetime.(row)
-      |> transforms.x.()
+    if options do
+      x =
+        accessors.datetime.(row)
+        |> transforms.x.()
 
-    y_vals = get_y_vals(row, accessors)
+      y_vals = get_y_vals(row, accessors)
 
-    scaled_y_vals =
-      Map.new(y_vals, fn {k, v} ->
-        {k, transforms.y.(v)}
-      end)
+      scaled_y_vals =
+        Map.new(y_vals, fn {k, v} ->
+          {k, transforms.y.(v)}
+        end)
 
-    color = get_colour(y_vals, plot)
-    draw_row(options, x, scaled_y_vals, color)
+      color = get_colour(y_vals, plot)
+      draw_row(options, x, scaled_y_vals, color)
+    end
   end
 
   # Draws a grey line from low to high, then overlay a coloured rect
@@ -473,7 +475,7 @@ defmodule Contex.OHLC do
 
   @spec maybe_fix_spacing(t()) :: t() | nil
   defp maybe_fix_spacing(plot) do
-    if get_option(plot, :timeframe) && !get_option(plot, :custom_x_scale) do
+    if fixed_timescale?(plot) do
       fix_spacing(plot)
     end
   end
@@ -482,6 +484,7 @@ defmodule Contex.OHLC do
   defp fix_spacing(plot) do
     [datetime: dt_column] <~ plot.mapping.column_map
     {min, max} = Dataset.column_extents(plot.mapping.dataset, dt_column)
+    min = get_option(plot, :domain_min) || min
 
     [zoom] <~ plot.options
     [body_width, spacing] <~ @zoom_levels[zoom]
@@ -508,9 +511,7 @@ defmodule Contex.OHLC do
       )
       |> TimeScale.domain(min, last_dt)
 
-    plot
-    |> apply_x_scale(x_scale)
-    |> trim_data_after(last_dt)
+    apply_x_scale(plot, x_scale)
   end
 
   @spec apply_x_scale(t(), Contex.Scale.t()) :: t()
@@ -522,35 +523,29 @@ defmodule Contex.OHLC do
     %{plot | x_scale: x_scale, transforms: transforms}
   end
 
-  # Keeps only the data before or at the last datetime.
-  @spec trim_data_after(t(), TimeScale.datetimes()) :: t()
-  defp trim_data_after(plot, last_dt) do
-    [accessors] <~ plot.mapping
-
-    %{
-      plot
-      | mapping:
-          Mapping.update_dataset!(plot.mapping, fn dataset ->
-            dataset.data
-            |> Enum.filter(&(Utils.date_compare(accessors.datetime.(&1), last_dt) != :gt))
-            |> Dataset.new(dataset.headers)
-          end)
-    }
-  end
-
   @spec prepare_y_scale(t()) :: t()
   defp prepare_y_scale(plot) do
-    [dataset, column_map] <~ plot.mapping
+    [dataset, column_map, accessors] <~ plot.mapping
 
     y_col_names = Enum.map([:open, :high, :low, :close], &column_map[&1])
     height = get_option(plot, :height)
     custom_y_scale = get_option(plot, :custom_y_scale)
 
+    filter_opts =
+      if fixed_timescale?(plot) do
+        accessor_dt = accessors.datetime
+        domain = plot.x_scale.nice_domain
+
+        [filter: &within_domain?(accessor_dt.(&1), domain)]
+      else
+        []
+      end
+
     y_scale =
       case custom_y_scale do
         nil ->
           {min, max} =
-            get_overall_domain(dataset, y_col_names)
+            get_overall_domain(dataset, y_col_names, filter_opts)
             |> Utils.fixup_value_range()
 
           ContinuousLinearScale.new()
@@ -568,14 +563,25 @@ defmodule Contex.OHLC do
     %{plot | y_scale: y_scale, transforms: transforms}
   end
 
+  @spec fixed_timescale?(t()) :: boolean()
+  defp fixed_timescale?(plot) do
+    !!get_option(plot, :timeframe) and !get_option(plot, :custom_x_scale)
+  end
+
+  @spec within_domain?(Timescale.datetimes(), {Timescale.datetimes(), Timescale.datetimes()}) ::
+          boolean()
+  defp within_domain?(dt, {min, max}) do
+    Utils.date_compare(dt, min) != :lt and Utils.date_compare(dt, max) != :gt
+  end
+
   # TODO: Extract into Dataset
-  defp get_overall_domain(dataset, col_names) do
+  defp get_overall_domain(dataset, col_names, opts) do
     combiner = fn {min1, max1}, {min2, max2} ->
       {Utils.safe_min(min1, min2), Utils.safe_max(max1, max2)}
     end
 
     Enum.reduce(col_names, {nil, nil}, fn col, acc_extents ->
-      inner_extents = Dataset.column_extents(dataset, col)
+      inner_extents = Dataset.column_extents(dataset, col, opts)
       combiner.(acc_extents, inner_extents)
     end)
   end

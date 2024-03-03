@@ -241,14 +241,23 @@ defmodule Contex.Dataset do
 
   @doc """
   Calculates the min and max value in the specified column
+
+  Options:
+  - filter: function filtering rows to take into account; takes a row and
+            returns a boolean
   """
-  @spec column_extents(t(), column_name()) :: {any, any}
-  def column_extents(%Dataset{data: data} = dataset, column_name) do
+  @spec column_extents(t(), column_name(), keyword()) :: {any, any}
+  def column_extents(%Dataset{data: data} = dataset, column_name, opts \\ []) do
     accessor = Dataset.value_fn(dataset, column_name)
+    filter = opts[:filter]
 
     Enum.reduce(data, {nil, nil}, fn row, {min, max} ->
-      val = accessor.(row)
-      {Utils.safe_min(val, min), Utils.safe_max(val, max)}
+      if !filter or filter.(row) do
+        val = accessor.(row)
+        {Utils.safe_min(val, min), Utils.safe_max(val, max)}
+      else
+        {min, max}
+      end
     end)
   end
 
