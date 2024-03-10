@@ -7,12 +7,12 @@ defmodule Contex.OHLC.MA do
 
   defstruct dataset: nil,
             period: 14,
-            shift: 0,
             method: :simple,
             apply_to: :close,
-            color: "#FF000"
+            color: "#FF000",
+            width: 1
 
-  @type method() :: :simple | :exponential | :smoothed | :weighted
+  @type method() :: :simple | :exponential | :weighted
   @type apply_to() :: :open | :high | :low | :close
   @type t() :: %__MODULE__{}
 
@@ -24,32 +24,62 @@ defmodule Contex.OHLC.MA do
   @spec init(t(), OHLC.t()) :: t()
   def init(%__MODULE__{} = ma, ohlc) do
     [dataset, accessors] <~ ohlc.mapping
+    value_fn = Map.fetch!(accessors, ma.apply_to)
 
     dataset =
       dataset.data
-      |> Enum.map(&{accessors.datetime.(&1), accessors.close.(&1)})
-      |> Dataset.new(["Date", "Close"])
+      |> Stream.map(&{accessors.datetime.(&1), value_fn.(&1)})
+      |> generate(ma.method, ma.period)
+      |> Dataset.new(["Date", "Average"])
 
     %{ma | dataset: dataset}
+  end
+
+  @spec generate(Enumerable.t(Overlayable.row()), method(), non_neg_integer()) :: [
+          Overlayable.row()
+        ]
+  defp generate(data, method, period)
+
+  defp generate(data, :simple, period) do
+    {sma, _, _} =
+      Enum.reduce(data, {[], [], 0}, fn row, {rows, subset, count} ->
+        {dt, value} = row
+        subset = Enum.take([value | subset], period)
+
+        if count >= period do
+          average = Enum.sum(subset) / period
+
+          {[{dt, average} | rows], subset, count + 1}
+        else
+          {rows, subset, count + 1}
+        end
+      end)
+
+    Enum.reverse(sma)
+  end
+
+  defp generate(_data, method, _period) do
+    raise "#{inspect(method)} not yet supported"
   end
 
   @doc false
   @spec render(t(), Overlayable.RenderConfig.t()) :: [Overlayable.rendered_row()]
   def render(%__MODULE__{dataset: %Dataset{}} = ma, render_config) do
+    [domain, x_transform, y_transform] <~ render_config
+
     dataset =
       Dataset.update_data(ma.dataset, fn data ->
-        Enum.filter(data, &OHLC.within_domain?(elem(&1, 0), render_config.domain))
+        Enum.filter(data, &OHLC.within_domain?(elem(&1, 0), domain))
       end)
 
     options = [
-      mapping: %{x_col: "Date", y_cols: ["Close"]},
-      smoothed: false,
-      stroke_width: "1",
-      colour_palette: ["ff9838"],
+      mapping: %{x_col: "Date", y_cols: ["Average"]},
+      stroke_width: "#{Integer.to_string(ma.width)}",
+      colour_palette: [ma.color],
       show_x_axis: false,
       show_y_axis: false,
-      x_transform: render_config.x_transform,
-      y_transform: render_config.y_transform
+      x_transform: x_transform,
+      y_transform: y_transform
     ]
 
     Plot.new(dataset, Contex.LinePlot, 100, 100, options)

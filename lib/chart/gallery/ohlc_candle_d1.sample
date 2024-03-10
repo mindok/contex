@@ -74,6 +74,8 @@ data = [
 
 dataset = Dataset.new( data, ["Date", "Open", "High", "Low", "Close", "Volume"])
 
+alias Contex.OHLC.MA
+
 opts = [
   mapping: %{ datetime: "Date", open: "Open", high: "High", low: "Low", close: "Close"},
   style: :candle,
@@ -84,7 +86,10 @@ opts = [
   shadow_color: "000000",
   crisp_edges: true,
   body_border: true,
-  timeframe: Contex.TimeScale.timeframe_d1()
+  timeframe: Contex.TimeScale.timeframe_d1(),
+  overlays: [
+    MA.new( period: 5, color: "0000AA", width: 2)
+  ]
 ]
 
 Contex.Plot.new( dataset, Contex.OHLC, 1200, 800, opts)
