@@ -38,13 +38,15 @@ defmodule Contex.OHLC do
   alias Contex.{Dataset, Mapping}
   alias Contex.Axis
   alias Contex.Utils
+  alias Contex.OHLC.Overlayable
 
   defstruct [
     :mapping,
     :options,
     :x_scale,
     :y_scale,
-    transforms: %{}
+    transforms: %{},
+    overlays: []
   ]
 
   @type t() :: %__MODULE__{}
@@ -137,6 +139,7 @@ defmodule Contex.OHLC do
 
         Contex.Plot.new(dataset, Contex.OHLC, 600, 400, opts)
   """
+  @dialyzer {:nowarn_function, new: 2}
   @spec new(Contex.Dataset.t(), keyword()) :: Contex.OHLC.t()
   def new(%Dataset{} = dataset, options \\ []) do
     options =
@@ -144,9 +147,11 @@ defmodule Contex.OHLC do
       |> Keyword.merge(options)
       |> maybe_put_custom_x_formatter()
 
+    [overlays([]) | options] <~ options
     mapping = Mapping.new(@required_mappings, Keyword.get(options, :mapping), dataset)
 
     %OHLC{mapping: mapping, options: options}
+    |> init_overlays(overlays)
   end
 
   @spec maybe_put_custom_x_formatter(keyword()) :: keyword()
@@ -184,7 +189,7 @@ defmodule Contex.OHLC do
 
   @doc false
   def to_svg(%__MODULE__{} = plot, plot_options) do
-    plot = prepare_scales(plot)
+    plot = prepare_scales_and_overlays(plot)
     plot_options = Map.merge(@default_plot_options, plot_options)
     [x_scale, y_scale] <~ plot
 
@@ -208,6 +213,7 @@ defmodule Contex.OHLC do
       y_axis_svg,
       "<g>",
       render_data(plot),
+      render_overlays(plot),
       "</g>"
     ]
   end
@@ -220,6 +226,23 @@ defmodule Contex.OHLC do
         rendered_row = maybe_render_row(plot, row),
         into: [],
         do: rendered_row
+  end
+
+  @spec init_overlays(t(), [Contex.Dataset.t()]) :: t()
+  defp init_overlays(plot, overlays) do
+    %{
+      plot
+      | overlays: Enum.map(overlays, &Overlayable.init(&1, plot))
+    }
+  end
+
+  @spec render_overlays(t()) :: [rendered_row()]
+  defp render_overlays(plot) do
+    render_config = Overlayable.RenderConfig.new(plot)
+
+    plot.overlays
+    |> Enum.map(&Overlayable.render(&1, render_config))
+    |> List.flatten()
   end
 
   @spec maybe_render_row(t(), row()) :: rendered_row() | nil
@@ -438,8 +461,8 @@ defmodule Contex.OHLC do
     |> Kernel.struct(rotation: rotation)
   end
 
-  @spec prepare_scales(t()) :: t()
-  defp prepare_scales(plot) do
+  @spec prepare_scales_and_overlays(t()) :: t()
+  defp prepare_scales_and_overlays(plot) do
     if fixed_x_plot = maybe_fix_spacing(plot) do
       fixed_x_plot
     else
@@ -523,6 +546,7 @@ defmodule Contex.OHLC do
     %{plot | x_scale: x_scale, transforms: transforms}
   end
 
+  # todo: take into account any value outliers of the overlay charts
   @spec prepare_y_scale(t()) :: t()
   defp prepare_y_scale(plot) do
     [dataset, column_map, accessors] <~ plot.mapping
@@ -568,9 +592,9 @@ defmodule Contex.OHLC do
     !!get_option(plot, :timeframe) and !get_option(plot, :custom_x_scale)
   end
 
-  @spec within_domain?(Timescale.datetimes(), {Timescale.datetimes(), Timescale.datetimes()}) ::
+  @spec within_domain?(TimeScale.datetimes(), {TimeScale.datetimes(), TimeScale.datetimes()}) ::
           boolean()
-  defp within_domain?(dt, {min, max}) do
+  def within_domain?(dt, {min, max}) do
     Utils.date_compare(dt, min) != :lt and Utils.date_compare(dt, max) != :gt
   end
 

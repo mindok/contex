@@ -96,6 +96,15 @@ defmodule Contex.Dataset do
   end
 
   @doc """
+  Updates data in the dataset.
+  The row structure is expected to remain the same.
+  """
+  @spec update_data(t(), (row() -> row())) :: t()
+  def update_data(%Dataset{} = dataset, updater) do
+    %{dataset | data: updater.(dataset.data)}
+  end
+
+  @doc """
   Optionally sets a title.
 
   Not really used at the moment to be honest, but seemed like a good
