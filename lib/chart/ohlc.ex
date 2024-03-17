@@ -50,6 +50,10 @@ defmodule Contex.OHLC do
   ]
 
   @type t() :: %__MODULE__{}
+
+  @type domain_min() ::
+          (t(), interval_count :: non_neg_integer() -> min :: TimeScale.datetimes())
+
   @typep row() :: list()
   @typep rendered_row() :: list()
   @typep color() :: <<_::24>>
@@ -505,17 +509,24 @@ defmodule Contex.OHLC do
 
   @spec fix_spacing(t()) :: t()
   defp fix_spacing(plot) do
-    [datetime: dt_column] <~ plot.mapping.column_map
-    {min, max} = Dataset.column_extents(plot.mapping.dataset, dt_column)
-    min = get_option(plot, :domain_min) || min
-
+    [dataset, column_map: [datetime: dt_column]] <~ plot.mapping
     [zoom] <~ plot.options
     [body_width, spacing] <~ @zoom_levels[zoom]
+
     width = get_option(plot, :width)
     border_width = (body_width > 0 && 2) || 1
     interval_width = body_width + spacing + border_width
     interval_count = floor(width / interval_width)
     tick_interval = get_option(plot, :timeframe)
+    domain_min = get_option(plot, :domain_min)
+    {min, max} = Dataset.column_extents(dataset, dt_column)
+
+    min =
+      if is_function(domain_min) do
+        domain_min.(plot, interval_count)
+      else
+        domain_min || min
+      end
 
     x_scale =
       TimeScale.new()
