@@ -17,8 +17,8 @@ defmodule Contex.OHLC do
   If they are equal, the candle will be plotted in dark grey.
 
   The datetime column must be of consist of DateTime or NaiveDateTime entries.
-  If a custom x scale option is not provided, a `Contex.TimeScale` scale will automatically be generated from the datetime extents
-  of the dataset and used for the x-axis.
+  If a custom x scale option is not provided, a `Contex.TimeScale` scale will automatically be generated from the
+  datetime extents of the dataset and used for the x-axis.
 
   The open / high / low / close columns must be of a numeric type (float or integer).
   Decimals are not currently supported.
@@ -38,17 +38,22 @@ defmodule Contex.OHLC do
   alias Contex.{Dataset, Mapping}
   alias Contex.Axis
   alias Contex.Utils
+  alias Contex.OHLC.Overlayable
 
   defstruct [
-    :dataset,
     :mapping,
     :options,
     :x_scale,
     :y_scale,
-    transforms: %{}
+    transforms: %{},
+    overlays: []
   ]
 
   @type t() :: %__MODULE__{}
+
+  @type domain_min() ::
+          (t(), interval_count :: non_neg_integer() -> min :: TimeScale.datetimes())
+
   @typep row() :: list()
   @typep rendered_row() :: list()
   @typep color() :: <<_::24>>
@@ -83,6 +88,7 @@ defmodule Contex.OHLC do
     width: 100,
     height: 100,
     zoom: 3,
+    timeframe: nil,
     bull_color: @green,
     bear_color: @red,
     shadow_color: @black
@@ -95,12 +101,13 @@ defmodule Contex.OHLC do
   }
 
   @zoom_levels [
-                 [body_width: 0, spacing: 0],
-                 [body_width: 0, spacing: 1],
-                 [body_width: 1, spacing: 1],
-                 [body_width: 3, spacing: 3],
-                 [body_width: 9, spacing: 5],
-                 [body_width: 23, spacing: 7]
+                 [body_width: 0, spacing: 0, step: 64],
+                 [body_width: 0, spacing: 1, step: 32],
+                 [body_width: 1, spacing: 1, step: 16],
+                 [body_width: 3, spacing: 3, step: 8],
+                 [body_width: 9, spacing: 5, step: 4],
+                 [body_width: 23, spacing: 7, step: 2],
+                 [body_width: 53, spacing: 9, step: 1]
                ]
                |> Stream.with_index()
                |> Map.new(fn {k, v} -> {v, Map.new(k)} end)
@@ -136,12 +143,30 @@ defmodule Contex.OHLC do
 
         Contex.Plot.new(dataset, Contex.OHLC, 600, 400, opts)
   """
+  @dialyzer {:nowarn_function, new: 2}
   @spec new(Contex.Dataset.t(), keyword()) :: Contex.OHLC.t()
   def new(%Dataset{} = dataset, options \\ []) do
-    options = Keyword.merge(@default_options, options)
+    options =
+      @default_options
+      |> Keyword.merge(options)
+      |> maybe_put_custom_x_formatter()
+
+    [overlays([]) | options] <~ options
     mapping = Mapping.new(@required_mappings, Keyword.get(options, :mapping), dataset)
 
-    %OHLC{dataset: dataset, mapping: mapping, options: options}
+    %OHLC{mapping: mapping, options: options}
+    |> init_overlays(overlays)
+  end
+
+  @spec maybe_put_custom_x_formatter(keyword()) :: keyword()
+  defp maybe_put_custom_x_formatter(options) do
+    if (timeframe = options[:timeframe]) && !options[:custom_x_formatter] do
+      intraday? = TimeScale.compare_timeframe(timeframe, TimeScale.timeframe_d1()) == :lt
+      custom_x_formatter = &NimbleStrftime.format(&1, (intraday? && "%d %b %H:%M") || "%d %b %Y")
+      Keyword.put(options, :custom_x_formatter, custom_x_formatter)
+    else
+      options
+    end
   end
 
   @doc false
@@ -168,10 +193,9 @@ defmodule Contex.OHLC do
 
   @doc false
   def to_svg(%__MODULE__{} = plot, plot_options) do
-    plot = prepare_scales(plot)
-    [x_scale, y_scale] <~ plot
-
+    plot = prepare_scales_and_overlays(plot)
     plot_options = Map.merge(@default_plot_options, plot_options)
+    [x_scale, y_scale] <~ plot
 
     x_axis_svg =
       if plot_options.show_x_axis,
@@ -193,35 +217,68 @@ defmodule Contex.OHLC do
       y_axis_svg,
       "<g>",
       render_data(plot),
+      render_overlays(plot),
       "</g>"
     ]
   end
 
   @spec render_data(t()) :: [rendered_row()]
   defp render_data(plot) do
-    [dataset] <~ plot
+    [dataset] <~ plot.mapping
 
-    dataset.data
-    |> Enum.map(fn row -> render_row(plot, row) end)
+    for row <- dataset.data,
+        rendered_row = maybe_render_row(plot, row),
+        into: [],
+        do: rendered_row
   end
 
-  @spec render_row(t(), row()) :: rendered_row()
-  defp render_row(plot, row) do
+  @spec init_overlays(t(), [Contex.Dataset.t()]) :: t()
+  defp init_overlays(plot, overlays) do
+    %{
+      plot
+      | overlays: Enum.map(overlays, &Overlayable.init(&1, plot))
+    }
+  end
+
+  @spec render_overlays(t()) :: [rendered_row()]
+  defp render_overlays(plot) do
+    render_config = Overlayable.RenderConfig.new(plot)
+
+    plot.overlays
+    |> Enum.map(&Overlayable.render(&1, render_config))
+    |> List.flatten()
+  end
+
+  @spec maybe_render_row(t(), row()) :: rendered_row() | nil
+  defp maybe_render_row(plot, row) do
     [transforms, mapping: [accessors], options: options = %{}] <~ plot
 
-    x =
-      accessors.datetime.(row)
-      |> transforms.x.()
+    options =
+      with true <- !!options[:timeframe] || options,
+           row_dt = accessors.datetime.(row),
+           true <- within_domain?(row_dt, plot.x_scale.nice_domain) do
+        {min, max} = plot.x_scale.nice_domain
 
-    y_vals = get_y_vals(row, accessors)
+        options
+        |> put_in([:halve_first], Utils.date_compare(row_dt, min) != :gt)
+        |> put_in([:halve_last], Utils.date_compare(row_dt, max) != :lt)
+      end
 
-    scaled_y_vals =
-      Map.new(y_vals, fn {k, v} ->
-        {k, transforms.y.(v)}
-      end)
+    if options do
+      x =
+        accessors.datetime.(row)
+        |> transforms.x.()
 
-    color = get_colour(y_vals, plot)
-    draw_row(options, x, scaled_y_vals, color)
+      y_vals = get_y_vals(row, accessors)
+
+      scaled_y_vals =
+        Map.new(y_vals, fn {k, v} ->
+          {k, transforms.y.(v)}
+        end)
+
+      color = get_colour(y_vals, plot)
+      draw_row(options, x, scaled_y_vals, color)
+    end
   end
 
   # Draws a grey line from low to high, then overlay a coloured rect
@@ -231,11 +288,12 @@ defmodule Contex.OHLC do
   @spec draw_row(map(), number(), y_vals(), color()) :: rendered_row()
   defp draw_row(options, x, y_map, body_color)
 
-  defp draw_row(%{style: :candle} = options, x, y_map, body_color) do
+  defp draw_row(%{timeframe: nil, style: :candle} = options, x, y_map, body_color) do
     [zoom, shadow_color, crisp_edges(false), body_border(false)] <~ options
     [body_width] <~ @zoom_levels[zoom]
     [open, high, low, close] <~ y_map
 
+    body_width = ceil(body_width / 2)
     bar_x = {x - body_width, x + body_width}
 
     body_opts =
@@ -259,7 +317,7 @@ defmodule Contex.OHLC do
     ]
   end
 
-  defp draw_row(%{style: :tick} = options, x, y_map, body_color) do
+  defp draw_row(%{timeframe: nil, style: :tick} = options, x, y_map, body_color) do
     [zoom, shadow_color, crisp_edges(false), colorized_bars(false)] <~ options
     [body_width] <~ @zoom_levels[zoom]
     [open, high, low, close] <~ y_map
@@ -276,6 +334,86 @@ defmodule Contex.OHLC do
       ~s|<line x1="#{x - body_width}" x2="#{x}" y1="#{open}" y2="#{open}"  #{style}" />|,
       ~s|<line x1="#{x}" x2="#{x + body_width}" y1="#{close}" y2="#{close}"  #{style}" />|
     ]
+  end
+
+  defp draw_row(%{style: :candle} = options, x, y_map, body_color) do
+    [
+      zoom,
+      shadow_color,
+      crisp_edges(false),
+      body_border(false),
+      halve_first(false),
+      halve_last(false)
+    ]
+    <~ options
+
+    [body_width] <~ @zoom_levels[zoom]
+    [open, high, low, close] <~ y_map
+
+    right_width = div(body_width, 2)
+    left_width = right_width
+    left_width = (body_width > 0 && left_width + ((body_border && 1) || 0)) || left_width
+    body_width = left_width + right_width
+    bar_x = {x - ((!halve_first && left_width) || 0), x + ((!halve_last && right_width) || 0) + 1}
+
+    body_opts =
+      [
+        fill: body_color,
+        stroke: (body_border && shadow_color) || "transparent",
+        shape_rendering: crisp_edges && "crispEdges"
+      ]
+      |> Enum.filter(&elem(&1, 1))
+
+    style =
+      [
+        ~s|style="stroke: ##{shadow_color}"|,
+        (crisp_edges && ~s| shape-rendering="crispEdges"|) || ""
+      ]
+      |> Enum.join()
+
+    [
+      ~s|<line x1="#{x}" x2="#{x}" y1="#{low}" y2="#{high}" #{style} />|,
+      body_width > 0 && rect(bar_x, {open, close}, "", body_opts)
+    ]
+    |> Enum.filter(& &1)
+  end
+
+  defp draw_row(%{style: :tick} = options, x, y_map, body_color) do
+    [
+      zoom,
+      shadow_color,
+      crisp_edges(false),
+      colorized_bars(false),
+      halve_first(false),
+      halve_last(false)
+    ]
+    <~ options
+
+    [body_width] <~ @zoom_levels[zoom]
+    [open, high, low, close] <~ y_map
+
+    body_width = ceil(body_width / 2)
+
+    bar_x = %{
+      l: x - ((!halve_first && body_width) || 0),
+      r: x + ((!halve_last && body_width) || 0)
+    }
+
+    style =
+      [
+        ~s|style="stroke: ##{(colorized_bars && body_color) || shadow_color}"|,
+        (crisp_edges && ~s| shape-rendering="crispEdges"|) || ""
+      ]
+      |> Enum.join()
+
+    [
+      ~s|<line x1="#{x}" x2="#{x}" y1="#{low}" y2="#{high}" #{style} />|,
+      body_width > 0 and !halve_first &&
+        ~s|<line x1="#{bar_x.l}" x2="#{x}" y1="#{open}" y2="#{open}" #{style}" />|,
+      body_width > 0 and !halve_last &&
+        ~s|<line x1="#{x}" x2="#{bar_x.r + 1}" y1="#{close}" y2="#{close}" #{style}" />|
+    ]
+    |> Enum.filter(& &1)
   end
 
   @spec get_y_vals(row(), %{atom() => (row() -> number())}) :: y_vals()
@@ -303,31 +441,45 @@ defmodule Contex.OHLC do
 
   @spec get_x_axis(Contex.TimeScale.t(), t()) :: Contex.Axis.t()
   defp get_x_axis(x_scale, plot) do
-    rotation =
-      case get_option(plot, :axis_label_rotation) do
-        :auto ->
-          if length(Scale.ticks_range(x_scale)) > 8, do: 45, else: 0
+    degrees = get_option(plot, :axis_label_rotation)
 
-        degrees ->
-          degrees
+    {step, rotation} =
+      cond do
+        degrees != :auto ->
+          {1, degrees}
+
+        get_option(plot, :timeframe) ->
+          {@zoom_levels[get_option(plot, :zoom)].step, 0}
+
+        length(Scale.ticks_range(x_scale)) > 8 ->
+          {1, 45}
+
+        true ->
+          {1, 0}
       end
 
     x_scale
+    |> TimeScale.set_step(step)
     |> Axis.new_bottom_axis()
     |> Axis.set_offset(get_option(plot, :height))
     |> Kernel.struct(rotation: rotation)
   end
 
-  @doc false
-  def prepare_scales(%__MODULE__{} = plot) do
-    plot
-    |> prepare_x_scale()
+  @spec prepare_scales_and_overlays(t()) :: t()
+  defp prepare_scales_and_overlays(plot) do
+    if fixed_x_plot = maybe_fix_spacing(plot) do
+      fixed_x_plot
+    else
+      prepare_x_scale(plot)
+    end
     |> prepare_y_scale()
   end
 
   @spec prepare_x_scale(t()) :: t()
-  defp prepare_x_scale(%__MODULE__{dataset: dataset, mapping: mapping} = plot) do
-    x_col_name = mapping.column_map[:datetime]
+  defp prepare_x_scale(plot) do
+    [dataset, column_map] <~ plot.mapping
+
+    x_col_name = column_map[:datetime]
     width = get_option(plot, :width)
     custom_x_scale = get_option(plot, :custom_x_scale)
 
@@ -337,11 +489,7 @@ defmodule Contex.OHLC do
         _ -> custom_x_scale |> Scale.set_range(0, width)
       end
 
-    x_scale = %{x_scale | custom_tick_formatter: get_option(plot, :custom_x_formatter)}
-    x_transform = Scale.domain_to_range_fn(x_scale)
-    transforms = Map.merge(plot.transforms, %{x: x_transform})
-
-    %{plot | x_scale: x_scale, transforms: transforms}
+    apply_x_scale(plot, x_scale)
   end
 
   defp create_timescale_for_column(dataset, column, {r_min, r_max}) do
@@ -352,19 +500,87 @@ defmodule Contex.OHLC do
     |> Scale.set_range(r_min, r_max)
   end
 
+  @spec maybe_fix_spacing(t()) :: t() | nil
+  defp maybe_fix_spacing(plot) do
+    if fixed_timescale?(plot) do
+      fix_spacing(plot)
+    end
+  end
+
+  @spec fix_spacing(t()) :: t()
+  defp fix_spacing(plot) do
+    [dataset, column_map: [datetime: dt_column]] <~ plot.mapping
+    [zoom] <~ plot.options
+    [body_width, spacing] <~ @zoom_levels[zoom]
+
+    width = get_option(plot, :width)
+    border_width = (body_width > 0 && 2) || 1
+    interval_width = body_width + spacing + border_width
+    interval_count = floor(width / interval_width)
+    tick_interval = get_option(plot, :timeframe)
+    domain_min = get_option(plot, :domain_min)
+    {min, max} = Dataset.column_extents(dataset, dt_column)
+
+    min =
+      if is_function(domain_min) do
+        domain_min.(plot, interval_count)
+      else
+        domain_min || min
+      end
+
+    x_scale =
+      TimeScale.new()
+      |> TimeScale.domain(min, max)
+      |> Scale.set_range(0, width)
+
+    {min_d, _} = x_scale.domain
+    last_dt = TimeScale.add_interval(min_d, tick_interval, interval_count)
+
+    x_scale =
+      x_scale
+      |> struct(
+        interval_count: interval_count,
+        tick_interval: tick_interval,
+        use_existing_tick_interval?: true
+      )
+      |> TimeScale.domain(min, last_dt)
+
+    apply_x_scale(plot, x_scale)
+  end
+
+  @spec apply_x_scale(t(), Contex.Scale.t()) :: t()
+  defp apply_x_scale(plot, x_scale) do
+    x_scale = %{x_scale | custom_tick_formatter: get_option(plot, :custom_x_formatter)}
+    x_transform = Scale.domain_to_range_fn(x_scale)
+    transforms = Map.merge(plot.transforms, %{x: x_transform})
+
+    %{plot | x_scale: x_scale, transforms: transforms}
+  end
+
+  # todo: take into account any value outliers of the overlay charts
   @spec prepare_y_scale(t()) :: t()
   defp prepare_y_scale(plot) do
-    [dataset, mapping: [column_map]] <~ plot
+    [dataset, column_map, accessors] <~ plot.mapping
 
     y_col_names = Enum.map([:open, :high, :low, :close], &column_map[&1])
     height = get_option(plot, :height)
     custom_y_scale = get_option(plot, :custom_y_scale)
 
+    filter_opts =
+      if fixed_timescale?(plot) do
+        accessor_dt = accessors.datetime
+        domain = plot.x_scale.nice_domain
+
+        [filter: &within_domain?(accessor_dt.(&1), domain)]
+      else
+        []
+      end
+
     y_scale =
       case custom_y_scale do
         nil ->
           {min, max} =
-            get_overall_domain(dataset, y_col_names)
+            get_overall_domain(dataset, y_col_names, filter_opts)
             |> Utils.fixup_value_range()
 
           ContinuousLinearScale.new()
@@ -382,14 +598,25 @@ defmodule Contex.OHLC do
     %{plot | y_scale: y_scale, transforms: transforms}
   end
 
+  @spec fixed_timescale?(t()) :: boolean()
+  defp fixed_timescale?(plot) do
+    !!get_option(plot, :timeframe) and !get_option(plot, :custom_x_scale)
+  end
+
+  @spec within_domain?(TimeScale.datetimes(), {TimeScale.datetimes(), TimeScale.datetimes()}) ::
+          boolean()
+  def within_domain?(dt, {min, max}) do
+    Utils.date_compare(dt, min) != :lt and Utils.date_compare(dt, max) != :gt
+  end
+
   # TODO: Extract into Dataset
-  defp get_overall_domain(dataset, col_names) do
+  defp get_overall_domain(dataset, col_names, opts) do
     combiner = fn {min1, max1}, {min2, max2} ->
       {Utils.safe_min(min1, min2), Utils.safe_max(max1, max2)}
     end
 
     Enum.reduce(col_names, {nil, nil}, fn col, acc_extents ->
-      inner_extents = Dataset.column_extents(dataset, col)
+      inner_extents = Dataset.column_extents(dataset, col, opts)
       combiner.(acc_extents, inner_extents)
     end)
   end

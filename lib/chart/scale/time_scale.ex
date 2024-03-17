@@ -14,6 +14,16 @@ defmodule Contex.TimeScale do
 
   alias Contex.Utils
 
+  @type units() ::
+          :seconds
+          | :minutes
+          | :hours
+          | :days
+          | :weeks
+          | :months
+          | :years
+
+  @type timeframe() :: {units(), non_neg_integer(), non_neg_integer()}
   @type datetimes() :: NaiveDateTime.t() | DateTime.t()
 
   # Approximate durations in ms for calculating ideal tick intervals
@@ -39,6 +49,7 @@ defmodule Contex.TimeScale do
     {:minutes, 30, @duration_min * 30},
     {:hours, 1, @duration_hour},
     {:hours, 3, @duration_hour * 3},
+    {:hours, 4, @duration_hour * 4},
     {:hours, 6, @duration_hour * 6},
     {:hours, 12, @duration_hour * 12},
     {:days, 1, @duration_day},
@@ -51,12 +62,36 @@ defmodule Contex.TimeScale do
     {:years, 1, @duration_year}
   ]
 
+  def timeframe_m1(), do: {:minutes, 1, @duration_min}
+  def timeframe_m5(), do: {:minutes, 5, @duration_min * 5}
+  def timeframe_m15(), do: {:minutes, 15, @duration_min * 15}
+  def timeframe_m30(), do: {:minutes, 30, @duration_min * 30}
+  def timeframe_h1(), do: {:hours, 1, @duration_hour}
+  def timeframe_h4(), do: {:hours, 4, @duration_hour * 4}
+  def timeframe_d1(), do: {:days, 1, @duration_day}
+  #  def timeframe_w1(), do: {:days, 1, @duration_week}
+  def timeframe_mn(), do: {:months, 1, @duration_month}
+
+  @doc """
+  Compares two timeframes.
+  """
+  @spec compare_timeframe(timeframe(), timeframe()) :: :eq | :lt | :gt
+  def compare_timeframe({_, _, millis1}, {_, _, millis2}) do
+    cond do
+      millis1 < millis2 -> :lt
+      millis1 > millis2 -> :gt
+      true -> :eq
+    end
+  end
+
   defstruct [
     :domain,
     :nice_domain,
     :range,
     :interval_count,
     :tick_interval,
+    :use_existing_tick_interval?,
+    :step,
     :custom_tick_formatter,
     :display_format
   ]
@@ -66,9 +101,22 @@ defmodule Contex.TimeScale do
   @doc """
   Creates a new TimeScale struct with basic defaults set
   """
-  @spec new :: Contex.TimeScale.t()
+  @spec new :: t()
   def new() do
-    %TimeScale{range: {0.0, 1.0}, interval_count: 11}
+    %TimeScale{
+      range: {0.0, 1.0},
+      interval_count: 11,
+      use_existing_tick_interval?: false,
+      step: 1
+    }
+  end
+
+  @doc """
+  Sets the timescale tick plotting step.
+  """
+  @spec set_step(t(), non_neg_integer()) :: t()
+  def set_step(%TimeScale{} = scale, step) do
+    %TimeScale{scale | step: step}
   end
 
   @doc """
@@ -76,7 +124,7 @@ defmodule Contex.TimeScale do
 
   Default is 10.
   """
-  @spec interval_count(Contex.TimeScale.t(), integer()) :: Contex.TimeScale.t()
+  @spec interval_count(t(), integer()) :: t()
   def interval_count(%TimeScale{} = scale, interval_count)
       when is_integer(interval_count) and interval_count > 1 do
     scale
@@ -88,8 +136,10 @@ defmodule Contex.TimeScale do
 
   @doc """
   Define the data domain for the scale
+
+  If `tick_interval` is already defined in the structure, it will not be recomputed.
   """
-  @spec domain(Contex.TimeScale.t(), datetimes(), datetimes()) :: Contex.TimeScale.t()
+  @spec domain(t(), datetimes(), datetimes()) :: t()
   def domain(%TimeScale{} = scale, min, max) do
     # We can be flexible with the range start > end, but the domain needs to start from the min
     {d_min, d_max} =
@@ -105,10 +155,11 @@ defmodule Contex.TimeScale do
 
   @doc """
   Define the data domain for the scale from a list of data.
+  If `tick_interval` is already defined in the structure, it will not be recomputed.
 
   Extents will be calculated by the scale.
   """
-  @spec domain(Contex.TimeScale.t(), list(datetimes())) :: Contex.TimeScale.t()
+  @spec domain(t(), list(datetimes())) :: t()
   def domain(%TimeScale{} = scale, data) when is_list(data) do
     {min, max} = extents(data)
     domain(scale, min, max)
@@ -116,11 +167,19 @@ defmodule Contex.TimeScale do
 
   # NOTE: interval count will likely get adjusted down here to keep things looking nice
   # TODO: no type checks on the domain
+  @spec nice(t()) :: t()
+  defp nice(scale)
+
   defp nice(%TimeScale{domain: {min_d, max_d}, interval_count: interval_count} = scale)
        when is_number(interval_count) and interval_count > 1 do
-    width = Utils.date_diff(max_d, min_d, :millisecond)
-    unrounded_interval_size = width / (interval_count - 1)
-    tick_interval = lookup_tick_interval(unrounded_interval_size)
+    tick_interval =
+      if scale.use_existing_tick_interval? do
+        scale.tick_interval
+      else
+        width = Utils.date_diff(max_d, min_d, :millisecond)
+        unrounded_interval_size = width / (interval_count - 1)
+        lookup_tick_interval(unrounded_interval_size)
+      end
 
     min_nice = round_down_to(min_d, tick_interval)
 
@@ -285,16 +344,16 @@ defmodule Contex.TimeScale do
   defp round_down_multiple(value, multiple), do: div(value, multiple) * multiple
 
   defimpl Contex.Scale do
+    import Extructure
+
     def domain_to_range_fn(%TimeScale{} = scale),
       do: TimeScale.get_domain_to_range_function(scale)
 
-    def ticks_domain(%TimeScale{
-          nice_domain: {min_d, _},
-          interval_count: interval_count,
-          tick_interval: tick_interval
-        })
+    def ticks_domain(%TimeScale{interval_count: interval_count} = scale)
         when is_number(interval_count) do
-      0..interval_count
+      [tick_interval, step, nice_domain: ^{min_d, _}] <~ scale
+
+      0..interval_count//step
       |> Enum.map(fn i -> TimeScale.add_interval(min_d, tick_interval, i) end)
     end
 
