@@ -24,6 +24,8 @@ defmodule Contex.Gallery.OHLCCharts do
   #{graph(title: "A simple tick OHLC chart",
   file: "ohlc_tick.sample")}
 
+  #{graph(title: "D1 timeframe OHLC chart",
+  file: "ohlc_candle_d1.sample")}
 
   """
   def plain(), do: 0

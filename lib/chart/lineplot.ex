@@ -16,9 +16,8 @@ defmodule Contex.LinePlot do
   A column in the dataset can optionally be used to control the colours. See
   `colours/2` and `set_colour_col_name/2`
   """
-
+  import Extructure
   import Contex.SVG
-
   alias __MODULE__
   alias Contex.{Scale, ContinuousLinearScale, TimeScale}
   alias Contex.CategoryColourScale
@@ -186,7 +185,11 @@ defmodule Contex.LinePlot do
 
   @doc false
   def to_svg(%LinePlot{} = plot, plot_options) do
-    plot = prepare_scales(plot)
+    plot =
+      plot
+      |> prepare_scales()
+      |> maybe_override_transforms()
+
     x_scale = plot.x_scale
     y_scale = plot.y_scale
 
@@ -214,6 +217,24 @@ defmodule Contex.LinePlot do
       get_svg_lines(plot),
       "</g>"
     ]
+  end
+
+  # Replaces original x & y transforms if so specified in options
+  @spec maybe_override_transforms(t()) :: t()
+  defp maybe_override_transforms(plot) do
+    [_x_transform, _y_transform] <~ plot.options
+
+    %{
+      plot
+      | transforms:
+          Map.merge(
+            plot.transforms,
+            %{
+              x: x_transform || plot.transforms.x,
+              y: y_transform || plot.transforms.y
+            }
+          )
+    }
   end
 
   defp get_x_axis(x_scale, plot) do

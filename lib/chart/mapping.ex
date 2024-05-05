@@ -66,6 +66,18 @@ defmodule Contex.Mapping do
   end
 
   @doc """
+  Updates the dataset while ensuring sure the required columns are still present.
+  """
+  @spec update_dataset!(t(), (Contex.Dataset.t() -> Contex.Dataset.t())) :: t()
+  def update_dataset!(mapping, updater) do
+    mapping = %{mapping | dataset: updater.(mapping.dataset)}
+
+    confirm_columns_in_dataset!(mapping.dataset, mapping.column_map)
+
+    mapping
+  end
+
+  @doc """
   Given a plot that already has a mapping and a new map of elements to columns,
   updates the mapping accordingly and returns the plot.
   """
