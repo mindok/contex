@@ -59,6 +59,7 @@ defmodule Contex.BarChart do
     height: 100,
     padding: 2,
     data_labels: true,
+    max_number_of_cols_data_labels: 4,
     colour_palette: :default,
     phx_event_handler: nil,
     phx_event_target: nil,
@@ -544,7 +545,8 @@ defmodule Contex.BarChart do
       end)
 
     texts =
-      case count < 4 and get_option(plot, :data_labels) do
+      case count < get_option(plot, :max_number_of_cols_data_labels) and
+             get_option(plot, :data_labels) do
         false ->
           []
 

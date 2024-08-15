@@ -87,6 +87,10 @@ defmodule ContexBarChartTest do
       plot = BarChart.data_labels(plot, false)
       assert get_option(plot, :data_labels) == false
     end
+
+    test "default max_number_of_cols_data_labels value should be 4", %{plot: plot} do
+      assert get_option(plot, :max_number_of_cols_data_labels) == 4
+    end
   end
 
   describe "type/2" do
