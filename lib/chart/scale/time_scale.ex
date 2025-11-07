@@ -337,6 +337,6 @@ defmodule Contex.TimeScale do
       do: custom_tick_formatter.(tick)
 
     defp format_tick_text(tick, display_format, _),
-      do: NimbleStrftime.format(tick, display_format)
+      do: Calendar.strftime(tick, display_format)
   end
 end
