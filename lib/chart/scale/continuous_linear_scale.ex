@@ -73,7 +73,7 @@ defmodule Contex.ContinuousLinearScale do
   """
   @spec new :: Contex.ContinuousLinearScale.t()
   def new() do
-    %ContinuousLinearScale{range: {0.0, 1.0}, interval_count: 10, display_decimals: nil}
+    %ContinuousLinearScale{range: {+0.0, 1.0}, interval_count: 10, display_decimals: nil}
   end
 
   @doc """
@@ -132,7 +132,7 @@ defmodule Contex.ContinuousLinearScale do
        when is_number(min_d) and is_number(max_d) and is_number(interval_count) and
               interval_count > 1 do
     width = max_d - min_d
-    width = if width == 0.0, do: 1.0, else: width
+    width = if width in [-0.0, +0.0], do: 1.0, else: width
     unrounded_interval_size = width / interval_count
     order_of_magnitude = :math.ceil(:math.log10(unrounded_interval_size) - 1)
     power_of_ten = :math.pow(10, order_of_magnitude)
@@ -183,7 +183,10 @@ defmodule Contex.ContinuousLinearScale do
       0 ->
         fn x -> x end
 
-      0.0 ->
+      +0.0 ->
+        fn x -> x end
+
+      -0.0 ->
         fn x -> x end
 
       _ ->
@@ -215,7 +218,10 @@ defmodule Contex.ContinuousLinearScale do
       0 ->
         fn x -> x end
 
-      0.0 ->
+      +0.0 ->
+        fn x -> x end
+
+      -0.0 ->
         fn x -> x end
 
       _ ->
