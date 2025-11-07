@@ -43,7 +43,7 @@ defmodule Contex.MixProject do
     [
       main: "Contex",
       logo: "assets/logo.png",
-      assets: "assets",
+      assets: %{"assets" => "assets"},
       before_closing_head_tag: &docs_before_closing_head_tag/1
     ]
   end
