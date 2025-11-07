@@ -28,7 +28,7 @@ defmodule Contex.Dataset do
         headers: nil,
         title: nil
       }
-      iex> Dataset.column_names(dataset)
+      iex> Dataset.column_names(dataset) |> Enum.sort()
       [:category, :x, :y] # Note ordering of column names from map data is not guaranteed
 
   or from a list of tuples (or lists):
@@ -90,7 +90,7 @@ defmodule Contex.Dataset do
   Data is expected to be a list of tuples of the same size or list of lists of same size. Headers provided with a list of maps
   are ignored; column names from map data are inferred from the maps' keys.
   """
-  @spec new(list(row()), list(String.t())) :: Contex.Dataset.t()
+  @spec new([row(), ...], list(String.t())) :: Contex.Dataset.t()
   def new(data, headers) when is_list(data) and is_list(headers) do
     %Dataset{headers: headers, data: data}
   end
