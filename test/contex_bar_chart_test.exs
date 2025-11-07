@@ -232,13 +232,9 @@ defmodule ContexBarChartTest do
                [51.429, 58.0, 61.0, 68.571],
                [68.571, 58.0, 61.0, 0.0]
              ] ==
-               Stream.map(rects_map, &Map.delete(&1, :title))
-               |> Stream.map(&Enum.unzip/1)
-               |> Stream.map(fn value ->
-                 elem(value, 1)
-               end)
-               |> Enum.map(fn value ->
-                 Enum.map(value, string_to_rounded_float)
+               Enum.map(rects_map, fn rect ->
+                 [rect.height, rect.width, rect.x, rect.y]
+                 |> Enum.map(string_to_rounded_float)
                end)
 
       assert ["10", "20", "30", "40"] ==

@@ -8,8 +8,8 @@ defmodule ScaleUtilsTest do
     test "with fixed intervals" do
       assert %{
                display_decimals: 0,
-               ticks: [0.0, 20.0, 40.0, 60.0, 80.0, 100.0],
-               nice_domain: {0.0, 100.0}
+               ticks: [+0.0, 20.0, 40.0, 60.0, 80.0, 100.0],
+               nice_domain: {+0.0, 100.0}
              } =
                ScaleUtils.compute_nice_settings(
                  0,
@@ -23,7 +23,7 @@ defmodule ScaleUtilsTest do
       assert %{
                display_decimals: 0,
                ticks: [0, 10, 50],
-               nice_domain: {0.0, 80.0}
+               nice_domain: {+0.0, 80.0}
              } =
                ScaleUtils.compute_nice_settings(
                  0,

@@ -152,7 +152,11 @@ defmodule Contex.Mapping do
         :ok
 
       mappings ->
-        mapping_string = Enum.map_join(mappings, ", ", &"\"#{&1}\"")
+        mapping_string =
+          mappings
+          |> Enum.sort()
+          |> Enum.map_join(", ", &"\"#{&1}\"")
+
         raise "Required mapping(s) #{mapping_string} not included in column map."
     end
   end

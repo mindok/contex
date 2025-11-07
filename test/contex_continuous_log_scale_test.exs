@@ -9,9 +9,9 @@ defmodule ContinuousLogScaleTest do
     test "defaults" do
       assert %Contex.ContinuousLogScale{
                custom_tick_formatter: nil,
-               domain: {0.0, 1.0},
+               domain: {+0.0, 1.0},
                tick_positions: [
-                 0.0,
+                 +0.0,
                  0.1,
                  0.2,
                  _,

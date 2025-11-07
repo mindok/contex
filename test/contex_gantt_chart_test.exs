@@ -204,12 +204,9 @@ defmodule ContexGanttChartTest do
                [28.0, 15.0, 51.25, 61.0],
                [28.0, 30.0, 81.25, 91.0]
              ] ==
-               Stream.map(rects_map, &Enum.unzip/1)
-               |> Stream.map(fn value ->
-                 elem(value, 1)
-               end)
-               |> Enum.map(fn value ->
-                 Enum.map(value, string_to_rounded_float)
+               Enum.map(rects_map, fn rect ->
+                 [rect.height, rect.width, rect.x, rect.y]
+                 |> Enum.map(string_to_rounded_float)
                end)
 
       labels =
