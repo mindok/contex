@@ -180,7 +180,7 @@ defmodule Contex.SVG do
 
   # TODO: This is going to break down with more complex styles
   defp opts_to_attrs([{:fill, val} | t], attrs),
-    do: opts_to_attrs(t, [[" style=\"fill:#", val, ";\""] | attrs])
+    do: opts_to_attrs(t, [[" fill=\"#", val, "\""] | attrs])
 
   defp opts_to_attrs([{:transparent, true} | t], attrs),
     do: opts_to_attrs(t, [[" fill=\"transparent\""] | attrs])
