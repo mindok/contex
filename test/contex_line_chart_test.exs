@@ -41,8 +41,12 @@ defmodule ContexLineChartTest do
       C330.6666666666667,237.5 388.3333333333333,60 404,20 "
       """
 
-      output = Contex.SVG.line(points, true) |> IO.iodata_to_binary()
-      IO.inspect(output)
+      output_new = Contex.SVG.line(points, :smooth) |> IO.iodata_to_binary()
+      output_old = Contex.SVG.line(points, true) |> IO.iodata_to_binary()
+
+      assert output_new == output_old
+
+      IO.inspect(output_new)
     end
   end
 end

@@ -69,10 +69,10 @@ defmodule Contex.SVG do
     ]
   end
 
-  def line(points, smoothed, opts \\ []) do
+  def line(points, plot_style, opts \\ []) do
     attrs = opts_to_attrs(opts)
 
-    path = path(points, smoothed)
+    path = path(points, plot_style)
 
     [
       "<path d=\"",
@@ -85,7 +85,7 @@ defmodule Contex.SVG do
 
   defp path([], _), do: ""
 
-  defp path(points, false) do
+  defp path(points, :direct) do
     Enum.reduce(points, :first, fn {x, y}, acc ->
       coord = ~s|#{x} #{y}|
 
@@ -96,7 +96,24 @@ defmodule Contex.SVG do
     end)
   end
 
-  defp path(points, true) do
+  defp path(points, :step) do
+    Enum.reduce(points, :first, fn {x, y}, acc ->
+      coord = ~s|#{x} #{y}|
+
+      case acc do
+        :first ->
+          ["M ", coord]
+
+        _ ->
+          previous_coord = acc |> List.last()
+          previous_y = previous_coord |> String.split(" ") |> List.last()
+          new_x = x
+          acc ++ [" L ", ~s|#{new_x} #{previous_y}|, " L ", coord]
+      end
+    end)
+  end
+
+  defp path(points, :smooth) do
     # Use Catmull-Rom curve - see http://schepers.cc/getting-to-the-point
     # First point stays as-is. Subsequent points are draw using SVG cubic-spline
     # where control points are calculated as follows:
