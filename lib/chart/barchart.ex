@@ -357,9 +357,12 @@ defmodule Contex.BarChart do
 
     val_axis_svg = if plot_options.show_val_axis, do: Axis.to_svg(value_axis), else: ""
 
+    zero_line = Axis.get_zero_line_svg(category_axis)
+
     [
       cat_axis_svg,
       val_axis_svg,
+      zero_line,
       "<g>",
       get_svg_bars(plot),
       "</g>"
@@ -504,12 +507,12 @@ defmodule Contex.BarChart do
   end
 
   defp prepare_bar_values(series_values, scale, :grouped) do
-    {scale_min, _} = Scale.get_range(scale)
+    scale_zero = Scale.domain_to_range(scale, 0.0)
 
     results =
       Enum.reduce(series_values, [], fn data_val, points ->
         range_val = Scale.domain_to_range(scale, data_val)
-        [{scale_min, range_val} | points]
+        [{scale_zero, range_val} | points]
       end)
 
     Enum.reverse(results)
