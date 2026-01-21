@@ -72,6 +72,11 @@ defmodule Contex.Gallery.BarCharts do
   """)}
 
 
+  #{graph(title: "A simple stacked bar chart with absolute input values",
+  file: "bar_charts_plain_stacked_absolute.sample",
+  info: "")}
+
+
   """
   def plain(), do: 0
 end

@@ -7,6 +7,7 @@ defmodule ContexGalleryBarChartTest do
         "bar_charts_plain.sample",
         "bar_charts_plain_horizontal.sample",
         "bar_charts_plain_stacked.sample",
+        "bar_charts_plain_stacked_absolute.sample",
         "bar_charts_log_stacked.sample",
         "bar_charts_log_stacked_auto_domain.sample"
       ]

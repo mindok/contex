@@ -1,0 +1,29 @@
+data = [
+  ["January", 3500, 94, -3406],
+  ["February", 3500, 842, -2658],
+  ["March", 3500, 366, -3134],
+  ["April", 4000, 660, -3340],
+  ["May", 4000, 987, -3013],
+  ["June", 4000, 788, -3212],
+  ["July", 4000, 1630, -2370],
+  ["August", 4000, 569, -3431],
+  ["September", 4000, 855, -3145],
+  ["November", 4500, 1001, -3499],
+  ["December", 4000, 1562, -2438]
+]
+
+category_col = "Month"
+series_cols = ["Income", "Savings", "Expenditure"]
+test_data = Contex.Dataset.new(data, [category_col | series_cols])
+
+options = [
+  mapping: %{category_col: category_col, value_cols: series_cols},
+  type: :stacked_absolute,
+  data_labels: true,
+  orientation: :vertical,
+  colour_palette: ["009900", "003399", "990000"],
+  series_columns: series_cols
+]
+
+Contex.Plot.new(test_data, Contex.BarChart, 500, 400, options)
+  |> Contex.Plot.titles("Finances for a year", "")

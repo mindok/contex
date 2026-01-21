@@ -67,7 +67,7 @@ defmodule Contex.BarChart do
 
   @type t() :: %__MODULE__{}
   @type orientation() :: :vertical | :horizontal
-  @type plot_type() :: :stacked | :grouped
+  @type plot_type() :: :stacked | :stacked_absolute | :grouped
   @type selected_item() :: %{category: any(), series: any()}
 
   @doc ~S"""
@@ -75,7 +75,7 @@ defmodule Contex.BarChart do
 
   Options may be passed to control the settings for the barchart. Options available are:
 
-    - `:type` : `:stacked` (default) or `:grouped`
+    - `:type` : `:stacked` (default), `:stacked_absolute` or `:grouped`
     - `:orientation` : `:vertical` (default) or `:horizontal`
     - `:axis_label_rotation` : `:auto` (default), 45 or 90
 
@@ -178,7 +178,7 @@ defmodule Contex.BarChart do
   end
 
   @doc """
-  Specifies whether the bars are drawn stacked or grouped.
+  Specifies whether the bars are drawn stacked, stacked_absolute or grouped.
   """
   @deprecated "Set in new/2 options"
   @spec type(Contex.BarChart.t(), plot_type()) :: Contex.BarChart.t()
@@ -493,23 +493,48 @@ defmodule Contex.BarChart do
 
   # Transforms the raw value for each series into a list of range tuples the bar has to cover, scaled to the display area
   defp prepare_bar_values(series_values, scale, :stacked) do
-    {results, _last_val} =
-      Enum.reduce(series_values, {[], 0}, fn data_val, {points, last_val} ->
-        end_val = data_val + last_val
-        new = {Scale.domain_to_range(scale, last_val), Scale.domain_to_range(scale, end_val)}
-        {[new | points], end_val}
-      end)
+    Enum.reduce(series_values, {[], 0}, fn data_val, {points, last_val} ->
+      end_val = data_val + last_val
+      new = {Scale.domain_to_range(scale, last_val), Scale.domain_to_range(scale, end_val)}
+      {[new | points], end_val}
+    end)
+    |> elem(0)
+    |> Enum.reverse()
+  end
 
-    Enum.reverse(results)
+  defp prepare_bar_values(series_values, scale, :stacked_absolute) do
+    series_values
+    |> Enum.with_index()
+    |> Enum.reverse()
+    |> Enum.sort_by(&abs(elem(&1, 0)), :asc)
+    |> Enum.reduce({[], 0, 0}, fn {data_val, index},
+                                                 {points, last_pos_val, last_neg_val} ->
+      if data_val >= 0 do
+        new_point =
+          {Scale.domain_to_range(scale, last_pos_val),
+           Scale.domain_to_range(scale, data_val)}
+
+        {[{new_point, index} | points], data_val, last_neg_val}
+      else
+        new_point =
+          {Scale.domain_to_range(scale, data_val),
+           Scale.domain_to_range(scale, last_neg_val)}
+
+        {[{new_point, index} | points], last_pos_val, data_val}
+      end
+    end)
+    |> elem(0)
+    |> Enum.sort_by(&elem(&1, 1))
+    |> Enum.map(&elem(&1, 0))
   end
 
   defp prepare_bar_values(series_values, scale, :grouped) do
-    {scale_min, _} = Scale.get_range(scale)
+    scale_zero = Scale.domain_to_range(scale, 0.0)
 
     results =
       Enum.reduce(series_values, [], fn data_val, points ->
         range_val = Scale.domain_to_range(scale, data_val)
-        [{scale_min, range_val} | points]
+        [{scale_zero, range_val} | points]
       end)
 
     Enum.reverse(results)
@@ -561,7 +586,9 @@ defmodule Contex.BarChart do
 
   defp get_svg_bar_rects(_x, _y, _label, _plot, _fill, _event_handlers, _opacities), do: ""
 
-  defp adjust_cat_band(cat_band, _index, _count, :stacked, _), do: cat_band
+  defp adjust_cat_band(cat_band, _index, _count, type, _)
+       when type in [:stacked, :stacked_absolute],
+       do: cat_band
 
   defp adjust_cat_band({cat_band_start, cat_band_end}, index, count, :grouped, :vertical) do
     interval = (cat_band_end - cat_band_start) / count
@@ -710,7 +737,8 @@ defmodule Contex.BarChart do
     {0, max}
   end
 
-  defp get_overall_value_domain(_plot, dataset, col_names, :grouped) do
+  defp get_overall_value_domain(_plot, dataset, col_names, type)
+       when type in [:stacked_absolute, :grouped] do
     combiner = fn {min1, max1}, {min2, max2} ->
       {Utils.safe_min(min1, min2), Utils.safe_max(max1, max2)}
     end
