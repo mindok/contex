@@ -142,6 +142,7 @@ defmodule Contex.Mapping do
   end
 
   defp check_required_columns!(expected_mappings, column_map) do
+
     required_mappings = Enum.map(expected_mappings, fn {k, _v} -> k end)
 
     provided_mappings = Map.keys(column_map)
@@ -163,13 +164,11 @@ defmodule Contex.Mapping do
 
   defp confirm_columns_in_dataset!(dataset, column_map) do
     available_columns = [nil | Dataset.column_names(dataset)]
-
-    missing_columns =
       Map.values(column_map)
       |> List.flatten()
       |> missing_columns(available_columns)
-
-    case missing_columns do
+      |> Enum.filter(& not is_nil(&1))
+      |>case do
       [] ->
         :ok
 
@@ -180,8 +179,8 @@ defmodule Contex.Mapping do
   end
 
   defp missing_columns(required_columns, provided_columns) do
-    MapSet.new(required_columns)
-    |> MapSet.difference(MapSet.new(provided_columns))
+     MapSet.new(provided_columns)
+    |> MapSet.difference(MapSet.new(required_columns))
     |> MapSet.to_list()
   end
 

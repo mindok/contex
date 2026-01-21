@@ -16,6 +16,7 @@ defmodule Contex.PieChart do
 
   defstruct [
     :dataset,
+    :total,
     :mapping,
     :options,
     :colour_scale
@@ -67,11 +68,13 @@ defmodule Contex.PieChart do
     options = check_options(options)
     options = Keyword.merge(@default_options, options)
     mapping = Mapping.new(@required_mappings, Keyword.get(options, :mapping), dataset)
-
+    val_accessor = dataset |> Dataset.value_fn(mapping.column_map[:value_col])
+    total = dataset.data |> Enum.reduce(0, fn col, acc -> val_accessor.(col) + acc end)
     %PieChart{
       dataset: dataset,
       mapping: mapping,
       options: options,
+      total: total,
       colour_scale: Keyword.get(options, :colour_scale)
     }
   end
@@ -229,14 +232,13 @@ defmodule Contex.PieChart do
   end
 
   @spec scale_values(PieChart.t()) :: [{value :: number(), label :: any()}]
-  defp scale_values(%PieChart{dataset: dataset, mapping: mapping}) do
+  defp scale_values(%PieChart{dataset: dataset, mapping: mapping, total: 0}), do: raise ArithmeticError, message: "[Invalid dataset]#{inspect(dataset.data)} Sum of values should be a non-zero number"
+  defp scale_values(%PieChart{dataset: dataset, mapping: mapping, total: total}) do
     val_accessor = dataset |> Dataset.value_fn(mapping.column_map[:value_col])
     cat_accessor = dataset |> Dataset.value_fn(mapping.column_map[:category_col])
 
-    sum = dataset.data |> Enum.reduce(0, fn col, acc -> val_accessor.(col) + acc end)
-
     dataset.data
-    |> Enum.map_reduce(sum, &{{val_accessor.(&1) / &2 * 100, cat_accessor.(&1)}, &2})
+    |> Enum.map_reduce(total, &{{val_accessor.(&1) / &2 * 100, cat_accessor.(&1)}, &2})
     |> elem(0)
   end
 end
